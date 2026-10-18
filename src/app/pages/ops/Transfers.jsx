@@ -12,13 +12,14 @@ const FLOW = ["draft", "approved", "in_transit", "received"];
 export default function Transfers() {
   const { api, role, tenantId } = useAuth();
   const r = useAsync(async () => {
+    if (!api || !tenantId) return null;
     const [stos, items, branches] = await Promise.all([
-      api.list("stock_transfers", { eq: { tenant_id: tenantId }, order: ["created_at", "desc"] }),
-      api.list("inventory_items", { eq: { tenant_id: tenantId }, order: ["name"] }),
-      api.list("branches", { eq: { tenant_id: tenantId } }),
+      api.list("stock_transfers", { eq: { tenant_id: tenantId }, order: ["created_at", "desc"] }).catch(() => []),
+      api.list("inventory_items", { eq: { tenant_id: tenantId }, order: ["name"] }).catch(() => []),
+      api.list("branches", { eq: { tenant_id: tenantId } }).catch(() => []),
     ]);
-    return { stos, items, branches };
-  }, [api, tenantId], { key: `transfers@${tenantId}` });
+    return { stos: stos || [], items: items || [], branches: branches || [] };
+  }, [api, tenantId], { key: tenantId ? `transfers@${tenantId}` : null });
   useLive(["stock_transfers", "inventory_items", "branches"], r.reload);
   const [form, setForm] = useState(null);
   const a = useAction();
@@ -27,7 +28,7 @@ export default function Transfers() {
     <>
       <PageHead eyebrow="Fitur 10 · Mutasi stok" title="Transfer antar-gudang" desc="Surat jalan: Draft → Approved → In Transit → Received. Persetujuan dilakukan di halaman Persetujuan."
         actions={can(role, 10, "c") && <button type="button" className="d-btn d-btn--primary" disabled={!r.data} onClick={() => setForm({ from: r.data?.branches?.find((x) => x.is_warehouse)?.id ?? "", to: "", lines: [{ item_id: "", qty: "" }] })}>Buat transfer</button>} />
-      {r.loading && !r.data ? <Loading /> : r.error && !r.data ? <ErrorNote error={r.error} onRetry={r.reload} /> : !r.data ? null : (
+      {r.loading && !r.data ? <Loading /> : r.error && !r.data ? <ErrorNote error={r.error} onRetry={r.reload} /> : !r.data ? <Loading /> : (
         <Panel>
           {r.data.stos.length === 0 ? <Empty title="Belum ada transfer" /> : (
             <ul className="d-approvals">{r.data.stos.map((s) => (

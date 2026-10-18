@@ -10,14 +10,15 @@ const ST = { draft: ["Draf", "neutral"], pending: ["Menunggu Owner", "warn"], ap
 export default function Purchasing() {
   const { api, role, tenantId } = useAuth();
   const r = useAsync(async () => {
+    if (!api || !tenantId) return null;
     const [pos, vendors, items, branches] = await Promise.all([
-      api.list("purchase_orders", { eq: { tenant_id: tenantId }, order: ["created_at", "desc"] }),
-      api.list("vendors", { eq: { tenant_id: tenantId }, order: ["name"] }),
-      api.list("inventory_items", { eq: { tenant_id: tenantId }, order: ["name"] }),
-      api.list("branches", { eq: { tenant_id: tenantId } }),
+      api.list("purchase_orders", { eq: { tenant_id: tenantId }, order: ["created_at", "desc"] }).catch(() => []),
+      api.list("vendors", { eq: { tenant_id: tenantId }, order: ["name"] }).catch(() => []),
+      api.list("inventory_items", { eq: { tenant_id: tenantId }, order: ["name"] }).catch(() => []),
+      api.list("branches", { eq: { tenant_id: tenantId } }).catch(() => []),
     ]);
-    return { pos, vendors, items, branches };
-  }, [api, tenantId], { key: `purchasing@${tenantId}` });
+    return { pos: pos || [], vendors: vendors || [], items: items || [], branches: branches || [] };
+  }, [api, tenantId], { key: tenantId ? `purchasing@${tenantId}` : null });
   useLive(["purchase_orders", "vendors", "inventory_items", "branches"], r.reload);
   const [po, setPo] = useState(null);
   const [vendor, setVendor] = useState(null);
@@ -44,7 +45,7 @@ export default function Purchasing() {
       <PageHead eyebrow={`Fitur 9 · ${permOf(role, 9)?.label}`} title="Pembelian" desc="Draf PO → diajukan → disetujui Owner → barang diterima (stok & utang dagang tercatat otomatis)."
         actions={can(role, 9, "c") && <><button type="button" className="d-btn d-btn--ghost" onClick={() => setVendor({ name: "", phone: "", bank: "", terms: "COD" })}>Tambah vendor</button>
           <button type="button" className="d-btn d-btn--primary" disabled={!r.data} onClick={() => setPo({ vendor_id: r.data?.vendors?.[0]?.id ?? "", branch_id: r.data?.branches?.find((x) => x.is_warehouse)?.id ?? r.data?.branches?.[0]?.id, lines: [{ item_id: "", qty: "", price: "" }] })}>Buat PO</button></>} />
-      {r.loading && !r.data ? <Loading /> : r.error && !r.data ? <ErrorNote error={r.error} onRetry={r.reload} /> : !r.data ? null : (
+      {r.loading && !r.data ? <Loading /> : r.error && !r.data ? <ErrorNote error={r.error} onRetry={r.reload} /> : !r.data ? <Loading /> : (
         <div className="d-grid d-grid--wide">
           <Panel title="Purchase order">
             {r.data.pos.length === 0 ? <Empty title="Belum ada PO" /> : (

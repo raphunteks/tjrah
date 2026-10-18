@@ -1077,7 +1077,7 @@
 @media (max-width: 640px) {
   .d-role-chip { display: none; }
   .d-switch__label { display: none; }
-  .d-switch select { max-width: 12rem; }
+  .d-switch select { min-width: 9rem; max-width: 14rem; }
   .d-stats { grid-template-columns: minmax(0, 1fr); }
   .d-stat + .d-stat { border-left: 0; border-top: var(--rule-hair) solid var(--color-rule); }
   .d-form__row, .d-checks { grid-template-columns: minmax(0, 1fr); }

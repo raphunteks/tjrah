@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useAuth } from "../../../auth/AuthProvider.jsx";
 import { rupiah, dateTime } from "../../../lib/format.js";
 import { can } from "../../../lib/rbac.js";
-import { PageHead, Panel, Loading, ErrorNote, Field, useAsync, Stat, Badge } from "../../ui/index.jsx";
+import { PageHead, Panel, Loading, ErrorNote, Field, useAsync, Stat, Badge, Empty } from "../../ui/index.jsx";
 import { useBranch, BranchSelect, useAction, Feedback } from "../../ops.jsx";
 
 const M = { cash: "Tunai", card: "Kartu", qris: "QRIS", ewallet: "E-wallet", transfer: "Transfer" };
@@ -33,17 +33,29 @@ export default function Shift() {
   const [z, setZ] = useState(null);
   const a = useAction();
   const r = useAsync(async () => {
-    if (!b.branchId) return null;
-    const open = await api.list("shifts", { eq: { branch_id: b.branchId, status: "open" } });
-    const mine = open.find((s) => s.cashier_id === profile.id);
-    return { open, mine, rep: mine ? await api.rpc("shift_report", { p_shift: mine.id }) : null };
-  }, [api, b.branchId]);
+    if (!api || !b.branchId) return null;
+    const open = await api.list("shifts", { eq: { branch_id: b.branchId, status: "open" } }).catch(() => []);
+    const mine = (open || []).find((s) => s.cashier_id === profile?.id);
+    return { open: open || [], mine, rep: mine ? await api.rpc("shift_report", { p_shift: mine.id }).catch(() => null) : null };
+  }, [api, b.branchId, profile?.id], { key: b.branchId ? `shift@${b.branchId}@${profile?.id}` : null });
 
   const canOpen = can(role, 5, "c");
   return (
     <>
       <PageHead eyebrow="Fitur 5 · Buka/tutup kasir" title="Shift & laporan" desc="Modal awal wajib sebelum transaksi pertama. Tutup shift dengan menghitung uang fisik; Z-Report mengunci hari dan dikirim Hermes ke WhatsApp Owner & GM." actions={<BranchSelect b={b} />} />
-      {r.loading && !r.data ? <Loading /> : r.error ? <ErrorNote error={r.error} onRetry={r.reload} /> : !r.data ? null : (
+      {b.loading || (r.loading && !r.data) ? (
+        <Loading />
+      ) : b.error || r.error ? (
+        <ErrorNote error={b.error || r.error} onRetry={() => { b.reload?.(); r.reload(); }} />
+      ) : !b.branchId ? (
+        <Empty title="Pilih Cabang Operasional">
+          {b.options.length === 0
+            ? "Belum ada cabang terdaftar untuk toko Anda. Silakan tambahkan cabang di Pengaturan Toko terlebih dahulu."
+            : "Silakan pilih lokasi cabang di pemilih lokasi atas untuk mengelola shift kasir."}
+        </Empty>
+      ) : !r.data ? (
+        <Loading />
+      ) : (
         <div className="d-grid d-grid--wide">
           <div className="d-grid">
             {r.data.mine ? (

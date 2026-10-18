@@ -230,43 +230,71 @@ const DB_STORAGE_PREFIX = "tijarah_db_cache:";
 const CACHE_TTL_MS = 120000; // 2 menit cache RAM untuk browsing instan antar subtab
 
 function getDbStorage(key) {
-  if (typeof window === "undefined" || !window.sessionStorage) return null;
+  if (typeof window === "undefined") return null;
+  // 1. Cek sessionStorage (L1 Session)
   try {
-    const raw = sessionStorage.getItem(`${DB_STORAGE_PREFIX}${key}`);
-    if (!raw) return null;
-    const item = JSON.parse(raw);
-    if (item && item.data && Date.now() - (item.ts || 0) < 300000) { // 5 menit sessionStorage
-      DB_CACHE.set(key, item);
-      return item.data;
+    if (window.sessionStorage) {
+      const raw = sessionStorage.getItem(`${DB_STORAGE_PREFIX}${key}`);
+      if (raw) {
+        const item = JSON.parse(raw);
+        if (item && item.data && Date.now() - (item.ts || 0) < 300000) {
+          DB_CACHE.set(key, item);
+          return item.data;
+        }
+      }
     }
   } catch {}
+
+  // 2. Cek localStorage (L2 Persistent PWA Offline)
+  try {
+    if (window.localStorage) {
+      const raw = localStorage.getItem(`${DB_STORAGE_PREFIX}${key}`);
+      if (raw) {
+        const item = JSON.parse(raw);
+        if (item && item.data && Date.now() - (item.ts || 0) < 600000) {
+          DB_CACHE.set(key, item);
+          return item.data;
+        }
+      }
+    }
+  } catch {}
+
   return null;
 }
 
 function setDbStorage(key, data) {
-  if (data == null) return;
+  if (data == null || typeof window === "undefined") return;
   const item = { data, ts: Date.now() };
   DB_CACHE.set(key, item);
-  if (typeof window !== "undefined" && window.sessionStorage) {
-    try {
+  try {
+    if (window.sessionStorage) {
       sessionStorage.setItem(`${DB_STORAGE_PREFIX}${key}`, JSON.stringify(item));
-    } catch {}
-  }
+    }
+  } catch {}
+  try {
+    if (window.localStorage) {
+      localStorage.setItem(`${DB_STORAGE_PREFIX}${key}`, JSON.stringify(item));
+    }
+  } catch {}
 }
 
 export function invalidateTableCache(table) {
   if (!table) {
     DB_CACHE.clear();
-    if (typeof window !== "undefined" && window.sessionStorage) {
+    const clearStorage = (store) => {
       try {
-        const keys = [];
-        for (let i = 0; i < sessionStorage.length; i++) {
-          const k = sessionStorage.key(i);
-          if (k && k.startsWith(DB_STORAGE_PREFIX)) keys.push(k);
+        if (typeof window !== "undefined" && window[store]) {
+          const keys = [];
+          for (let i = 0; i < window[store].length; i++) {
+            const k = window[store].key(i);
+            if (k && k.startsWith(DB_STORAGE_PREFIX)) keys.push(k);
+          }
+          keys.forEach((k) => window[store].removeItem(k));
         }
-        keys.forEach((k) => sessionStorage.removeItem(k));
       } catch {}
-    }
+    };
+    clearStorage("sessionStorage");
+    clearStorage("localStorage");
     return;
   }
   for (const k of DB_CACHE.keys()) {
@@ -274,17 +302,21 @@ export function invalidateTableCache(table) {
       DB_CACHE.delete(k);
     }
   }
-  if (typeof window !== "undefined" && window.sessionStorage) {
+  const clearTableFrom = (store) => {
     try {
-      const keys = [];
-      const search = `${DB_STORAGE_PREFIX}${table}:`;
-      for (let i = 0; i < sessionStorage.length; i++) {
-        const k = sessionStorage.key(i);
-        if (k && k.startsWith(search)) keys.push(k);
+      if (typeof window !== "undefined" && window[store]) {
+        const keys = [];
+        const search = `${DB_STORAGE_PREFIX}${table}:`;
+        for (let i = 0; i < window[store].length; i++) {
+          const k = window[store].key(i);
+          if (k && k.startsWith(search)) keys.push(k);
+        }
+        keys.forEach((k) => window[store].removeItem(k));
       }
-      keys.forEach((k) => sessionStorage.removeItem(k));
     } catch {}
-  }
+  };
+  clearTableFrom("sessionStorage");
+  clearTableFrom("localStorage");
 }
 
 Object.assign(api, {

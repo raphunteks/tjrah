@@ -16,13 +16,14 @@ export default function Cash() {
   const [rej, setRej] = useState(null); // { p, reason }
   // Staff: cabangnya sendiri. GM/Owner/Superadmin: semua cabang tenant, supaya tak ada pengajuan terlewat.
   const r = useAsync(async () => {
+    if (!api || (!tenantId && !b.branchId)) return null;
     const where = b.locked ? { branch_id: b.branchId } : { tenant_id: tenantId };
     const [petty, shifts] = await Promise.all([
-      api.list("petty_cash", { eq: where, order: ["created_at", "desc"], limit: 80 }),
-      scoped ? Promise.resolve([]) : api.list("shifts", { eq: { ...where, status: "closed" }, order: ["closed_at", "desc"], limit: 30 }),
+      api.list("petty_cash", { eq: where, order: ["created_at", "desc"], limit: 80 }).catch(() => []),
+      scoped ? Promise.resolve([]) : api.list("shifts", { eq: { ...where, status: "closed" }, order: ["closed_at", "desc"], limit: 30 }).catch(() => []),
     ]);
-    return { petty, shifts };
-  }, [api, b.branchId, tenantId, b.locked]);
+    return { petty: petty || [], shifts: shifts || [] };
+  }, [api, b.branchId, tenantId, b.locked, scoped], { key: `cash@${tenantId}@${b.branchId}@${b.locked}` });
   const br = useIndex(b.all);
 
   const submit = () => a.run(async () => {
@@ -37,7 +38,7 @@ export default function Cash() {
     <>
       <PageHead eyebrow={`Fitur 12 · ${permOf(role, 12)?.label}`} title={scoped ? "Kas kecil" : "Kas & settlement"}
         desc="Pengeluaran tak terduga outlet dengan foto nota, divalidasi GM lalu otomatis dijurnal." actions={b.locked ? <BranchSelect b={b} /> : <span className="d-role-chip d-role-chip--plain">Semua cabang</span>} />
-      {r.loading && !r.data ? <Loading /> : r.error ? <ErrorNote error={r.error} onRetry={r.reload} /> : !r.data ? null : (
+      {r.loading && !r.data ? <Loading /> : r.error ? <ErrorNote error={r.error} onRetry={r.reload} /> : !r.data ? <Loading /> : (
         <div className="d-grid d-grid--wide">
           <div className="d-grid">
             <Panel title={scoped ? "Pengajuan saya" : "Pengajuan kas kecil"}>

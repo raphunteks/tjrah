@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useAuth } from "../../../auth/AuthProvider.jsx";
 import { can, permOf } from "../../../lib/rbac.js";
 import { rupiah, date } from "../../../lib/format.js";
-import { PageHead, Panel, Loading, ErrorNote, Modal, Field, useAsync, Badge } from "../../ui/index.jsx";
+import { PageHead, Panel, Loading, ErrorNote, Modal, Field, useAsync, Badge, Empty } from "../../ui/index.jsx";
 import { useAction, Feedback, useBranch, useLive } from "../../ops.jsx";
 
 const ACCOUNTS = [["1101", "Kas"], ["1102", "Bank, EDC & QRIS"], ["1301", "Persediaan Bahan Baku"], ["2101", "Utang Dagang"], ["2102", "Utang Pajak Penjualan"], ["2103", "Utang Gaji"],
@@ -12,7 +12,7 @@ const SRC = { pos: "POS", void: "Void", waste: "Waste", purchase: "Pembelian", p
 export default function Journal() {
   const { api, role, tenantId } = useAuth();
   const b = useBranch();
-  const r = useAsync(() => api.list("journal_entries", { select: "*, journal_lines(debit, credit, account:accounts(code, name))", eq: { tenant_id: tenantId }, order: ["entry_date", "desc"], limit: 80 }), [api, tenantId], { key: `journal@${tenantId}` });
+  const r = useAsync(() => (!api || !tenantId ? null : api.list("journal_entries", { select: "*, journal_lines(debit, credit, account:accounts(code, name))", eq: { tenant_id: tenantId }, order: ["entry_date", "desc"], limit: 80 }).catch(() => [])), [api, tenantId], { key: tenantId ? `journal@${tenantId}` : null });
   useLive(["journal_entries", "journal_lines"], r.reload);
   const [open, setOpen] = useState(null);
   const [form, setForm] = useState(null);
@@ -23,7 +23,7 @@ export default function Journal() {
       <PageHead eyebrow={`Fitur 11 · ${permOf(role, 11)?.label}`} title="Jurnal umum" desc="Penjualan, pembelian, waste, kas kecil, dan payroll dijurnal otomatis (double-entry). Jurnal manual untuk transaksi di luar sistem."
         actions={can(role, 11, "c") && <button type="button" className="d-btn d-btn--primary" onClick={() => setForm({ memo: "", source: "manual", lines: [{ code: "6102", dr: "", cr: "" }, { code: "1101", dr: "", cr: "" }] })}>Jurnal manual</button>} />
       <Panel>
-        {r.loading && !r.data ? <Loading /> : r.error && !r.data ? <ErrorNote error={r.error} onRetry={r.reload} /> : !r.data ? null : (
+        {r.loading && !r.data ? <Loading /> : r.error && !r.data ? <ErrorNote error={r.error} onRetry={r.reload} /> : !r.data ? <Loading /> : r.data.length === 0 ? <Empty title="Belum ada jurnal transaksi">Transaksi penjualan, kas kecil, dan mutasi lainnya akan tercatat otomatis di sini.</Empty> : (
           <ul className="jr">{r.data.map((e) => {
             const amt = e.journal_lines.reduce((s, l) => s + Number(l.debit), 0);
             const isOpen = open === e.id;

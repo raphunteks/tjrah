@@ -98,6 +98,6 @@ export default function App() {
   if (!ready && !profile) return <TopProgress />;
   if (api === null) return <Setup />;
   if (isMasuk) return <Suspense fallback={<TopProgress />}><Login /></Suspense>;
-  if (!profile) return <TopProgress />;
+  if (!profile || !api) return <TopProgress />;
   return <Suspense fallback={<TopProgress />}><AppShell /></Suspense>;
 }

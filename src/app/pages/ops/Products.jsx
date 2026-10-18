@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useAuth } from "../../../auth/AuthProvider.jsx";
 import { can, permOf } from "../../../lib/rbac.js";
 import { rupiah } from "../../../lib/format.js";
-import { PageHead, Panel, Loading, ErrorNote, Modal, Field, useAsync, Badge } from "../../ui/index.jsx";
+import { PageHead, Panel, Loading, ErrorNote, Modal, Field, useAsync, Badge, Empty } from "../../ui/index.jsx";
 import { useAction, Feedback, useLive } from "../../ops.jsx";
 
 const STATIONS = ["dapur", "barista", "grill", "pastry"];
@@ -10,7 +10,7 @@ const EMPTY = { sku: "", name: "", category: "Makanan", price: "", station: "dap
 
 export default function Products() {
   const { api, role, tenantId } = useAuth();
-  const r = useAsync(() => api.list("products", { eq: { tenant_id: tenantId }, order: ["category"] }), [api, tenantId], { key: `products@${tenantId}` });
+  const r = useAsync(() => (!api || !tenantId ? null : api.list("products", { eq: { tenant_id: tenantId }, order: ["category"] })), [api, tenantId], { key: tenantId ? `products@${tenantId}` : null });
   useLive(["products"], r.reload);
   const [edit, setEdit] = useState(null);
   const a = useAction();
@@ -26,7 +26,7 @@ export default function Products() {
       <PageHead eyebrow={`Fitur 3 · ${permOf(role, 3)?.label}`} title="Menu & harga jual" desc="Harga dihitung di server saat pesanan dibuat; kasir tidak bisa mengubah harga."
         actions={can(role, 3, "c") && <button type="button" className="d-btn d-btn--primary" onClick={() => setEdit({ ...EMPTY })}>Tambah menu</button>} />
       <Panel>
-        {r.loading && !r.data ? <Loading /> : r.error && !r.data ? <ErrorNote error={r.error} onRetry={r.reload} /> : !r.data ? null : (
+        {r.loading && !r.data ? <Loading /> : r.error && !r.data ? <ErrorNote error={r.error} onRetry={r.reload} /> : !r.data ? <Loading /> : r.data.length === 0 ? <Empty title="Belum ada menu produk">Tambahkan menu pertama Anda untuk memulai.</Empty> : (
           <div className="d-table-wrap"><table className="d-table">
             <thead><tr><th scope="col">SKU</th><th scope="col">Menu</th><th scope="col">Kategori</th><th scope="col">Stasiun</th><th scope="col" className="d-num">Harga</th><th scope="col">Status</th><th scope="col"><span className="sr-only">Aksi</span></th></tr></thead>
             <tbody>{r.data.map((p) => (

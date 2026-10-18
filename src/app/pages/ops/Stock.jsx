@@ -200,16 +200,22 @@ export default function Stock() {
   });
   const a = useAction();
   const r = useAsync(async () => {
-    if (!b.branchId) return null;
+    if (!api || !tenantId || !b.branchId) return null;
     const [items, levels, moves, counts, waste] = await Promise.all([
-      api.list("inventory_items", { eq: { tenant_id: tenantId }, order: ["name"] }),
-      api.list("stock_levels", { eq: { branch_id: b.branchId } }),
-      api.list("stock_movements", { eq: { branch_id: b.branchId }, order: ["created_at", "desc"], limit: 60 }),
-      api.list("stock_counts", { eq: { branch_id: b.branchId, status: "submitted" }, order: ["created_at", "desc"] }),
-      api.list("waste_logs", { eq: { branch_id: b.branchId }, order: ["created_at", "desc"], limit: 40 }),
+      api.list("inventory_items", { eq: { tenant_id: tenantId }, order: ["name"] }).catch(() => []),
+      api.list("stock_levels", { eq: { branch_id: b.branchId } }).catch(() => []),
+      api.list("stock_movements", { eq: { branch_id: b.branchId }, order: ["created_at", "desc"], limit: 60 }).catch(() => []),
+      api.list("stock_counts", { eq: { branch_id: b.branchId, status: "submitted" }, order: ["created_at", "desc"] }).catch(() => []),
+      api.list("waste_logs", { eq: { branch_id: b.branchId }, order: ["created_at", "desc"], limit: 40 }).catch(() => []),
     ]);
-    return { items, levels, moves, counts, waste };
-  }, [api, b.branchId, tenantId], { key: `stock@${tenantId}@${b.branchId}` });
+    return {
+      items: items || [],
+      levels: levels || [],
+      moves: moves || [],
+      counts: counts || [],
+      waste: waste || []
+    };
+  }, [api, b.branchId, tenantId], { key: b.branchId ? `stock@${tenantId}@${b.branchId}` : null });
   useLive(["stock_levels", "stock_counts", "inventory_items", "stock_movements"], r.reload);
   const items = useIndex(r.data?.items);
   const lvl = (id) => r.data?.levels?.find((l) => l.item_id === id)?.qty ?? 0;
@@ -1309,7 +1315,19 @@ export default function Stock() {
             <BranchSelect b={b} label="Lokasi" />
           </>
         } />
-      {r.loading && !r.data ? <Loading /> : r.error ? <ErrorNote error={r.error} onRetry={r.reload} /> : !r.data ? null : (
+      {b.loading || (r.loading && !r.data) ? (
+        <Loading />
+      ) : b.error || r.error ? (
+        <ErrorNote error={b.error || r.error} onRetry={() => { b.reload?.(); r.reload(); }} />
+      ) : !b.branchId ? (
+        <Empty title="Pilih Cabang Operasional">
+          {b.options.length === 0
+            ? "Belum ada cabang terdaftar untuk toko Anda. Silakan tambahkan cabang di Pengaturan Toko terlebih dahulu."
+            : "Silakan pilih lokasi cabang di pemilih lokasi atas untuk menampilkan data inventori bahan baku."}
+        </Empty>
+      ) : !r.data ? (
+        <Loading />
+      ) : (
         <>
           <div className="d-stats">
             <Stat label="Nilai persediaan" value={rupiah(value)} sub={b.branch?.name} />
@@ -1318,7 +1336,11 @@ export default function Stock() {
             <Stat label="Waste (40 terakhir)" value={rupiah(r.data.waste.reduce((s, w) => s + Number(w.cost), 0))} />
           </div>
           <Panel>
-            {tab === "level" && (
+            {tab === "level" && (r.data.items.length === 0 ? (
+              <Empty title="Belum Ada Bahan Baku">
+                Bahan baku belum ditambahkan untuk toko ini. Anda dapat menambahkan bahan secara manual atau menggunakan Bulk Import (.xlsx).
+              </Empty>
+            ) : (
               <div className="d-table-wrap"><table className="d-table">
                 <thead>
                   <tr>
@@ -1409,7 +1431,7 @@ export default function Stock() {
                   );
                 })}</tbody>
               </table></div>
-            )}
+            ))}
             {tab === "mutasi" && (r.data.moves.length === 0 ? <Empty title="Belum ada mutasi" /> : (
               <div className="d-table-wrap"><table className="d-table">
                 <thead><tr><th scope="col">Waktu</th><th scope="col">Bahan</th><th scope="col">Jenis</th><th scope="col" className="d-num">Jumlah</th><th scope="col">Referensi</th></tr></thead>

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../../../auth/AuthProvider.jsx";
 import { can } from "../../../lib/rbac.js";
-import { PageHead, Panel, Loading, ErrorNote, Modal, Field, useAsync } from "../../ui/index.jsx";
+import { PageHead, Panel, Loading, ErrorNote, Modal, Field, useAsync, Empty } from "../../ui/index.jsx";
 import { useBranch, BranchSelect, useAction, Feedback, useLive } from "../../ops.jsx";
 import { qrSvg } from "../../../lib/qr.js";
 
@@ -44,7 +44,7 @@ function TableQrCard({ table, tenantName }) {
 export default function Floor() {
   const { api, role, tenant } = useAuth();
   const b = useBranch();
-  const r = useAsync(() => (b.branchId ? api.list("tables", { eq: { branch_id: b.branchId }, order: ["sort"] }) : Promise.resolve([])), [api, b.branchId], { key: `floor@${b.branchId}` });
+  const r = useAsync(() => (!api || !b.branchId ? null : api.list("tables", { eq: { branch_id: b.branchId }, order: ["sort"] }).catch(() => [])), [api, b.branchId], { key: b.branchId ? `floor@${b.branchId}` : null });
   useLive(["tables"], r.reload);
   const [edit, setEdit] = useState(null);
   const [qrView, setQrView] = useState(null); // null | table object | "ALL"
@@ -82,7 +82,24 @@ export default function Floor() {
         }
       />
 
-      {r.loading && !r.data ? <Loading /> : r.error && !r.data ? <ErrorNote error={r.error} onRetry={r.reload} /> : !r.data ? null : areas.map((area) => (
+      {b.loading || (r.loading && !r.data) ? (
+        <Loading />
+      ) : b.error || r.error ? (
+        <ErrorNote error={b.error || r.error} onRetry={() => { b.reload?.(); r.reload(); }} />
+      ) : !b.branchId ? (
+        <Empty title="Pilih Cabang Operasional">
+          {b.options.length === 0
+            ? "Belum ada cabang terdaftar untuk toko Anda. Silakan tambahkan cabang di Pengaturan Toko terlebih dahulu."
+            : "Silakan pilih lokasi cabang di pemilih lokasi atas untuk menampilkan denah meja."}
+        </Empty>
+      ) : !r.data ? (
+        <Loading />
+      ) : tables.length === 0 ? (
+        <Empty title="Belum Ada Meja">
+          Belum ada denah meja untuk cabang ini. Tambahkan meja baru untuk mulai mengatur tata letak ruangan.
+        </Empty>
+      ) : (
+        areas.map((area) => (
         <Panel key={area} title={area}>
           <ul className="pos-floor pos-floor--wide">
             {tables.filter((t) => t.area === area).map((t) => (
@@ -95,7 +112,7 @@ export default function Floor() {
             ))}
           </ul>
         </Panel>
-      ))}
+      )))}
 
       {/* MODAL EDIT / TAMBAH MEJA */}
       <Modal

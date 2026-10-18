@@ -12,14 +12,14 @@ export default function Opname() {
   const [counts, setCounts] = useState({});
   const a = useAction();
   const r = useAsync(async () => {
-    if (!b.branchId) return null;
+    if (!api || !b.branchId) return null;
     const [items, waste, mine] = await Promise.all([
-      api.list("inventory_items", { order: ["name"] }),
-      api.list("waste_logs", { eq: { branch_id: b.branchId }, order: ["created_at", "desc"], limit: 20 }),
-      api.list("stock_counts", { eq: { branch_id: b.branchId }, order: ["created_at", "desc"], limit: 20 }),
+      api.list("inventory_items", { order: ["name"] }).catch(() => []),
+      api.list("waste_logs", { eq: { branch_id: b.branchId }, order: ["created_at", "desc"], limit: 20 }).catch(() => []),
+      api.list("stock_counts", { eq: { branch_id: b.branchId }, order: ["created_at", "desc"], limit: 20 }).catch(() => []),
     ]);
-    return { items, waste, mine };
-  }, [api, b.branchId]);
+    return { items: items || [], waste: waste || [], mine: mine || [] };
+  }, [api, b.branchId], { key: b.branchId ? `opname@${b.branchId}` : null });
   const idx = useIndex(r.data?.items);
 
   return (
@@ -27,7 +27,19 @@ export default function Opname() {
       <PageHead eyebrow="Fitur 10 · Create (Opname/Waste)" title="Opname & waste"
         desc="Catat bahan rusak, tumpah, atau kedaluwarsa, dan hitung stok fisik. GM meninjau selisih opname sebelum stok disesuaikan."
         actions={<><div className="d-seg" role="radiogroup" aria-label="Bagian"><button type="button" role="radio" aria-checked={tab === "waste"} onClick={() => setTab("waste")}>Waste</button><button type="button" role="radio" aria-checked={tab === "opname"} onClick={() => setTab("opname")}>Opname</button></div><BranchSelect b={b} /></>} />
-      {r.loading && !r.data ? <Loading /> : r.error ? <ErrorNote error={r.error} onRetry={r.reload} /> : !r.data ? null : tab === "waste" ? (
+      {b.loading || (r.loading && !r.data) ? (
+        <Loading />
+      ) : b.error || r.error ? (
+        <ErrorNote error={b.error || r.error} onRetry={() => { b.reload?.(); r.reload(); }} />
+      ) : !b.branchId ? (
+        <Empty title="Pilih Cabang Operasional">
+          {b.options.length === 0
+            ? "Belum ada cabang terdaftar untuk toko Anda. Silakan tambahkan cabang di Pengaturan Toko terlebih dahulu."
+            : "Silakan pilih lokasi cabang di pemilih lokasi atas untuk mengelola opname dan waste."}
+        </Empty>
+      ) : !r.data ? (
+        <Loading />
+      ) : tab === "waste" ? (
         <div className="d-grid d-grid--wide">
           <Panel title="Waste terakhir">
             {r.data.waste.length === 0 ? <Empty title="Belum ada catatan waste" /> : (

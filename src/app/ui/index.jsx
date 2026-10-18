@@ -131,41 +131,60 @@ export function useAsync(fn, deps = [], options = {}) {
     loading: initialCached === undefined,
   }));
 
+  const prevKeyRef = useRef(cacheKey);
+  useEffect(() => {
+    if (prevKeyRef.current !== cacheKey) {
+      prevKeyRef.current = cacheKey;
+      const cached = cacheKey ? (ASYNC_CACHE.get(cacheKey) || getStorageCache(cacheKey)) : undefined;
+      if (cached !== undefined) {
+        setState({ data: cached, loading: false, error: null });
+      }
+    }
+  }, [cacheKey]);
+
   const seq = useRef(0);
   const run = useCallback(() => {
     const n = ++seq.current;
-    // Jika data sudah ada di L1/L2, pertahankan agar UI TIDAK berkedip atau memicu spinner
-    setState((s) => ({ ...s, loading: s.data == null, error: null }));
+    const currentCached = cacheKey ? (ASYNC_CACHE.get(cacheKey) || getStorageCache(cacheKey)) : undefined;
 
-    // Timeout failsafe diperpanjang menjadi 18 detik untuk latensi antar-benua
+    // Jika data sudah ada di L1/L2, tampilkan data dan jangan tampilkan spinner kosong
+    setState((s) => ({
+      data: currentCached !== undefined ? currentCached : s.data,
+      loading: currentCached === undefined && s.data == null,
+      error: null
+    }));
+
+    // Timeout failsafe 18 detik untuk latensi antar-benua
     let timer;
     const timeoutPromise = new Promise((_, reject) => {
       timer = setTimeout(() => {
-        reject(new Error("Waktu tunggu server melebihi batas (18s). Menampilkan data lokal terakhir."));
+        reject(new Error("Waktu tunggu server melebihi batas (18s). Menggunakan data lokal offline."));
       }, 18000);
     });
 
-    // Jalankan fn() secara independen sehingga bila timeout terpicu, hasil fn() di latar belakang TIDAK dibuang
     const fnPromise = Promise.resolve().then(fn).then((res) => {
       clearTimeout(timer);
       if (n === seq.current) {
         if (cacheKey && res != null) {
           setStorageCache(cacheKey, res);
         }
-        setState({ data: res, error: null, loading: false });
+        setState((s) => ({
+          data: res != null ? res : s.data,
+          error: null,
+          loading: false
+        }));
       }
       return res;
     });
 
     Promise.race([fnPromise, timeoutPromise]).catch((error) => {
       if (n === seq.current) {
-        // Cek fallback L1 / L2 persistent storage
-        const fallback = (cacheKey && (ASYNC_CACHE.get(cacheKey) || getStorageCache(cacheKey))) || state.data;
+        const fallback = (cacheKey && (ASYNC_CACHE.get(cacheKey) || getStorageCache(cacheKey))) || null;
         if (fallback != null) {
           setState({ data: fallback, error: null, loading: false });
         } else {
           setState((s) => ({
-            ...s,
+            data: s.data,
             error: s.data == null ? error : null,
             loading: false,
           }));
