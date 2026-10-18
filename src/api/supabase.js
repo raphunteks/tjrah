@@ -372,6 +372,11 @@ Object.assign(api, {
     invalidateTableCache(table);
     return ok(await supabase.from(table).insert(row).select().single());
   },
+  insertMany: async (table, rows) => {
+    if (!rows || rows.length === 0) return [];
+    invalidateTableCache(table);
+    return ok(await supabase.from(table).insert(rows).select());
+  },
   update: async (table, id, patch, key = "id") => {
     invalidateTableCache(table);
     return ok(await supabase.from(table).update(patch).eq(key, id).select().maybeSingle());
@@ -379,6 +384,11 @@ Object.assign(api, {
   remove: async (table, id, key = "id") => {
     invalidateTableCache(table);
     return ok(await supabase.from(table).delete().eq(key, id));
+  },
+  removeMany: async (table, ids, key = "id") => {
+    if (!ids || ids.length === 0) return [];
+    invalidateTableCache(table);
+    return ok(await supabase.from(table).delete().in(key, ids));
   },
   rpc: async (name, args = {}) => {
     if (name.includes("86") || name.includes("product")) invalidateTableCache("products");

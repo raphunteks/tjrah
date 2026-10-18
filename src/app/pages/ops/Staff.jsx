@@ -398,8 +398,13 @@ export default function Staff() {
 
   const deleteGroupShifts = (group) => a.run(async () => {
     if (!group || !group.shifts || group.shifts.length === 0) return;
-    for (const s of group.shifts) {
-      await api.remove("work_shifts", s.id);
+    const shiftIds = group.shifts.map((s) => s.id);
+    if (api.removeMany) {
+      await api.removeMany("work_shifts", shiftIds);
+    } else {
+      for (const sId of shiftIds) {
+        await api.remove("work_shifts", sId).catch(() => {});
+      }
     }
     clearAsyncCache(`staff@${tenantId}`);
     api.invalidateCache?.("work_shifts");
@@ -477,12 +482,10 @@ export default function Staff() {
       start_date: todayMakassar,
       duration: "1month",
       model: "model_a",
-      shift_pagi_start: "08:00",
-      shift_pagi_end: "16:00",
-      shift_closing_start: "15:00",
-      shift_closing_end: "23:00",
-      shift_malam_start: "23:00",
-      shift_malam_end: "07:00",
+      shift_slots: [
+        { id: "1", label: "Shift Pagi", start_time: "08:00", end_time: "16:00" },
+        { id: "2", label: "Shift Closing / Sore", start_time: "15:00", end_time: "23:00" },
+      ],
       late_tolerance_val: 15,
       late_tolerance_unit: "min",
       auto_clockout: true,
@@ -511,24 +514,22 @@ export default function Staff() {
     const shiftIdsToReplace = overlappingGroups.flatMap((og) => (og.shifts || []).map((s) => s.id));
 
     const times = group.distinctTimes || [];
-    let shiftPagiStart = "08:00";
-    let shiftPagiEnd = "16:00";
-    let shiftClosingStart = "15:00";
-    let shiftClosingEnd = "23:00";
-
+    let shiftSlots = [];
     if (times.length > 0) {
-      const parts = times[0].time.split(" - ");
-      if (parts[0] && parts[1]) {
-        shiftPagiStart = parts[0];
-        shiftPagiEnd = parts[1];
-      }
-    }
-    if (times.length > 1) {
-      const parts = times[1].time.split(" - ");
-      if (parts[0] && parts[1]) {
-        shiftClosingStart = parts[0];
-        shiftClosingEnd = parts[1];
-      }
+      shiftSlots = times.map((t, idx) => {
+        const parts = t.time.split(" - ");
+        return {
+          id: String(idx + 1),
+          label: t.label || (idx === 0 ? "Shift Pagi" : idx === 1 ? "Shift Closing / Sore" : `Shift ${idx + 1}`),
+          start_time: parts[0] || "08:00",
+          end_time: parts[1] || "16:00",
+        };
+      });
+    } else {
+      shiftSlots = [
+        { id: "1", label: "Shift Pagi", start_time: "08:00", end_time: "16:00" },
+        { id: "2", label: "Shift Closing / Sore", start_time: "15:00", end_time: "23:00" },
+      ];
     }
 
     const totalDays = group.totalDaysSpan || 30;
@@ -553,12 +554,7 @@ export default function Staff() {
       model: group.isRotating ? "model_b" : "model_a",
       duration: durationKey,
       custom_days: customDays,
-      shift_pagi_start: shiftPagiStart,
-      shift_pagi_end: shiftPagiEnd,
-      shift_closing_start: shiftClosingStart,
-      shift_closing_end: shiftClosingEnd,
-      shift_malam_start: "23:00",
-      shift_malam_end: "07:00",
+      shift_slots: shiftSlots,
       late_tolerance_val: group.todayShift?.late_tolerance_min ?? 15,
       late_tolerance_unit: "min",
       auto_clockout: Boolean(group.todayShift?.auto_clockout),
@@ -575,10 +571,14 @@ export default function Staff() {
     }
     if (!rolling.start_date) throw new Error("Tanggal mulai rotasi wajib ditentukan");
 
-    // Jika mode ubah/edit, hapus seluruh shift lama yang digantikan sebelum meng-generate yang baru
+    // Jika mode ubah/edit, hapus seluruh shift lama yang digantikan secara batch
     if (rolling.is_edit && rolling.shift_ids_to_replace && rolling.shift_ids_to_replace.length > 0) {
-      for (const sId of rolling.shift_ids_to_replace) {
-        await api.remove("work_shifts", sId).catch(() => {});
+      if (api.removeMany) {
+        await api.removeMany("work_shifts", rolling.shift_ids_to_replace);
+      } else {
+        for (const sId of rolling.shift_ids_to_replace) {
+          await api.remove("work_shifts", sId).catch(() => {});
+        }
       }
     }
 
@@ -586,13 +586,16 @@ export default function Staff() {
       ? Math.max(1, Number(rolling.custom_days || 30))
       : (rolling.duration === "1week" ? 7 : rolling.duration === "2weeks" ? 14 : rolling.duration === "2months" ? 60 : 30);
 
-    const shiftSlots = [
-      { start_time: `${rolling.shift_pagi_start || "08:00"}:00`, end_time: `${rolling.shift_pagi_end || "16:00"}:00`, label: "Pagi" },
-      { start_time: `${rolling.shift_closing_start || "15:00"}:00`, end_time: `${rolling.shift_closing_end || "23:00"}:00`, label: "Closing" },
-    ];
-    if (rolling.model === "model_d") {
-      shiftSlots.push({ start_time: `${rolling.shift_malam_start || "23:00"}:00`, end_time: `${rolling.shift_malam_end || "07:00"}:00`, label: "Malam" });
-    }
+    const shiftSlots = (rolling.shift_slots && rolling.shift_slots.length > 0)
+      ? rolling.shift_slots.map((s, idx) => ({
+          start_time: (s.start_time || "08:00").length === 5 ? `${s.start_time}:00` : s.start_time,
+          end_time: (s.end_time || "16:00").length === 5 ? `${s.end_time}:00` : s.end_time,
+          label: s.label || `Shift ${idx + 1}`,
+        }))
+      : [
+          { start_time: "08:00:00", end_time: "16:00:00", label: "Pagi" },
+          { start_time: "15:00:00", end_time: "23:00:00", label: "Closing" },
+        ];
 
     const lateTolMinutes = rolling.late_tolerance_unit === "hour"
       ? Math.round(Number(rolling.late_tolerance_val || 0) * 60)
@@ -617,8 +620,17 @@ export default function Staff() {
 
     if (shifts.length === 0) throw new Error("Tidak ada jadwal yang dapat di-generate untuk parameter ini");
 
-    for (const s of shifts) {
-      await api.insert("work_shifts", s);
+    // Insert batch ke database (dipaketkan dalam chunk 50 per request)
+    if (api.insertMany) {
+      for (let i = 0; i < shifts.length; i += 50) {
+        const chunk = shifts.slice(i, i + 50);
+        await api.insertMany("work_shifts", chunk);
+      }
+    } else {
+      for (let i = 0; i < shifts.length; i += 20) {
+        const chunk = shifts.slice(i, i + 20);
+        await Promise.all(chunk.map((s) => api.insert("work_shifts", s)));
+      }
     }
 
     clearAsyncCache(`staff@${tenantId}`);
@@ -1950,37 +1962,114 @@ export default function Staff() {
               )}
             </div>
 
-            {/* Pengaturan Jam Shift */}
+            {/* Pengaturan Jam Shift Dinamis (Dapat ditambah tanpa batas) */}
             <div style={{ background: "var(--color-paper-2, #f8fafc)", padding: "10px 12px", borderRadius: "8px", border: "1px solid var(--color-rule, #e2e8f0)", marginBottom: "0.75rem" }}>
-              <span style={{ fontSize: "0.8125rem", fontWeight: 600, color: "var(--color-ink, #0f172a)", display: "block", marginBottom: "0.5rem" }}>
-                Alokasi Jam Shift:
-              </span>
-              <div className="d-form__row d-form__row--2" style={{ marginBottom: "0.5rem" }}>
-                <Field label="Shift Pagi (Jam Mulai)" id="sh-p-s">
-                  <input type="time" value={rolling.shift_pagi_start} onChange={(e) => setRolling({ ...rolling, shift_pagi_start: e.target.value })} />
-                </Field>
-                <Field label="Shift Pagi (Jam Selesai)" id="sh-p-e">
-                  <input type="time" value={rolling.shift_pagi_end} onChange={(e) => setRolling({ ...rolling, shift_pagi_end: e.target.value })} />
-                </Field>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+                <span style={{ fontSize: "0.8125rem", fontWeight: 600, color: "var(--color-ink, #0f172a)" }}>
+                  Alokasi Jam Shift ({(rolling.shift_slots || []).length} Slot Shift):
+                </span>
+                <button
+                  type="button"
+                  className="d-btn d-btn--sm d-btn--ghost"
+                  style={{ fontSize: "0.75rem", padding: "3px 8px", color: "var(--color-primary, #0B5D4B)" }}
+                  onClick={() => {
+                    const currentSlots = rolling.shift_slots || [];
+                    const nextNum = currentSlots.length + 1;
+                    const defaultTemplates = [
+                      { label: "Shift Pagi", start_time: "08:00", end_time: "16:00" },
+                      { label: "Shift Closing / Sore", start_time: "15:00", end_time: "23:00" },
+                      { label: "Shift Siang / Mid", start_time: "11:00", end_time: "19:00" },
+                      { label: "Shift Malam", start_time: "23:00", end_time: "07:00" },
+                    ];
+                    const template = defaultTemplates[nextNum - 1] || { label: `Shift ${nextNum}`, start_time: "09:00", end_time: "17:00" };
+                    setRolling({
+                      ...rolling,
+                      shift_slots: [
+                        ...currentSlots,
+                        { id: String(Date.now()), label: template.label, start_time: template.start_time, end_time: template.end_time },
+                      ],
+                    });
+                  }}
+                >
+                  <i className="fa-solid fa-plus" style={{ marginRight: "0.3rem" }} />
+                  + Tambah Slot Shift
+                </button>
               </div>
-              <div className="d-form__row d-form__row--2">
-                <Field label="Shift Closing / Sore (Jam Mulai)" id="sh-c-s">
-                  <input type="time" value={rolling.shift_closing_start} onChange={(e) => setRolling({ ...rolling, shift_closing_start: e.target.value })} />
-                </Field>
-                <Field label="Shift Closing / Sore (Jam Selesai)" id="sh-c-e">
-                  <input type="time" value={rolling.shift_closing_end} onChange={(e) => setRolling({ ...rolling, shift_closing_end: e.target.value })} />
-                </Field>
-              </div>
-              {rolling.model === "model_d" && (
-                <div className="d-form__row d-form__row--2" style={{ marginTop: "0.5rem" }}>
-                  <Field label="Shift Malam (Jam Mulai)" id="sh-m-s">
-                    <input type="time" value={rolling.shift_malam_start} onChange={(e) => setRolling({ ...rolling, shift_malam_start: e.target.value })} />
-                  </Field>
-                  <Field label="Shift Malam (Jam Selesai)" id="sh-m-e">
-                    <input type="time" value={rolling.shift_malam_end} onChange={(e) => setRolling({ ...rolling, shift_malam_end: e.target.value })} />
-                  </Field>
+
+              {(rolling.shift_slots || []).map((slot, sIdx) => (
+                <div
+                  key={slot.id || sIdx}
+                  style={{
+                    background: "var(--color-paper, #ffffff)",
+                    border: "1px solid var(--color-rule, #e2e8f0)",
+                    borderRadius: "6px",
+                    padding: "8px 10px",
+                    marginBottom: "0.5rem",
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.35rem" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                      <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--color-muted, #64748b)" }}>
+                        #{sIdx + 1}
+                      </span>
+                      <input
+                        type="text"
+                        className="d-input"
+                        value={slot.label}
+                        placeholder={`Nama Shift ${sIdx + 1}`}
+                        style={{ fontSize: "0.78rem", fontWeight: 600, padding: "2px 6px", width: "170px" }}
+                        onChange={(e) => {
+                          const updated = [...(rolling.shift_slots || [])];
+                          updated[sIdx] = { ...updated[sIdx], label: e.target.value };
+                          setRolling({ ...rolling, shift_slots: updated });
+                        }}
+                      />
+                    </div>
+                    {(rolling.shift_slots || []).length > 1 && (
+                      <button
+                        type="button"
+                        className="d-btn d-btn--sm d-btn--ghost"
+                        style={{ padding: "2px 6px", color: "var(--color-danger, #ef4444)", fontSize: "0.75rem" }}
+                        title="Hapus slot shift ini"
+                        onClick={() => {
+                          const updated = (rolling.shift_slots || []).filter((_, i) => i !== sIdx);
+                          setRolling({ ...rolling, shift_slots: updated });
+                        }}
+                      >
+                        <i className="fa-solid fa-trash-can" style={{ marginRight: "0.25rem" }} />
+                        Hapus Slot
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="d-form__row d-form__row--2" style={{ margin: 0 }}>
+                    <Field label="Jam Mulai" id={`slot-s-${sIdx}`}>
+                      <input
+                        type="time"
+                        id={`slot-s-${sIdx}`}
+                        value={slot.start_time}
+                        onChange={(e) => {
+                          const updated = [...(rolling.shift_slots || [])];
+                          updated[sIdx] = { ...updated[sIdx], start_time: e.target.value };
+                          setRolling({ ...rolling, shift_slots: updated });
+                        }}
+                      />
+                    </Field>
+                    <Field label="Jam Selesai" id={`slot-e-${sIdx}`}>
+                      <input
+                        type="time"
+                        id={`slot-e-${sIdx}`}
+                        value={slot.end_time}
+                        onChange={(e) => {
+                          const updated = [...(rolling.shift_slots || [])];
+                          updated[sIdx] = { ...updated[sIdx], end_time: e.target.value };
+                          setRolling({ ...rolling, shift_slots: updated });
+                        }}
+                      />
+                    </Field>
+                  </div>
                 </div>
-              )}
+              ))}
             </div>
 
             {/* Toleransi & Auto-Clockout */}

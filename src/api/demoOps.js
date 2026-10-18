@@ -340,6 +340,15 @@ export function createOps(ctx) {
       audit("insert", table, r.id, r, r.tenant_id);
       return done(structuredClone(r), [table]);
     },
+    async insertMany(table, rows) {
+      if (!rows || rows.length === 0) return [];
+      const inserted = [];
+      for (const row of rows) {
+        const res = await this.insert(table, row);
+        inserted.push(res);
+      }
+      return inserted;
+    },
     async update(table, rid, patch, key = "id") {
       if (role() === "member") err("Akses ditolak: Member tidak menulis langsung ke tabel");
       const cu = clinic.write.update[table];
@@ -394,6 +403,13 @@ export function createOps(ctx) {
       db[table === "inventory_items" ? "items" : table] = T(table).filter((x) => x.id !== rid);
       audit("delete", table, rid, {}, r?.tenant_id);
       return done(null, [table]);
+    },
+    async removeMany(table, rids) {
+      if (!rids || rids.length === 0) return null;
+      for (const rid of rids) {
+        await this.remove(table, rid);
+      }
+      return null;
     },
     async lockTable() { return { locked: true }; },
 

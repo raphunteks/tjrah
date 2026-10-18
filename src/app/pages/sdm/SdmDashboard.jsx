@@ -205,10 +205,14 @@ export default function SdmDashboard() {
               <select
                 value={horizonFilter}
                 onChange={(e) => {
-                  if (e.target.value === "custom") {
+                  const val = e.target.value;
+                  if (val === "custom") {
+                    setHorizonFilter("custom");
                     setShowRangeModal(true);
                   } else {
-                    setHorizonFilter(e.target.value);
+                    setHorizonFilter(val);
+                    setCustomStart("");
+                    setCustomEnd("");
                   }
                 }}
                 className="d-input"
@@ -226,10 +230,10 @@ export default function SdmDashboard() {
                 type="button"
                 className="d-btn d-btn--sm d-btn--ghost"
                 onClick={() => setShowRangeModal(true)}
-                title="Buka Kalender Rentang Tanggal (GBR 5)"
+                title="Buka Kalender Rentang Tanggal"
                 style={{ padding: "0.35rem 0.6rem" }}
               >
-                <i className="fa-solid fa-calendar-range" />
+                <i className="fa-solid fa-calendar-days" />
                 <span style={{ fontSize: "0.78rem", marginLeft: "0.35rem" }}>
                   {horizonFilter === "custom" && customStart ? activeRange.label : "Pilih Rentang"}
                 </span>
@@ -534,6 +538,54 @@ export default function SdmDashboard() {
               </div>
             </div>
 
+            {/* CHART 5: Peringkat Kedisiplinan Staf / Kasir */}
+            <div className="sdm-chart-card">
+              <div className="sdm-chart-header">
+                <div>
+                  <h3 className="sdm-chart-title">Peringkat Kedisiplinan &amp; On-Time Kasir</h3>
+                  <p className="sdm-chart-desc">
+                    Tingkat ketepatan waktu presensi clock-in staf ({activeRange.label})
+                  </p>
+                </div>
+                <Badge tone="emerald">On-Time Rank</Badge>
+              </div>
+
+              <div className="sdm-chart-body" style={{ padding: "0.5rem 0" }}>
+                <StaffDisciplineLeaderboard
+                  staffList={staffList}
+                  attendance={rawAttendance}
+                  range={activeRange}
+                  branchFilter={branchFilter}
+                  branches={branches}
+                  getAttendanceWitaDate={getAttendanceWitaDate}
+                />
+              </div>
+            </div>
+
+            {/* CHART 6: Kepatuhan Presensi per Cabang / Outlet */}
+            <div className="sdm-chart-card">
+              <div className="sdm-chart-header">
+                <div>
+                  <h3 className="sdm-chart-title">Kepatuhan Presensi Antar Cabang</h3>
+                  <p className="sdm-chart-desc">
+                    Komparasi kehadiran roster shift vs clock-in aktual ({activeRange.label})
+                  </p>
+                </div>
+                <Badge tone="sky">Multi-Branch</Badge>
+              </div>
+
+              <div className="sdm-chart-body" style={{ padding: "0.5rem 0" }}>
+                <BranchAttendanceCompliance
+                  branches={branches}
+                  staffList={staffList}
+                  attendance={rawAttendance}
+                  shifts={rawShifts}
+                  range={activeRange}
+                  getAttendanceWitaDate={getAttendanceWitaDate}
+                />
+              </div>
+            </div>
+
           </div>
 
           {/* 4. DAFTAR KASIR REALTIME DARI DATABASE SUPABASE */}
@@ -603,7 +655,7 @@ export default function SdmDashboard() {
 
       {/* MODAL 1: Pratinjau Foto Selfie Presensi */}
       {photoModal && (
-        <Modal title={`Verifikasi Foto Presensi · ${photoModal.full_name}`} onClose={() => setPhotoModal(null)}>
+        <Modal open={Boolean(photoModal)} title={`Verifikasi Foto Presensi · ${photoModal.full_name}`} onClose={() => setPhotoModal(null)}>
           <div style={{ textAlign: "center" }}>
             <img
               src={photoModal.selfie_url}
@@ -630,7 +682,12 @@ export default function SdmDashboard() {
           initialEnd={activeRange.end}
           todayIso={todayIso}
           onApply={handleApplyRange}
-          onClose={() => setShowRangeModal(false)}
+          onClose={() => {
+            setShowRangeModal(false);
+            if (horizonFilter === "custom" && !customStart) {
+              setHorizonFilter("7");
+            }
+          }}
         />
       )}
     </>
@@ -812,7 +869,7 @@ function DualMonthRangePickerModal({ initialStart, initialEnd, todayIso, onApply
   }, [startIso, endIso]);
 
   return (
-    <Modal title="Pilih Rentang Waktu (Date Range Picker)" onClose={onClose}>
+    <Modal open={true} title="Pilih Rentang Waktu (Date Range Picker)" onClose={onClose}>
       <div className="sdm-dp-wrap">
         {/* Kolom Sidebar Preset Cepat (GBR 5) */}
         <div className="sdm-dp-sidebar">
@@ -1334,6 +1391,201 @@ function LeaveAllocationBreakdown({ leaves, summary }) {
                   transition: "width 0.3s ease"
                 }}
               />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// =============================================================
+// CHART 5: LEADERBOARD KEDISIPLINAN STAF (REAL-TIME DB)
+// =============================================================
+function StaffDisciplineLeaderboard({ staffList = [], attendance = [], range, branchFilter, branches = [], getAttendanceWitaDate }) {
+  const filteredStaff = useMemo(() => {
+    return branchFilter ? staffList.filter((s) => s.branch_id === branchFilter) : staffList;
+  }, [staffList, branchFilter]);
+
+  const leaderboard = useMemo(() => {
+    return filteredStaff.map((staff) => {
+      const staffAtt = attendance.filter((a) => {
+        if (a.profile_id !== staff.id) return false;
+        if (a.kind !== "in") return false;
+        const d = getAttendanceWitaDate(a.created_at);
+        return d >= range.start && d <= range.end;
+      });
+
+      const totalHadir = staffAtt.length;
+      const terlambat = staffAtt.filter((a) => (a.late_by_min || 0) > 0).length;
+      const onTime = Math.max(0, totalHadir - terlambat);
+      const totalLateMin = staffAtt.reduce((sum, a) => sum + (a.late_by_min || 0), 0);
+      const onTimePct = totalHadir > 0 ? Math.round((onTime / totalHadir) * 100) : 100;
+      const branchObj = branches.find((b) => b.id === staff.branch_id);
+
+      return {
+        id: staff.id,
+        name: staff.full_name || staff.email || "Kasir",
+        branchName: branchObj?.name || "Cabang Utama",
+        totalHadir,
+        onTime,
+        terlambat,
+        totalLateMin,
+        onTimePct,
+      };
+    }).sort((a, b) => b.onTimePct - a.onTimePct || b.totalHadir - a.totalHadir);
+  }, [filteredStaff, attendance, range, branches, getAttendanceWitaDate]);
+
+  if (leaderboard.length === 0) {
+    return (
+      <div style={{ textAlign: "center", padding: "1.5rem", color: "var(--color-muted)" }}>
+        Belum ada data kasir pada cabang terpilih.
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+      {leaderboard.map((item, idx) => {
+        const toneColor = item.onTimePct >= 90 ? "#10b981" : item.onTimePct >= 70 ? "#f59e0b" : "#ef4444";
+        return (
+          <div
+            key={item.id}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "8px 12px",
+              background: "var(--color-paper-2, #f8fafc)",
+              border: "1px solid var(--color-rule, #e2e8f0)",
+              borderRadius: "8px",
+              gap: "0.75rem",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", minWidth: "140px" }}>
+              <span
+                style={{
+                  width: "22px",
+                  height: "22px",
+                  borderRadius: "50%",
+                  background: idx === 0 ? "#fef08a" : idx === 1 ? "#e2e8f0" : idx === 2 ? "#fed7aa" : "#f1f5f9",
+                  color: idx === 0 ? "#854d0e" : idx === 1 ? "#475569" : idx === 2 ? "#9a3412" : "#64748b",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "0.72rem",
+                  fontWeight: 700,
+                  flexShrink: 0,
+                }}
+              >
+                {idx + 1}
+              </span>
+              <div>
+                <strong style={{ fontSize: "0.8125rem", color: "var(--color-ink, #0f172a)", display: "block", lineHeight: 1.2 }}>
+                  {item.name}
+                </strong>
+                <span style={{ fontSize: "0.7rem", color: "var(--color-muted, #64748b)" }}>
+                  {item.branchName}
+                </span>
+              </div>
+            </div>
+
+            <div style={{ flex: 1, margin: "0 0.5rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.72rem", marginBottom: "3px" }}>
+                <span style={{ color: "var(--color-muted, #64748b)" }}>
+                  {item.totalHadir} Hadir ({item.terlambat} Telat)
+                </span>
+                <span style={{ fontWeight: 700, color: toneColor }}>
+                  {item.onTimePct}% On-Time
+                </span>
+              </div>
+              <div style={{ width: "100%", height: "6px", background: "#e2e8f0", borderRadius: "3px", overflow: "hidden" }}>
+                <div style={{ width: `${item.onTimePct}%`, height: "100%", background: toneColor, borderRadius: "3px" }} />
+              </div>
+            </div>
+
+            <div style={{ textAlign: "right", minWidth: "75px" }}>
+              <span style={{ fontSize: "0.72rem", display: "block", color: item.totalLateMin > 0 ? "#ef4444" : "#10b981", fontWeight: 600 }}>
+                {item.totalLateMin > 0 ? `+${item.totalLateMin}m Telat` : "Tepat Waktu"}
+              </span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// =============================================================
+// CHART 6: KEPATUHAN PRESENSI PER CABANG (REAL-TIME DB)
+// =============================================================
+function BranchAttendanceCompliance({ branches = [], staffList = [], attendance = [], shifts = [], range, getAttendanceWitaDate }) {
+  const branchData = useMemo(() => {
+    return branches.map((b) => {
+      const bStaff = staffList.filter((s) => s.branch_id === b.id || (!s.branch_id && b.is_warehouse === false));
+      const bShifts = shifts.filter((s) => s.branch_id === b.id && s.work_date >= range.start && s.work_date <= range.end);
+      const bAttendance = attendance.filter((a) => {
+        if (a.kind !== "in") return false;
+        if (a.branch_id !== b.id) return false;
+        const d = getAttendanceWitaDate(a.created_at);
+        return d >= range.start && d <= range.end;
+      });
+
+      const totalShift = bShifts.length;
+      const totalHadir = bAttendance.length;
+      const compliancePct = totalShift > 0 ? Math.min(100, Math.round((totalHadir / totalShift) * 100)) : (totalHadir > 0 ? 100 : 0);
+      const lateCount = bAttendance.filter((a) => (a.late_by_min || 0) > 0).length;
+
+      return {
+        id: b.id,
+        name: b.name,
+        staffCount: bStaff.length,
+        totalShift,
+        totalHadir,
+        compliancePct,
+        lateCount,
+      };
+    });
+  }, [branches, staffList, attendance, shifts, range, getAttendanceWitaDate]);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+      {branchData.map((b) => {
+        const barColor = b.compliancePct >= 90 ? "#10b981" : b.compliancePct >= 70 ? "#3b82f6" : "#f59e0b";
+        return (
+          <div
+            key={b.id}
+            style={{
+              padding: "10px 12px",
+              background: "var(--color-paper-2, #f8fafc)",
+              border: "1px solid var(--color-rule, #e2e8f0)",
+              borderRadius: "8px",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                <i className="fa-solid fa-store" style={{ color: "var(--color-primary, #0B5D4B)", fontSize: "0.8rem" }} />
+                <span style={{ fontWeight: 600, fontSize: "0.8125rem", color: "var(--color-ink, #0f172a)" }}>
+                  {b.name}
+                </span>
+                <span style={{ fontSize: "0.7rem", color: "var(--color-muted, #64748b)" }}>
+                  ({b.staffCount} Kasir)
+                </span>
+              </div>
+              <span style={{ fontWeight: 700, fontSize: "0.8125rem", color: barColor }}>
+                {b.compliancePct}% Kepatuhan
+              </span>
+            </div>
+
+            <div style={{ width: "100%", height: "8px", background: "#e2e8f0", borderRadius: "4px", overflow: "hidden", marginBottom: "4px" }}>
+              <div style={{ width: `${b.compliancePct}%`, height: "100%", background: barColor, borderRadius: "4px" }} />
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.72rem", color: "var(--color-muted, #64748b)" }}>
+              <span>Presensi: {b.totalHadir} clock-in dari {b.totalShift} shift terjadwal</span>
+              <span style={{ color: b.lateCount > 0 ? "#ef4444" : "#10b981" }}>
+                {b.lateCount > 0 ? `${b.lateCount} kali telat` : "Nihil telat"}
+              </span>
             </div>
           </div>
         );

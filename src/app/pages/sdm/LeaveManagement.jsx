@@ -203,31 +203,35 @@ export default function LeaveManagement() {
         }
       />
 
-      {/* ──────── 4 STAT METRICS ──────── */}
-      <section className="d-grid d-grid--4" aria-label="Statistik Cuti" style={{ marginBottom: "1.25rem" }}>
+      {/* ──────── 4 STAT METRICS (4 KARTU BERJEJER SEJAJAR HORIZONTAL) ──────── */}
+      <section className="d-stats" aria-label="Statistik Cuti" style={{ marginBottom: "1.25rem" }}>
         <Stat
-          title="Menunggu Otorisasi"
+          label={t("Menunggu Otorisasi", lang)}
           value={summary.pending}
-          note="Permohonan butuh persetujuan"
-          tone={summary.pending > 0 ? "warn" : "neutral"}
+          sub={t("Permohonan butuh persetujuan", lang)}
+          tone={summary.pending > 0 ? "warn" : "slate"}
+          icon={<i className="fa-solid fa-hourglass-half" />}
         />
         <Stat
-          title="Disetujui Bulan Ini"
+          label={t("Disetujui Bulan Ini", lang)}
           value={summary.approvedThisMonth}
-          note="Total izin disahkan GM/Owner"
-          tone="ok"
+          sub={t("Total izin disahkan GM/Owner", lang)}
+          tone="emerald"
+          icon={<i className="fa-solid fa-calendar-check" />}
         />
         <Stat
-          title="Sedang Cuti Hari Ini"
+          label={t("Sedang Cuti Hari Ini", lang)}
           value={summary.onLeaveToday}
-          note="Staf izin hari berjalan"
-          tone={summary.onLeaveToday > 0 ? "accent" : "neutral"}
+          sub={t("Staf izin hari berjalan", lang)}
+          tone={summary.onLeaveToday > 0 ? "sky" : "slate"}
+          icon={<i className="fa-solid fa-plane-departure" />}
         />
         <Stat
-          title="Saldo Cuti Habis"
+          label={t("Saldo Cuti Habis", lang)}
           value={summary.zeroBalance}
-          note="Kasir dengan sisa kuota 0 hari"
-          tone={summary.zeroBalance > 0 ? "warn" : "ok"}
+          sub={t("Kasir dengan sisa kuota 0 hari", lang)}
+          tone={summary.zeroBalance > 0 ? "danger" : "emerald"}
+          icon={<i className="fa-solid fa-clock-rotate-left" />}
         />
       </section>
 
@@ -469,7 +473,7 @@ export default function LeaveManagement() {
 
       {/* ──────── MODAL AJUKAN PERMOHONAN CUTI / IZIN ──────── */}
       {showApplyModal && (
-        <Modal title="Formulir Permohonan Cuti &amp; Izin Resmi" onClose={() => setShowApplyModal(false)}>
+        <Modal open={Boolean(showApplyModal)} title="Formulir Permohonan Cuti &amp; Izin Resmi" onClose={() => setShowApplyModal(false)}>
           <form onSubmit={handleApplyLeave} className="d-form">
             {isManager && (
               <Field label="Kasir / Staf Pemohon" id="f-staf" hint="Pilih staf yang mengajukan cuti">
@@ -573,7 +577,7 @@ export default function LeaveManagement() {
 
       {/* ──────── MODAL EVALUASI PERMOHONAN OLEH GM/OWNER ──────── */}
       {evalModal && (
-        <Modal title={`Evaluasi Permohonan Cuti · ${evalModal.category}`} onClose={() => setEvalModal(null)}>
+        <Modal open={Boolean(evalModal)} title={`Evaluasi Permohonan Cuti · ${evalModal.category}`} onClose={() => setEvalModal(null)}>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
             <div style={{ padding: "0.75rem", background: "var(--color-paper-2)", borderRadius: "var(--radius-md)", fontSize: "0.85rem" }}>
               <p style={{ margin: "0.2rem 0" }}><strong>{t("Kategori", lang)}:</strong> {t(CATEGORIES[evalModal.category]?.label, lang)}</p>
@@ -627,7 +631,7 @@ export default function LeaveManagement() {
 
       {/* ──────── MODAL PENYESUAIAN SALDO MEMO ──────── */}
       {showAdjustModal && adjustTarget && (
-        <Modal title={t("Penyesuaian Manual Saldo Cuti", lang)} onClose={() => setShowAdjustModal(false)}>
+        <Modal open={Boolean(showAdjustModal && adjustTarget)} title={t("Penyesuaian Manual Saldo Cuti", lang)} onClose={() => setShowAdjustModal(false)}>
           <form onSubmit={handleAdjustBalance} className="d-form">
             <Field label="Perubahan Kuota (Hari)" id="f-adj-delta" hint="Gunakan angka positif untuk menambah atau negatif untuk memotong">
               <input
