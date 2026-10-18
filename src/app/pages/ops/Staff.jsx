@@ -491,6 +491,82 @@ export default function Staff() {
     });
   };
 
+  // Buka modal untuk mengubah roster dan mensinkronkan seluruh staf dalam kelompok rotasi
+  const handleEditGroupRoster = (group) => {
+    const branchId = group.branch_id;
+    const minD = group.minDate;
+    const maxD = group.maxDate;
+
+    // Temukan semua kelompok roster di cabang ini yang beririsan rentang tanggalnya (cohort rotasi bersama)
+    const overlappingGroups = groupedShifts.filter((other) => {
+      if (other.branch_id !== branchId) return false;
+      return other.minDate <= maxD && other.maxDate >= minD;
+    });
+
+    const cohortStaffIds = Array.from(new Set(overlappingGroups.map((og) => og.profile_id)));
+    if (!cohortStaffIds.includes(group.profile_id)) {
+      cohortStaffIds.push(group.profile_id);
+    }
+
+    const shiftIdsToReplace = overlappingGroups.flatMap((og) => (og.shifts || []).map((s) => s.id));
+
+    const times = group.distinctTimes || [];
+    let shiftPagiStart = "08:00";
+    let shiftPagiEnd = "16:00";
+    let shiftClosingStart = "15:00";
+    let shiftClosingEnd = "23:00";
+
+    if (times.length > 0) {
+      const parts = times[0].time.split(" - ");
+      if (parts[0] && parts[1]) {
+        shiftPagiStart = parts[0];
+        shiftPagiEnd = parts[1];
+      }
+    }
+    if (times.length > 1) {
+      const parts = times[1].time.split(" - ");
+      if (parts[0] && parts[1]) {
+        shiftClosingStart = parts[0];
+        shiftClosingEnd = parts[1];
+      }
+    }
+
+    const totalDays = group.totalDaysSpan || 30;
+    let durationKey = "1month";
+    let customDays = totalDays;
+    if (totalDays === 7) durationKey = "1week";
+    else if (totalDays === 14) durationKey = "2weeks";
+    else if (totalDays === 30 || totalDays === 29 || totalDays === 31) durationKey = "1month";
+    else if (totalDays === 60) durationKey = "2months";
+    else {
+      durationKey = "custom";
+      customDays = totalDays;
+    }
+
+    setRolling({
+      is_edit: true,
+      original_group_id: group.id,
+      shift_ids_to_replace: shiftIdsToReplace,
+      branch_id: branchId,
+      start_date: minD,
+      staff_ids: cohortStaffIds,
+      model: group.isRotating ? "model_b" : "model_a",
+      duration: durationKey,
+      custom_days: customDays,
+      shift_pagi_start: shiftPagiStart,
+      shift_pagi_end: shiftPagiEnd,
+      shift_closing_start: shiftClosingStart,
+      shift_closing_end: shiftClosingEnd,
+      shift_malam_start: "23:00",
+      shift_malam_end: "07:00",
+      late_tolerance_val: group.todayShift?.late_tolerance_min ?? 15,
+      late_tolerance_unit: "min",
+      auto_clockout: Boolean(group.todayShift?.auto_clockout),
+      auto_clockout_delay_val: group.todayShift?.auto_clockout_delay_min ?? 30,
+      auto_clockout_delay_unit: "min",
+    });
+  };
+
   const applyAutoRolling = () => a.run(async () => {
     if (!rolling) return;
     if (!rolling.branch_id) throw new Error("Pilih cabang outlet terlebih dahulu");
@@ -499,7 +575,17 @@ export default function Staff() {
     }
     if (!rolling.start_date) throw new Error("Tanggal mulai rotasi wajib ditentukan");
 
-    const daysCount = rolling.duration === "1week" ? 7 : rolling.duration === "2weeks" ? 14 : rolling.duration === "2months" ? 60 : 30;
+    // Jika mode ubah/edit, hapus seluruh shift lama yang digantikan sebelum meng-generate yang baru
+    if (rolling.is_edit && rolling.shift_ids_to_replace && rolling.shift_ids_to_replace.length > 0) {
+      for (const sId of rolling.shift_ids_to_replace) {
+        await api.remove("work_shifts", sId).catch(() => {});
+      }
+    }
+
+    const daysCount = rolling.duration === "custom"
+      ? Math.max(1, Number(rolling.custom_days || 30))
+      : (rolling.duration === "1week" ? 7 : rolling.duration === "2weeks" ? 14 : rolling.duration === "2months" ? 60 : 30);
+
     const shiftSlots = [
       { start_time: `${rolling.shift_pagi_start || "08:00"}:00`, end_time: `${rolling.shift_pagi_end || "16:00"}:00`, label: "Pagi" },
       { start_time: `${rolling.shift_closing_start || "15:00"}:00`, end_time: `${rolling.shift_closing_end || "23:00"}:00`, label: "Closing" },
@@ -538,7 +624,7 @@ export default function Staff() {
     clearAsyncCache(`staff@${tenantId}`);
     setRolling(null);
     r.reload();
-  }, "Auto-Rolling jadwal shift berhasil diterapkan!");
+  }, rolling?.is_edit ? "Jadwal roster berhasil disinkronkan & diperbarui!" : "Auto-Rolling jadwal shift berhasil diterapkan!");
 
   const saveShift = () => a.run(async () => {
     if (!ws.profile_id) throw new Error("Pilih kasir/staf terlebih dahulu");
@@ -1041,6 +1127,18 @@ export default function Staff() {
                                 <i className="fa-solid fa-calendar-days" style={{ marginRight: "0.25rem" }} />
                                 Roster ({g.shiftCount})
                               </button>
+                              {can(role, 13, "u") && (
+                                <button
+                                  type="button"
+                                  className="d-btn d-btn--ghost d-btn--sm"
+                                  style={{ fontSize: "0.75rem", padding: "3px 8px" }}
+                                  onClick={() => handleEditGroupRoster(g)}
+                                  title="Ubah rotasi shift & sinkronkan antar staf"
+                                >
+                                  <i className="fa-solid fa-pen-to-square" style={{ marginRight: "0.25rem" }} />
+                                  Ubah
+                                </button>
+                              )}
                               {can(role, 13, "d") && (
                                 <button
                                   type="button"
@@ -1642,12 +1740,16 @@ export default function Staff() {
       {/* Modal Auto-Rolling Shift Kasir & Staf (1-Click Roster) */}
       <Modal
         open={Boolean(rolling)}
-        title="Auto-Rolling Shift Kasir & Staf (1-Click Roster)"
+        title={rolling?.is_edit ? "Ubah & Sinkronkan Roster Jadwal Kasir" : "Auto-Rolling Shift Kasir & Staf (1-Click Roster)"}
         onClose={() => setRolling(null)}
         footer={
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
             <span style={{ fontSize: "0.75rem", color: "var(--color-muted, #64748b)" }}>
-              {rolling?.staff_ids?.length || 0} kasir terpilih · {rolling?.duration === "1week" ? "7 hari" : rolling?.duration === "2weeks" ? "14 hari" : rolling?.duration === "2months" ? "60 hari" : "30 hari"} rotasi
+              {rolling?.staff_ids?.length || 0} kasir terpilih · {
+                rolling?.duration === "custom"
+                  ? `${rolling?.custom_days || 30} hari`
+                  : (rolling?.duration === "1week" ? "7 hari" : rolling?.duration === "2weeks" ? "14 hari" : rolling?.duration === "2months" ? "60 hari" : "30 hari")
+              } rotasi
             </span>
             <div style={{ display: "flex", gap: "0.5rem" }}>
               <button type="button" className="d-btn d-btn--ghost" onClick={() => setRolling(null)}>
@@ -1661,7 +1763,7 @@ export default function Staff() {
                 style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}
               >
                 <i className="fa-solid fa-arrows-rotate" />
-                {a.busy ? "Menerapkan..." : "Terapkan Auto-Rolling (1-Click)"}
+                {a.busy ? "Menyimpan..." : (rolling?.is_edit ? "Simpan Perubahan & Sinkronkan" : "Terapkan Auto-Rolling (1-Click)")}
               </button>
             </div>
           </div>
@@ -1671,7 +1773,9 @@ export default function Staff() {
           <div className="d-form" style={{ maxHeight: "70vh", overflowY: "auto", paddingRight: "4px" }}>
             <div style={{ background: "var(--color-paper-2, #f8fafc)", padding: "10px 14px", borderRadius: "8px", border: "1px solid var(--color-rule, #e2e8f0)", marginBottom: "0.75rem" }}>
               <p style={{ margin: 0, fontSize: "0.8125rem", color: "var(--color-ink, #0f172a)", fontWeight: 500 }}>
-                Fitur ini secara otomatis membuat rotasi shift selang-seling untuk 2, 3, 4, 5+ staf/kasir secara adil tanpa perlu input manual harian.
+                {rolling?.is_edit
+                  ? "Mode Ubah Roster: Mengubah jadwal rotasi untuk seluruh rekan staf terkait. Anda dapat menambah atau mengurangi staf dan memilih model baru. Jadwal lama periode ini akan disinkronkan ulang secara rapi tanpa bentrok."
+                  : "Fitur ini secara otomatis membuat rotasi shift selang-seling untuk 2, 3, 4, 5+ staf/kasir secara adil tanpa perlu input manual harian."}
               </p>
             </div>
 
@@ -1805,12 +1909,13 @@ export default function Staff() {
               <label style={{ fontSize: "0.8125rem", fontWeight: 600, color: "var(--color-ink, #0f172a)", display: "block", marginBottom: "0.35rem" }}>
                 Rentang Waktu Roster (Durasi):
               </label>
-              <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap", alignItems: "center" }}>
                 {[
                   { id: "1week", label: "1 Minggu (7 Hari)" },
                   { id: "2weeks", label: "2 Minggu (14 Hari)" },
                   { id: "1month", label: "1 Bulan (30 Hari) · Standar" },
                   { id: "2months", label: "2 Bulan (60 Hari)" },
+                  { id: "custom", label: "Kustom..." },
                 ].map((d) => (
                   <button
                     key={d.id}
@@ -1823,6 +1928,26 @@ export default function Staff() {
                   </button>
                 ))}
               </div>
+              {rolling.duration === "custom" && (
+                <div style={{ marginTop: "0.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <label htmlFor="roll-custom-days" style={{ fontSize: "0.75rem", color: "var(--color-ink, #0f172a)", fontWeight: 500 }}>
+                    Jumlah Hari:
+                  </label>
+                  <input
+                    id="roll-custom-days"
+                    type="number"
+                    min="1"
+                    max="365"
+                    className="d-input"
+                    style={{ width: "90px", padding: "4px 8px", fontSize: "0.8125rem" }}
+                    value={rolling.custom_days ?? 30}
+                    onChange={(e) => setRolling({ ...rolling, custom_days: Math.max(1, Math.min(365, Number(e.target.value) || 1)) })}
+                  />
+                  <span style={{ fontSize: "0.75rem", color: "var(--color-muted, #64748b)" }}>
+                    hari (1 - 365 hari rotasi)
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Pengaturan Jam Shift */}

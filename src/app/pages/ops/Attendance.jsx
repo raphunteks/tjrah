@@ -260,6 +260,16 @@ export default function Attendance() {
   const alreadyCompletedToday = Boolean(todayIn && todayOut);
   const nextKind = !todayIn ? "in" : !todayOut ? "out" : null;
 
+  // Format sisa waktu manusiawi dalam jam dan menit (misal: 6 jam 51 menit atau 45 menit)
+  const formatRemainingTime = (minutes) => {
+    const m = Math.max(0, Math.round(minutes));
+    const hrs = Math.floor(m / 60);
+    const mins = m % 60;
+    if (hrs > 0 && mins > 0) return `${hrs} jam ${mins} menit`;
+    if (hrs > 0) return `${hrs} jam`;
+    return `${mins} menit`;
+  };
+
   // Evaluasi jendela waktu masuk (Clock-In Window) di zona waktu aktif
   const shiftStartTime = todayShift?.start_time || "08:00:00";
   const { isBeforeClockIn, shiftStartTimeStr, minutesUntilShiftStart } = useMemo(() => {
@@ -479,6 +489,32 @@ export default function Attendance() {
     return canvas.toDataURL("image/jpeg", 0.95);
   };
 
+  // Jepret / Ambil Foto Presensi (Freeze live camera and generate watermark preview)
+  const handleSnapPhoto = async () => {
+    setCameraError(null);
+    try {
+      const c = await getPos();
+      let finalAddress = detectedAddress;
+      if (!finalAddress) {
+        try {
+          finalAddress = await reverseGeocode(c.latitude, c.longitude);
+          if (finalAddress) setDetectedAddress(finalAddress);
+        } catch { /* graceful fallback */ }
+      }
+      const photoDataUrl = capturePhotoWithWatermark(c, home?.name, finalAddress);
+      setStampedSelfie(photoDataUrl);
+      stopCamera();
+    } catch (err) {
+      setCameraError(err.message || "Gagal mengambil foto presensi");
+    }
+  };
+
+  // Ambil Ulang Foto Presensi
+  const handleRetakePhoto = () => {
+    setStampedSelfie(null);
+    startCamera();
+  };
+
   const clock = () => a.run(async () => {
     if (alreadyCompletedToday) {
       throw new Error("Anda sudah menyelesaikan absensi masuk dan pulang hari ini.");
@@ -498,7 +534,7 @@ export default function Attendance() {
     if (nextKind === "out" && isBeforeClockOut) {
       if (!allowEarlyCheckout) {
         throw new Error(
-          `Belum waktu absen pulang. Shift Anda berakhir pukul ${shiftEndTimeStr || todayShift?.end_time?.slice(0, 5) || "12:00"} ${appTzAbbr} (tersisa ±${minutesUntilShiftEnd} menit lagi).`
+          `Belum waktu absen pulang. Shift Anda berakhir pukul ${shiftEndTimeStr || todayShift?.end_time?.slice(0, 5) || "12:00"} ${appTzAbbr} (tersisa ${formatRemainingTime(minutesUntilShiftEnd)} lagi).`
         );
       }
       if (!notes || notes === "-" || notes.trim().length < 5) {
@@ -517,9 +553,12 @@ export default function Attendance() {
       } catch { /* graceful fallback */ }
     }
 
-    // Capture photo with automatic live watermark in crisp HD
-    const photoDataUrl = capturePhotoWithWatermark(c, home?.name, finalAddress);
-    setStampedSelfie(photoDataUrl);
+    // Ambil foto yang sudah dijepret staf atau ambil otomatis jika belum ada
+    let photoDataUrl = stampedSelfie;
+    if (!photoDataUrl) {
+      photoDataUrl = capturePhotoWithWatermark(c, home?.name, finalAddress);
+      setStampedSelfie(photoDataUrl);
+    }
 
     let path = photoDataUrl;
     if (api.upload && !photoDataUrl.startsWith("data:")) {
@@ -541,6 +580,7 @@ export default function Attendance() {
         api.invalidateCache?.("attendance");
         await r.reload();
         stopCamera();
+        setStampedSelfie(null);
         throw new Error("Data presensi telah disinkronkan. Anda sudah tercatat absen masuk hari ini; silakan lakukan Absen Pulang jika shift telah selesai.");
       }
       throw err;
@@ -548,6 +588,7 @@ export default function Attendance() {
 
     api.invalidateCache?.("attendance");
     stopCamera();
+    setStampedSelfie(null);
     setNotes("-");
     setAllowEarlyCheckout(false);
     await r.reload();
@@ -650,33 +691,49 @@ export default function Attendance() {
               <div className="att-layout">
                 {/* Kolom Kiri: Viewfinder Live Webcam & Deteksi Alamat Satelit */}
                 <div className="att-viewfinder">
-                  <video
-                    ref={videoRef}
-                    autoPlay
-                    playsInline
-                    muted
-                    className="att-viewfinder__video"
-                    style={{ display: isCameraActive ? "block" : "none" }}
-                  />
-
-                  {/* Oval Panduan Wajah saat kamera aktif */}
-                  {isCameraActive && (
-                    <div className="att-viewfinder__face-guide">
-                      <span className="att-viewfinder__face-label">
-                        Posisikan Wajah
-                      </span>
+                  {stampedSelfie ? (
+                    <div style={{ position: "relative", width: "100%", height: "100%", minHeight: "320px", background: "#0b1120", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <img
+                        src={stampedSelfie}
+                        alt="Hasil Foto Presensi"
+                        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                      />
+                      <div className="att-viewfinder__live-badge" style={{ background: "rgba(16, 185, 129, 0.9)" }}>
+                        <i className="fa-solid fa-check" style={{ marginRight: "0.3rem" }} />
+                        FOTO TERCATAT
+                      </div>
                     </div>
+                  ) : (
+                    <>
+                      <video
+                        ref={videoRef}
+                        autoPlay
+                        playsInline
+                        muted
+                        className="att-viewfinder__video"
+                        style={{ display: isCameraActive ? "block" : "none" }}
+                      />
+
+                      {/* Oval Panduan Wajah saat kamera aktif */}
+                      {isCameraActive && (
+                        <div className="att-viewfinder__face-guide">
+                          <span className="att-viewfinder__face-label">
+                            Posisikan Wajah
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Badge Status Live */}
+                      {isCameraActive && (
+                        <div className="att-viewfinder__live-badge">
+                          <span className="att-viewfinder__live-dot" />
+                          LIVE WEBCAM
+                        </div>
+                      )}
+                    </>
                   )}
 
-                  {/* Badge Status Live */}
-                  {isCameraActive && (
-                    <div className="att-viewfinder__live-badge">
-                      <span className="att-viewfinder__live-dot" />
-                      LIVE WEBCAM
-                    </div>
-                  )}
-
-                  {/* Logo Tijarah resmi di pojok kiri bawah viewfinder live */}
+                  {/* Logo Tijarah resmi di pojok kiri bawah viewfinder */}
                   <img
                     src="/tijarah-header.svg"
                     alt="Tijarah"
@@ -684,61 +741,55 @@ export default function Attendance() {
                   />
 
                   {/* Layar saat kamera belum aktif atau terkunci */}
-                  {isLockedClockIn ? (
-                    <div className="att-viewfinder__locked">
-                      <div className="att-viewfinder__lock-icon">
-                        <i className="fa-solid fa-lock" />
-                      </div>
-                      <p className="att-viewfinder__lock-title">
-                        Kamera Terkunci
-                      </p>
-                      <p className="att-viewfinder__lock-desc">
-                        Belum masuk waktu jam kerja shift Anda (Mulai pukul <strong>{shiftStartTimeStr || "08:00"} {appTzAbbr}</strong>). Tersisa ±{minutesUntilShiftStart} menit lagi.
-                      </p>
-                      <span className="att-viewfinder__lock-badge">
-                        <i className="fa-solid fa-shield-halved" />
-                        Kamera Tidak Bisa Dinyalakan Sebelum Jam Kerja
-                      </span>
-                    </div>
-                  ) : isLockedClockOut ? (
-                    <div className="att-viewfinder__locked">
-                      <div className="att-viewfinder__lock-icon">
-                        <i className="fa-solid fa-lock" />
-                      </div>
-                      <p className="att-viewfinder__lock-title">
-                        Presensi Pulang Terkunci
-                      </p>
-                      <p className="att-viewfinder__lock-desc">
-                        Belum memasuki jam pulang shift (<strong>{shiftEndTimeStr || todayShift?.end_time?.slice(0, 5) || "12:00"} {appTzAbbr}</strong>). Tersisa ±{minutesUntilShiftEnd} menit lagi.
-                      </p>
-                      <span className="att-viewfinder__lock-badge">
-                        <i className="fa-solid fa-shield-halved" />
-                        Kamera Dinonaktifkan Sesuai Jadwal
-                      </span>
-                    </div>
-                  ) : !isCameraActive ? (
-                    <div className="att-viewfinder__inactive">
-                      <div className="att-viewfinder__inactive-icon">
-                        <i className="fa-solid fa-camera" />
-                      </div>
-                      <p className="att-viewfinder__inactive-text">
-                        {lang === "en" ? "Camera Not Active" : "Kamera Belum Aktif"}
-                      </p>
-                      <button
-                        type="button"
-                        className="d-btn d-btn--primary"
-                        onClick={startCamera}
-                      >
-                        <i className="fa-solid fa-camera" style={{ marginRight: "0.4rem" }} />
-                        {t("Nyalakan Kamera Depan", lang)}
-                      </button>
-                      {cameraError && (
-                        <p style={{ margin: "0.5rem 0 0", fontSize: "0.75rem", color: "#f87171" }}>
-                          {cameraError}
+                  {!stampedSelfie && (
+                    isLockedClockIn ? (
+                      <div className="att-viewfinder__locked">
+                        <div className="att-viewfinder__lock-icon">
+                          <i className="fa-solid fa-lock" />
+                        </div>
+                        <p className="att-viewfinder__lock-title">
+                          Kamera Terkunci
                         </p>
-                      )}
-                    </div>
-                  ) : null}
+                        <p className="att-viewfinder__lock-desc">
+                          Belum masuk waktu jam kerja shift Anda (Mulai pukul <strong>{shiftStartTimeStr || "08:00"} {appTzAbbr}</strong>). Tersisa {formatRemainingTime(minutesUntilShiftStart)} lagi.
+                        </p>
+                      </div>
+                    ) : isLockedClockOut ? (
+                      <div className="att-viewfinder__locked">
+                        <div className="att-viewfinder__lock-icon">
+                          <i className="fa-solid fa-lock" />
+                        </div>
+                        <p className="att-viewfinder__lock-title">
+                          Presensi Pulang Terkunci
+                        </p>
+                        <p className="att-viewfinder__lock-desc">
+                          Belum memasuki jam pulang shift (<strong>{shiftEndTimeStr || todayShift?.end_time?.slice(0, 5) || "12:00"} {appTzAbbr}</strong>). Tersisa {formatRemainingTime(minutesUntilShiftEnd)} lagi.
+                        </p>
+                      </div>
+                    ) : !isCameraActive ? (
+                      <div className="att-viewfinder__inactive">
+                        <div className="att-viewfinder__inactive-icon">
+                          <i className="fa-solid fa-camera" />
+                        </div>
+                        <p className="att-viewfinder__inactive-text">
+                          {lang === "en" ? "Camera Not Active" : "Kamera Belum Aktif"}
+                        </p>
+                        <button
+                          type="button"
+                          className="d-btn d-btn--primary"
+                          onClick={startCamera}
+                        >
+                          <i className="fa-solid fa-camera" style={{ marginRight: "0.4rem" }} />
+                          {t("Nyalakan Kamera Depan", lang)}
+                        </button>
+                        {cameraError && (
+                          <p style={{ margin: "0.5rem 0 0", fontSize: "0.75rem", color: "#f87171" }}>
+                            {cameraError}
+                          </p>
+                        )}
+                      </div>
+                    ) : null
+                  )}
                 </div>
 
                 {/* Kolom Kanan: Jadwal Kerja, Waktu Pulang, Catatan Presensi, & Aksi */}
@@ -867,37 +918,80 @@ export default function Attendance() {
                             Anda sudah menyelesaikan absensi masuk &amp; pulang untuk jadwal shift ini. Tidak dapat melakukan absensi berulang.
                           </span>
                         </div>
-                      ) : (
+                      ) : isLockedClockIn ? (
                         <button
                           type="button"
                           className="d-btn d-btn--primary d-btn--block"
                           style={{ padding: "0.75rem" }}
-                          disabled={
-                            a.busy ||
-                            isLockedClockIn ||
-                            (nextKind === "out" && isBeforeClockOut && !allowEarlyCheckout) ||
-                            (nextKind === "out" && isBeforeClockOut && allowEarlyCheckout && (!notes || notes === "-" || notes.trim().length < 5))
-                          }
-                          onClick={() => clock()}
+                          disabled
                         >
-                          {a.busy ? (
-                            lang === "en" ? "Recording Attendance..." : "Merekam Presensi..."
-                          ) : isLockedClockIn ? (
-                            <>
-                              <i className="fa-solid fa-lock" style={{ marginRight: "0.4rem" }} />
-                              {lang === "en" ? `Locked Before Shift (${shiftStartTimeStr || "08:00"} ${appTzAbbr})` : `Kamera Terkunci · Mulai Pukul ${shiftStartTimeStr || "08:00"} ${appTzAbbr}`}
-                            </>
-                          ) : nextKind === "out" && isBeforeClockOut && !allowEarlyCheckout ? (
-                            <>
-                              <i className="fa-solid fa-lock" style={{ marginRight: "0.4rem" }} />
-                              {lang === "en" ? `Waiting for Clock-Out Time (${shiftEndTimeStr || todayShift?.end_time?.slice(0, 5) || "12:00"} ${appTzAbbr})` : `Menunggu Jam Pulang (${shiftEndTimeStr || todayShift?.end_time?.slice(0, 5) || "12:00"} ${appTzAbbr})`}
-                            </>
-                          ) : (
-                            <>
-                              <i className="fa-solid fa-camera" style={{ marginRight: "0.4rem" }} />
-                              {nextKind === "in" ? t("Ambil Foto & Absen Masuk", lang) : t("Ambil Foto & Absen Pulang", lang)}
-                            </>
-                          )}
+                          <i className="fa-solid fa-lock" style={{ marginRight: "0.4rem" }} />
+                          {lang === "en" ? `Locked Before Shift (${shiftStartTimeStr || "08:00"} ${appTzAbbr})` : `Kamera Terkunci · Mulai Pukul ${shiftStartTimeStr || "08:00"} ${appTzAbbr}`}
+                        </button>
+                      ) : nextKind === "out" && isBeforeClockOut && !allowEarlyCheckout ? (
+                        <button
+                          type="button"
+                          className="d-btn d-btn--primary d-btn--block"
+                          style={{ padding: "0.75rem" }}
+                          disabled
+                        >
+                          <i className="fa-solid fa-lock" style={{ marginRight: "0.4rem" }} />
+                          {lang === "en" ? `Waiting for Clock-Out Time (${shiftEndTimeStr || todayShift?.end_time?.slice(0, 5) || "12:00"} ${appTzAbbr})` : `Menunggu Jam Pulang (${shiftEndTimeStr || todayShift?.end_time?.slice(0, 5) || "12:00"} ${appTzAbbr})`}
+                        </button>
+                      ) : stampedSelfie ? (
+                        /* Langkah 2: Foto sudah dicekrek -> opsi Ulang Foto atau Kirim Presensi */
+                        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                          <button
+                            type="button"
+                            className="d-btn d-btn--ghost"
+                            style={{ flex: 1, minWidth: "120px", padding: "0.75rem", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "0.4rem" }}
+                            onClick={handleRetakePhoto}
+                            disabled={a.busy}
+                          >
+                            <i className="fa-solid fa-arrows-rotate" />
+                            Ulang Foto
+                          </button>
+                          <button
+                            type="button"
+                            className="d-btn d-btn--primary"
+                            style={{ flex: 2, minWidth: "170px", padding: "0.75rem", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "0.4rem" }}
+                            disabled={
+                              a.busy ||
+                              (nextKind === "out" && isBeforeClockOut && !allowEarlyCheckout) ||
+                              (nextKind === "out" && isBeforeClockOut && allowEarlyCheckout && (!notes || notes === "-" || notes.trim().length < 5))
+                            }
+                            onClick={() => clock()}
+                          >
+                            <i className="fa-solid fa-paper-plane" />
+                            {a.busy
+                              ? (lang === "en" ? "Submitting..." : "Mengirim...")
+                              : nextKind === "in"
+                              ? t("Kirim Presensi Masuk", lang)
+                              : t("Kirim Presensi Pulang", lang)}
+                          </button>
+                        </div>
+                      ) : isCameraActive ? (
+                        /* Langkah 1: Kamera aktif -> ambil / jepret foto */
+                        <button
+                          type="button"
+                          className="d-btn d-btn--primary d-btn--block"
+                          style={{ padding: "0.75rem" }}
+                          disabled={a.busy}
+                          onClick={handleSnapPhoto}
+                        >
+                          <i className="fa-solid fa-camera" style={{ marginRight: "0.4rem" }} />
+                          {nextKind === "in" ? t("Ambil Foto Presensi Masuk (Cekrek)", lang) : t("Ambil Foto Presensi Pulang (Cekrek)", lang)}
+                        </button>
+                      ) : (
+                        /* Kamera belum aktif -> tombol nyalakan kamera */
+                        <button
+                          type="button"
+                          className="d-btn d-btn--primary d-btn--block"
+                          style={{ padding: "0.75rem" }}
+                          onClick={startCamera}
+                        >
+                          <i className="fa-solid fa-camera" style={{ marginRight: "0.4rem" }} />
+                          {t("Nyalakan Kamera Depan", lang)}
                         </button>
                       )}
                     </div>
