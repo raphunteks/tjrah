@@ -1,0 +1,3 @@
+#!/bin/sh
+# Tolak commit yang berisi rahasia asli. Lewati hanya dengan sengaja: git commit --no-verify
+exec node scripts/secret-scan.mjs --staged

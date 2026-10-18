@@ -1,0 +1,88 @@
+{
+  "id": "/app",
+  "name": "Tijarah · Smart Trade, Better Business",
+  "short_name": "Tijarah",
+  "description": "Platform Cloud POS, Kitchen Display System (KDS), manajemen inventori resep BOM, akuntansi PSAK, SDM, dan rekam medis elektronik klinik (RME SATUSEHAT).",
+  "start_url": "/app",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#0B5D4B",
+  "background_color": "#0B5D4B",
+  "lang": "id-ID",
+  "dir": "ltr",
+  "categories": [
+    "business",
+    "productivity",
+    "finance",
+    "utilities"
+  ],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/tijarah-logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "POS Kasir & Transaksi",
+      "short_name": "Kasir",
+      "description": "Buka antarmuka kasir meja POS untuk memproses transaksi penjualan.",
+      "url": "/app?page=pos",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Kitchen Display System (KDS)",
+      "short_name": "Dapur KDS",
+      "description": "Buka layar monitor antrean pesanan masak dapur real-time.",
+      "url": "/app?page=kitchen",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Dashboard Bisnis",
+      "short_name": "Dashboard",
+      "description": "Lihat ringkasan omzet, laba kotor, dan KPI performa toko.",
+      "url": "/app?page=dashboard",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "prefer_related_applications": false
+}

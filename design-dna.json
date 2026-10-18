@@ -1,0 +1,404 @@
+{
+  "meta": {
+    "name": "Harum.in Blueprint — Cobalt Instrument",
+    "description": "DNA visual situs blueprint arsitektur Harum.in: kanvas putih-dingin terukur, satu aksen cobalt sebagai sinyal, hairline sebagai struktur, satu band graphite per halaman, gerak GSAP yang tenang.",
+    "source_references": [
+      "Harum_in_Ecosystem_Architecture_RBAC_Matrix.md",
+      "Hallmark theme: Cobalt (modern-minimal)"
+    ],
+    "created_at": "2026-10-11"
+  },
+  "design_system": {
+    "color": {
+      "palette_type": "monochromatic",
+      "primary": {
+        "hex": "#1E2433",
+        "role": "Ink — judul, teks kuat (oklch 24% 0.02 258)"
+      },
+      "secondary": {
+        "hex": "#151A24",
+        "role": "Graphite — kartu kode & band gelap tunggal (oklch 21.5% 0.016 260)"
+      },
+      "accent": {
+        "hex": "#2F5FE0",
+        "role": "Cobalt — sinyal tunggal: tombol utama, tautan aktif, jalur topologi terpilih, fokus (oklch 55% 0.2 258), < 5% viewport"
+      },
+      "neutral": {
+        "scale": [
+          "#F9FAFC",
+          "#F2F4F8",
+          "#EAEDF2",
+          "#DFE3EA",
+          "#CDD3DD",
+          "#6B7385",
+          "#3A4152",
+          "#1E2433"
+        ],
+        "usage": "Paper → paper-2 (latar seksi) → rule (hairline) → rule-2 (border kontrol) → muted (meta/mono) → ink-2 (body) → ink (judul)"
+      },
+      "semantic": {
+        "success": "#2F8F5B",
+        "warning": "#9A6A12",
+        "error": "#C23A2B",
+        "info": "#2F5FE0"
+      },
+      "surface": {
+        "background": "#F9FAFC",
+        "card": "#F9FAFC",
+        "elevated": "#151A24"
+      },
+      "contrast_strategy": "Gelap-di-atas-terang dominan; satu band graphite memberi ritme terang → gelap → terang. Penanda revisi memakai warn-soft, bukan merah."
+    },
+    "typography": {
+      "type_scale": {
+        "display": {
+          "size": "clamp(2.5rem, 1.6rem + 4.2vw, 4.75rem)",
+          "weight": "600",
+          "line_height": "1.02",
+          "tracking": "-0.035em"
+        },
+        "heading_1": {
+          "size": "clamp(1.875rem, 1.4rem + 2vw, 2.75rem)",
+          "weight": "600",
+          "line_height": "1.1",
+          "tracking": "-0.025em"
+        },
+        "heading_2": {
+          "size": "clamp(1.5rem, 1.2rem + 1.2vw, 2rem)",
+          "weight": "600",
+          "line_height": "1.15",
+          "tracking": "-0.02em"
+        },
+        "heading_3": {
+          "size": "1.375rem",
+          "weight": "600",
+          "line_height": "1.2",
+          "tracking": "-0.015em"
+        },
+        "body": {
+          "size": "1rem",
+          "weight": "400",
+          "line_height": "1.6",
+          "tracking": "0"
+        },
+        "body_small": {
+          "size": "0.875rem",
+          "weight": "400",
+          "line_height": "1.55",
+          "tracking": "0"
+        },
+        "caption": {
+          "size": "0.75rem",
+          "weight": "400",
+          "line_height": "1.5",
+          "tracking": "0"
+        },
+        "overline": {
+          "size": "0.75rem",
+          "weight": "500",
+          "line_height": "1.2",
+          "tracking": "0.06em"
+        }
+      },
+      "font_families": {
+        "heading": "Space Grotesk",
+        "body": "Inter",
+        "mono": "JetBrains Mono"
+      },
+      "font_style_notes": "Grotesk mekanis untuk display, Inter netral untuk body, mono UPPERCASE untuk eyebrow/meta/status. Semua roman, tanpa italic di judul."
+    },
+    "spacing": {
+      "base_unit": "4px",
+      "scale": [
+        "4",
+        "8",
+        "12",
+        "16",
+        "24",
+        "32",
+        "48",
+        "64",
+        "96",
+        "128"
+      ],
+      "content_density": "comfortable",
+      "section_rhythm": "96px antar-seksi di desktop, 64px di mobile; hairline menandai batas seksi"
+    },
+    "layout": {
+      "grid_system": "Kontainer 76rem dengan gutter fluid; grid CSS per seksi, track minmax(0,1fr)",
+      "max_content_width": "1216px",
+      "columns": "12 (implisit), peta topologi 3 kolom + panel detail 21rem",
+      "gutter": "clamp(16px, 2vw, 40px)",
+      "breakpoints": [
+        "380px",
+        "720px",
+        "900px",
+        "1100px"
+      ],
+      "alignment_tendency": "asymmetric"
+    },
+    "shape": {
+      "border_radius": {
+        "small": "4px",
+        "medium": "6px",
+        "large": "10px",
+        "pill": "tidak dipakai"
+      },
+      "border_usage": "subtle 1px",
+      "divider_style": "Hairline 1px rule; tidak ada kartu berbayang"
+    },
+    "elevation": {
+      "shadow_style": "none",
+      "levels": {
+        "low": "0 1px 2px ink/6%",
+        "medium": "tidak dipakai",
+        "high": "0 24px 64px -16px ink/28% (palet ⌘K saja)"
+      },
+      "depth_cues": "Border dan perubahan latar (paper → paper-2 → graphite), bukan blur"
+    },
+    "iconography": {
+      "style": "Tanpa ikon dekoratif; glyph tipografis (→, ▍, ×) dan tick 2px",
+      "stroke_weight": "1.25–1.5px (jalur topologi)",
+      "size_scale": [
+        "6px",
+        "14px"
+      ],
+      "preferred_set": "none"
+    },
+    "motion": {
+      "easing": {
+        "out": "cubic-bezier(0.16,1,0.3,1) / expo.out",
+        "in-out": "power2.inOut / power3.inOut"
+      },
+      "duration_scale": {
+        "micro": "140ms",
+        "normal": "240ms",
+        "macro": "600ms"
+      },
+      "entrance_pattern": "Fade + naik 10–16px, stagger 0.05–0.09s, sekali saja (once)",
+      "exit_pattern": "Tidak ada animasi keluar; elemen tetap setelah masuk",
+      "philosophy": "minimal functional"
+    },
+    "components": {
+      "button_style": "Satu tombol solid cobalt radius 6px; aksi sekunder berupa tautan dengan garis bawah tumbuh",
+      "input_style": "Mono, tanpa border di dalam palet; border 1px rule-2 di luar",
+      "card_style": "Node/kartu datar 1px rule-2, radius 10px, terpilih = border cobalt ganda",
+      "navigation_pattern": "Bar sticky penuh lebar ber-hairline + pemicu ⌘K berfungsi + progres baca 2px",
+      "modal_style": "Palet perintah ⌘K: scrim ink 32%, panel 36rem, listbox ber-keyboard",
+      "list_style": "Baris spec bertanda garis cobalt 6px; tabel pilar sebagai daftar ber-hairline",
+      "component_notes": "Chip pemilah (aria-pressed) mengubah opacity baris non-cocok ke 0.38; badge 'revisi' warn-soft di sudut node."
+    }
+  },
+  "design_style": {
+    "aesthetic": {
+      "mood": [
+        "tenang",
+        "presisi",
+        "teknis",
+        "jujur"
+      ],
+      "visual_metaphor": "Panel instrumen / gambar teknik arsitek",
+      "era_influence": "Dokumentasi developer 2024–2026",
+      "genre": "modern-minimal dev-tool",
+      "personality_traits": [
+        "teliti",
+        "lugas",
+        "kritis"
+      ],
+      "adjectives": [
+        "terukur",
+        "dingin",
+        "rapi",
+        "terbaca"
+      ]
+    },
+    "visual_language": {
+      "complexity": "moderate",
+      "ornamentation": "none",
+      "whitespace_usage": "Lega di antara seksi, padat di dalam spesifikasi",
+      "visual_weight_distribution": "Judul kiri, bukti (kode/peta) kanan",
+      "focal_strategy": "progressive reveal",
+      "contrast_level": "tinggi untuk teks, rendah untuk struktur",
+      "texture_usage": "none"
+    },
+    "composition": {
+      "hierarchy_method": "typographic hierarchy",
+      "balance_type": "asymmetric",
+      "flow_direction": "Atas ke bawah, mengikuti urutan Bab",
+      "grouping_strategy": "Hairline dan grid-area bernama",
+      "negative_space_role": "Memisahkan bab; ruang antar-node peta menampung jalur"
+    },
+    "imagery": {
+      "photo_treatment": "Tidak ada foto",
+      "illustration_style": "Diagram SVG buatan tangan dari data",
+      "graphic_elements": "Jalur ortogonal, label protokol mono, kartu kode graphite",
+      "pattern_usage": "none",
+      "image_shape": "Persegi radius 10px"
+    },
+    "interaction_feel": {
+      "feedback_style": "Perubahan border ke cobalt, tanpa toast",
+      "hover_behavior": "Underline tumbuh dari kiri; border node ke cobalt",
+      "transition_personality": "smooth glide",
+      "loading_style": "Tidak ada spinner; konten statis",
+      "microinteraction_density": "rendah"
+    },
+    "brand_voice_in_ui": {
+      "tone": "Teknis, langsung, menyebut angka dan nama komponen",
+      "formality": "Semi-formal Bahasa Indonesia",
+      "cta_style": "direct imperative",
+      "empty_state_approach": "Sebut apa yang dicari dan sarankan kata kunci lain",
+      "error_tone": "Faktual, tanpa permintaan maaf berlebihan"
+    }
+  },
+  "visual_effects": {
+    "overview": {
+      "effect_intensity": "subtle-accent",
+      "performance_tier": "lightweight",
+      "fallback_strategy": "prefers-reduced-motion: semua konten statis dan terlihat penuh",
+      "primary_technology": "GSAP"
+    },
+    "background_effects": {
+      "type": "none",
+      "description": "Latar polos; ritme datang dari pergantian paper → paper-2 → graphite",
+      "technology": "CSS",
+      "params": {
+        "color_palette": "paper, paper-2, graphite",
+        "speed": "0",
+        "density": "0",
+        "opacity": "1",
+        "blend_mode": "normal"
+      }
+    },
+    "particle_systems": {
+      "enabled": false,
+      "type": "none",
+      "description": "Tidak dipakai",
+      "technology": "none",
+      "params": {
+        "count": "0",
+        "shape": "none",
+        "size_range": "0",
+        "movement_pattern": "none",
+        "color_behavior": "none",
+        "interaction": "none",
+        "spawn_area": "none"
+      }
+    },
+    "3d_elements": {
+      "enabled": false,
+      "type": "none",
+      "description": "Tidak dipakai",
+      "technology": "none",
+      "params": {
+        "renderer": "none",
+        "lighting": "none",
+        "camera": "none",
+        "materials": "none",
+        "geometry": "none",
+        "post_processing": [],
+        "interaction_model": "none"
+      }
+    },
+    "shader_effects": {
+      "enabled": false,
+      "type": "none",
+      "description": "Tidak dipakai",
+      "technology": "none",
+      "params": {
+        "uniforms": "none",
+        "vertex_manipulation": "none",
+        "fragment_output": "none",
+        "noise_type": "none",
+        "distortion": "none"
+      }
+    },
+    "scroll_effects": {
+      "parallax": {
+        "enabled": false,
+        "layers": "0",
+        "depth_range": "0",
+        "speed_curve": "none"
+      },
+      "scroll_triggered_animations": {
+        "enabled": true,
+        "trigger_points": "top 75–88% viewport, once: true",
+        "animation_type": "fade-up + draw-SVG (stroke-dashoffset dengan pathLength=1)",
+        "scrub_behavior": "Hanya progres baca di nav (scrub 0.3, scaleX)"
+      },
+      "scroll_morphing": {
+        "enabled": false,
+        "description": "Tidak dipakai"
+      }
+    },
+    "text_effects": {
+      "type": "split-letter-animate",
+      "description": "Judul hero dipecah per kata dan naik dari mask; satu baris kode diketik sekali",
+      "technology": "GSAP timeline",
+      "params": {
+        "split_strategy": "by-word",
+        "animation_per_unit": "yPercent 110 → 0",
+        "stagger": "0.05s",
+        "effect_style": "mask reveal"
+      }
+    },
+    "cursor_effects": {
+      "enabled": false,
+      "type": "none",
+      "description": "Tidak dipakai",
+      "params": {
+        "shape": "none",
+        "size": "0",
+        "blend_mode": "normal",
+        "trail": "none",
+        "interaction_zone": "none"
+      }
+    },
+    "image_effects": {
+      "type": "none",
+      "description": "Tidak ada gambar raster",
+      "technology": "none",
+      "params": {
+        "filter_pipeline": "none",
+        "hover_transform": "none",
+        "reveal_animation": "none",
+        "distortion_type": "none"
+      }
+    },
+    "glassmorphism_neumorphism": {
+      "enabled": false,
+      "style": "none",
+      "params": {
+        "blur_radius": "8px hanya pada nav saat scroll",
+        "transparency": "0.86",
+        "border_treatment": "hairline",
+        "shadow_type": "none",
+        "light_source_angle": "none"
+      }
+    },
+    "canvas_drawings": {
+      "enabled": false,
+      "type": "none",
+      "description": "Tidak dipakai",
+      "technology": "none",
+      "params": {
+        "draw_method": "none",
+        "animation_loop": "none",
+        "color_scheme": "none",
+        "responsiveness": "none",
+        "interaction": "none"
+      }
+    },
+    "svg_animations": {
+      "enabled": true,
+      "type": "path-draw",
+      "description": "Jalur peta topologi digambar setelah node muncul lapis demi lapis; jalur node terpilih berubah cobalt",
+      "params": {
+        "animation_method": "GSAP strokeDashoffset 1 → 0",
+        "path_morphing": "none",
+        "stroke_animation": "draw sekali, stagger 0.08s",
+        "filter_effects": "none"
+      }
+    },
+    "composite_notes": "Geometri jalur diukur dengan offset* sehingga tidak terpengaruh transform GSAP; ResizeObserver mengukur ulang. Di bawah 720px jalur disembunyikan dan relasi ditampilkan di panel 'Terhubung ke'. Bab II–VI memakai DNA yang sama: Flip untuk penjelajah modul, ScrollTrigger pin/scrub untuk swimlane alur. Bab IV: toggle asli↔revisi menganimasikan hanya sel yang berubah (opacity+y, stagger 0.012). Bab V: satu timeline per alur, langkah muncul berurutan dan jalur SVG digambar progresif; diputar sekali saat masuk viewport. Bab VI: bar urutan bangun scaleX 0→1."
+  }
+}

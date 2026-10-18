@@ -1,0 +1,216 @@
+/* ═════════ FASE 3 · klinik, antrean, CRM, alur kerja ═════════
+   Hanya token Cobalt (tokens.css). Warna odontogram = token khusus di bawah, dipetakan ke palet status. */
+:root {
+  --od-car: var(--color-danger);
+  --od-amf: var(--color-graphite);
+  --od-cof: var(--color-ok);
+  --od-fis: var(--color-warn);
+  --od-line: var(--color-rule-2);
+}
+
+/* ───────── Antrean & reservasi ───────── */
+.q-layout { display: grid; grid-template-columns: minmax(18rem, 22rem) minmax(0, 1fr); gap: var(--space-md); align-items: start; }
+.q-list { display: grid; gap: var(--space-2xs); }
+.q-item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--space-sm); align-items: center; padding: var(--space-xs) var(--space-sm);
+  border: var(--rule-hair) solid var(--color-rule); border-left: 3px solid var(--color-rule-2); border-radius: var(--radius-md); background: var(--color-paper); }
+.q-item--waiting { border-left-color: var(--color-warn); }
+.q-item--called, .q-item--booked { border-left-color: var(--color-accent); }
+.q-item--in_exam { border-left-color: var(--color-ok); background: var(--color-ok-soft); }
+.q-no { min-width: 3.25rem; padding: var(--space-2xs) var(--space-3xs); text-align: center; font: 600 var(--text-lg)/1 var(--font-mono); color: var(--color-ink); background: var(--color-paper-2); border-radius: var(--radius-sm); }
+.q-main { min-width: 0; display: grid; gap: 2px; }
+.q-name { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2xs); font-weight: 600; color: var(--color-ink); }
+.q-cc { font-size: var(--text-sm); color: var(--color-ink-2); }
+.q-item .d-row-actions { flex-wrap: wrap; justify-content: flex-end; }
+
+/* ───────── Pemeriksaan (RME) ───────── */
+.exam-tabs { margin-bottom: var(--space-sm); max-width: 100%; overflow-x: auto; }
+.exam { display: grid; grid-template-columns: minmax(0, 1fr) 17rem; gap: var(--space-md); align-items: start; }
+.exam-side { position: sticky; top: 4.5rem; }
+.allergy { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-xs); margin-bottom: var(--space-sm); padding: var(--space-xs) var(--space-sm);
+  border: var(--rule-hair) solid var(--color-rule); border-radius: var(--radius-md); background: var(--color-paper-2); font-size: var(--text-sm); }
+.allergy p { margin-right: auto; }
+.allergy--yes { background: var(--color-danger-soft); border-color: var(--color-danger-soft); color: var(--color-ink); }
+.allergy--yes strong { color: var(--color-danger); }
+.allergy--none { background: var(--color-ok-soft); border-color: var(--color-ok-soft); }
+.allergy--unknown { background: var(--color-warn-soft); border-color: var(--color-warn-soft); }
+.allergy__form { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2xs); width: 100%; }
+.allergy__form input { flex: 1 1 14rem; min-height: 2.25rem; padding: 0 var(--space-xs); border: var(--rule-hair) solid var(--color-rule-2); border-radius: var(--radius-md); background: var(--color-paper); }
+.dx-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-lg); }
+.dx-grid > .d-field__error, .dx-grid > .d-saved { grid-column: 1 / -1; }
+.dx-h { font: 600 var(--text-base)/1.3 var(--font-display); color: var(--color-ink); margin-bottom: var(--space-2xs); }
+.dx-grid section { display: grid; gap: var(--space-xs); align-content: start; min-width: 0; }
+.px-add { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-xs); align-items: end; }
+.px-add .d-switch { flex-direction: column; align-items: flex-start; gap: var(--space-3xs); }
+.px-tooth { width: 3.5rem; min-height: 2.5rem; text-align: center; border: var(--rule-hair) solid var(--color-rule-2); border-radius: var(--radius-md); background: var(--color-paper); }
+.rx-add { display: grid; grid-template-columns: minmax(0, 2fr) 5.5rem minmax(0, 2fr) 4.5rem auto; gap: var(--space-xs); align-items: end; }
+.d-self-end { align-self: end; }
+.close-checks { display: grid; gap: var(--space-2xs); font-size: var(--text-sm); }
+.close-checks li { display: flex; gap: var(--space-2xs); align-items: baseline; }
+.close-checks .is-ok span:first-child { color: var(--color-ok); font-weight: 700; }
+.close-checks .is-miss { color: var(--color-muted); }
+.closed-sum { margin-bottom: var(--space-md); border-color: var(--color-ok); box-shadow: inset 3px 0 0 var(--color-ok); }
+
+/* ICD combobox */
+.icd { position: relative; display: grid; gap: var(--space-3xs); min-width: 0; }
+.icd input { width: 100%; min-height: 2.5rem; padding: 0 var(--space-xs); border: var(--rule-hair) solid var(--color-rule-2); border-radius: var(--radius-md); background: var(--color-paper); }
+.icd-list { position: absolute; z-index: 20; top: 100%; left: 0; right: 0; margin-top: 2px; max-height: 18rem; overflow-y: auto;
+  background: var(--color-paper); border: var(--rule-hair) solid var(--color-rule-2); border-radius: var(--radius-md); box-shadow: var(--shadow-overlay); }
+.icd-list li { display: grid; grid-template-columns: 4rem minmax(0, 1fr); gap: var(--space-xs); padding: var(--space-2xs) var(--space-xs); cursor: pointer; font-size: var(--text-sm); }
+.icd-list li.is-active { background: var(--color-accent-soft); }
+.icd-code { color: var(--color-accent); font-weight: 600; }
+.icd-text { display: grid; min-width: 0; }
+.icd-text span:last-child { font-size: var(--text-xs); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ───────── Odontogram ───────── */
+.odo { display: grid; gap: var(--space-sm); }
+.odo-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: var(--space-3xs); }
+.odo-svg { display: block; width: 100%; min-width: 34rem; max-width: 46rem; height: auto; margin-inline: auto; user-select: none; }
+.odo-mid { stroke: var(--color-rule-2); stroke-dasharray: 2 3; }
+.odo-num { font: 500 9px var(--font-mono); fill: var(--color-muted); }
+.odo-num[role="button"] { cursor: pointer; }
+.odo-num[role="button"]:hover, .odo-num[role="button"]:focus-visible { fill: var(--color-accent); outline: none; text-decoration: underline; }
+.odo-s { fill: var(--color-paper); stroke: var(--od-line); stroke-width: 0.75; }
+.odo-svg .odo-s { transition: fill var(--dur-micro) var(--ease-out); }
+.odo--edit .odo-s { cursor: pointer; }
+.odo--edit .odo-s:hover { fill: var(--color-accent-soft); }
+.odo-s--car { fill: var(--od-car); }
+.odo-s--amf { fill: var(--od-amf); }
+.odo-s--cof { fill: var(--od-cof); }
+.odo-s--fis { fill: var(--od-fis); }
+.odo .odo-s.is-sel { fill: var(--color-accent); stroke: var(--color-accent); }
+.odo-tooth.is-whole .odo-s { stroke: var(--color-accent); stroke-width: 2; }
+.odo-tooth--mis .odo-s, .odo-tooth--une .odo-s { fill: var(--color-paper-2); stroke-dasharray: 2 2; }
+.odo-tooth--nvt .odo-s, .odo-tooth--rrx .odo-s { stroke: var(--color-danger); }
+.odo-tooth--rct .odo-s, .odo-tooth--poc .odo-s, .odo-tooth--ipx .odo-s { stroke: var(--color-ink); stroke-width: 1.4; }
+.odo-x { stroke: var(--color-ink); stroke-width: 1.5; }
+.odo-code { font: 600 7px var(--font-mono); fill: var(--color-ink-2); }
+.odo-tools { display: grid; gap: var(--space-xs); padding: var(--space-xs) var(--space-sm); border-radius: var(--radius-md); background: var(--color-paper-2); }
+.odo-clear { margin-left: var(--space-2xs); }
+.odo-chip { display: inline-flex; align-items: center; gap: var(--space-2xs); }
+.odo-swatch { display: inline-block; width: 0.75rem; height: 0.75rem; border-radius: 2px; border: var(--rule-hair) solid var(--color-rule-2); background: var(--color-paper); flex-shrink: 0; }
+.odo-chip--car .odo-swatch, .odo-swatch.odo-chip--car { background: var(--od-car); border-color: var(--od-car); }
+.odo-chip--amf .odo-swatch, .odo-swatch.odo-chip--amf { background: var(--od-amf); border-color: var(--od-amf); }
+.odo-chip--cof .odo-swatch, .odo-swatch.odo-chip--cof { background: var(--od-cof); border-color: var(--od-cof); }
+.odo-chip--fis .odo-swatch, .odo-swatch.odo-chip--fis { background: var(--od-fis); border-color: var(--od-fis); }
+.odo-chip--nvt .odo-swatch, .odo-swatch.odo-chip--nvt, .odo-chip--rrx .odo-swatch, .odo-swatch.odo-chip--rrx { border: 2px solid var(--color-danger); }
+.odo-chip--rct .odo-swatch, .odo-swatch.odo-chip--rct, .odo-chip--poc .odo-swatch, .odo-swatch.odo-chip--poc,
+.odo-chip--ipx .odo-swatch, .odo-swatch.odo-chip--ipx { border: 2px solid var(--color-ink); }
+.odo-chip--mis .odo-swatch, .odo-swatch.odo-chip--mis { background: linear-gradient(45deg, transparent 45%, var(--color-ink) 45% 55%, transparent 55%); }
+.odo-chip--une .odo-swatch, .odo-swatch.odo-chip--une, .odo-chip--pre .odo-swatch, .odo-swatch.odo-chip--pre,
+.odo-chip--prd .odo-swatch, .odo-swatch.odo-chip--prd, .odo-chip--cfr .odo-swatch, .odo-swatch.odo-chip--cfr { border-style: dashed; border-color: var(--color-ink-2); }
+.odo-legend { display: grid; grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); gap: var(--space-3xs) var(--space-sm); font-size: var(--text-xs); color: var(--color-ink-2); }
+.odo-legend li { display: flex; align-items: center; gap: var(--space-2xs); }
+.odo-kb summary { cursor: pointer; font-size: var(--text-sm); color: var(--color-accent); }
+.odo-kb__row { display: grid; gap: var(--space-xs); margin-top: var(--space-xs); justify-items: start; }
+
+/* ───────── Pasien & rekam medis ───────── */
+.pt-layout { display: grid; grid-template-columns: 19rem minmax(0, 1fr); gap: var(--space-md); align-items: start; }
+.pt-list { position: sticky; top: 4.5rem; max-height: calc(100vh - 6rem); grid-template-rows: auto auto minmax(0, 1fr); }
+.pt-search { flex-direction: column; align-items: stretch; gap: var(--space-3xs); }
+.pt-search .d-switch__label { display: block; text-align: left; }
+.pt-search input { width: 100%; min-height: 2.5rem; padding: 0 var(--space-xs); border: var(--rule-hair) solid var(--color-rule-2); border-radius: var(--radius-md); background: var(--color-paper); }
+.pt-items { display: grid; gap: 2px; overflow-y: auto; margin-inline: calc(var(--space-xs) * -1); }
+.pt-items button { display: grid; gap: 2px; width: 100%; padding: var(--space-2xs) var(--space-xs); border: 0; border-radius: var(--radius-md); background: transparent; text-align: left; cursor: pointer; }
+.pt-items button:hover { background: var(--color-paper-2); }
+.pt-items button.is-on { background: var(--color-accent-soft); box-shadow: inset 2px 0 0 var(--color-accent); }
+.pt-name { font-weight: 600; color: var(--color-ink); font-size: var(--text-sm); }
+.pt-main, .pt-detail { display: grid; gap: var(--space-md); min-width: 0; }
+.pt-facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-sm); font-size: var(--text-sm); }
+.pt-facts dt { color: var(--color-muted); font-size: var(--text-xs); }
+.pt-facts dd { margin: 0; color: var(--color-ink); overflow-wrap: anywhere; }
+.visits { display: grid; gap: var(--space-sm); }
+.visit { display: grid; gap: var(--space-sm); padding: var(--space-sm); border: var(--rule-hair) solid var(--color-rule); border-radius: var(--radius-md); }
+.visit__head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-xs); }
+.visit__date { font-weight: 600; color: var(--color-ink); }
+.soap { display: grid; gap: var(--space-3xs); margin: 0; font-size: var(--text-sm); }
+.soap div { display: grid; grid-template-columns: 1.5rem minmax(0, 1fr); gap: var(--space-xs); }
+.soap dt { font: 600 var(--text-sm) var(--font-mono); color: var(--color-accent); }
+.soap dd { margin: 0; color: var(--color-ink); }
+.visit__codes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-sm) var(--space-md); font-size: var(--text-sm); }
+.visit__codes h4 { display: flex; align-items: center; gap: var(--space-2xs); font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-muted); margin-bottom: var(--space-3xs); }
+.visit__codes ul { display: grid; gap: 2px; }
+.visit__ss { display: flex; flex-wrap: wrap; gap: var(--space-xs); align-items: start; }
+.visit__ss .fhir { flex: 1 1 20rem; }
+
+/* SATUSEHAT & FHIR */
+.ss-badge { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--space-2xs); }
+.ss-badge__id { font-size: var(--text-xs); color: var(--color-muted); }
+.ss-badge__err { flex-basis: 100%; font-size: var(--text-xs); color: var(--color-danger); }
+.fhir { font-size: var(--text-sm); }
+.fhir summary { cursor: pointer; color: var(--color-accent); padding: var(--space-3xs) 0; }
+.fhir-list { display: grid; gap: 2px; margin: var(--space-2xs) 0; }
+.fhir-list li { display: grid; grid-template-columns: 9.5rem minmax(0, 1fr); gap: var(--space-xs); padding: var(--space-3xs) var(--space-2xs); border-radius: var(--radius-sm); background: var(--color-paper-2); }
+.fhir-type { font-size: var(--text-xs); color: var(--color-accent); }
+.fhir-detail { overflow-wrap: anywhere; color: var(--color-ink-2); }
+.fhir-raw pre { max-height: 20rem; overflow: auto; padding: var(--space-xs); border-radius: var(--radius-md); background: var(--color-graphite); color: var(--color-on-graphite); font: 0.6875rem/1.5 var(--font-mono); }
+.vh { display: grid; gap: var(--space-xs); }
+.vh li { display: grid; gap: 2px; padding-left: var(--space-xs); border-left: 2px solid var(--color-rule-2); }
+.vh-date { font-size: var(--text-xs); color: var(--color-muted); }
+.vh-a { font-size: var(--text-sm); color: var(--color-ink); }
+
+/* ───────── Tagihan klinik & e-resep ───────── */
+.bill-layout { display: grid; grid-template-columns: minmax(0, 1fr) 20rem; gap: var(--space-md); align-items: start; margin-top: var(--space-sm); }
+.bills { display: grid; gap: var(--space-sm); }
+.bill { display: grid; gap: var(--space-sm); padding: var(--space-sm); border: var(--rule-hair) solid var(--color-rule-2); border-radius: var(--radius-md); background: var(--color-paper); }
+.bill__head { display: flex; justify-content: space-between; gap: var(--space-sm); align-items: baseline; }
+.bill__who { font: 600 var(--text-lg)/1.2 var(--font-display); color: var(--color-ink); }
+.bill__total { font: 600 var(--text-lg)/1 var(--font-mono); color: var(--color-ink); white-space: nowrap; }
+.bill__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-xs); }
+.rx-card { display: grid; gap: var(--space-xs); padding: var(--space-sm); border-radius: var(--radius-md); background: var(--color-accent-soft); }
+.rx-card__head { display: flex; align-items: center; gap: var(--space-2xs); font-weight: 600; color: var(--color-ink); font-size: var(--text-sm); }
+.rx-card__r { font: 700 var(--text-lg)/1 var(--font-display); color: var(--color-accent); }
+.rx-card ol { display: grid; gap: var(--space-2xs); }
+.rx-card li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 var(--space-sm); font-size: var(--text-sm); }
+.rx-card__name { color: var(--color-ink); font-weight: 500; }
+.rx-card__signa { grid-column: 1 / -1; color: var(--color-ink-2); font-style: italic; }
+.rx-card__ok { padding-top: var(--space-2xs); border-top: var(--rule-hair) solid var(--color-rule-2); }
+
+/* ───────── CRM ───────── */
+.crm-tools { display: flex; flex-wrap: wrap; gap: var(--space-xs); align-items: center; }
+.crm-tools input { min-height: 2.25rem; padding: 0 var(--space-xs); border: var(--rule-hair) solid var(--color-rule-2); border-radius: var(--radius-md); background: var(--color-paper); min-width: 0; width: 14rem; }
+
+/* ───────── Alur kerja (Bab V) ───────── */
+.flow-tabs { margin-bottom: var(--space-sm); max-width: 100%; overflow-x: auto; }
+.flow { display: grid; position: relative; }
+.flow::before { content: ""; position: absolute; left: 1.05rem; top: 0.75rem; bottom: 0.75rem; width: 1px; background: var(--color-rule-2); }
+.flow-step { position: relative; display: grid; grid-template-columns: 2.25rem minmax(0, 1fr); gap: var(--space-sm); padding: var(--space-xs) 0; }
+.flow-step__no { position: relative; z-index: 1; display: grid; place-items: center; width: 2.125rem; height: 2.125rem; border-radius: 50%; font-size: var(--text-xs);
+  background: var(--color-paper); border: var(--rule-hair) solid var(--color-rule-2); color: var(--color-muted); }
+.flow-step.is-mine .flow-step__no { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-accent-ink); }
+.flow-step__body { display: grid; gap: var(--space-3xs); padding: var(--space-xs) var(--space-sm); border-radius: var(--radius-md); }
+.flow-step.is-mine .flow-step__body { background: var(--color-accent-soft); }
+.flow-step__body h3 { font: 600 var(--text-base)/1.3 var(--font-display); color: var(--color-ink); }
+.flow-step__lanes { display: flex; flex-wrap: wrap; gap: var(--space-3xs); }
+.flow-step__note { font-size: var(--text-sm); padding: var(--space-2xs) var(--space-xs); border-left: 2px solid var(--color-warn); background: var(--color-warn-soft); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+
+@media (max-width: 1180px) {
+  .exam { grid-template-columns: minmax(0, 1fr); }
+  .exam-side { position: static; }
+  .rx-add { grid-template-columns: minmax(0, 1fr) 5.5rem; }
+  .rx-add .d-field:nth-child(3) { grid-column: 1 / -1; }
+  .bill-layout { grid-template-columns: minmax(0, 1fr); }
+  .pt-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 960px) {
+  .q-layout, .pt-layout { grid-template-columns: minmax(0, 1fr); }
+  .pt-list { position: static; max-height: 22rem; }
+  .dx-grid, .visit__codes { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+  .q-item { grid-template-columns: auto minmax(0, 1fr); }
+  .q-item .d-row-actions { grid-column: 1 / -1; justify-content: flex-start; }
+  .rx-add { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .rx-add .d-field:first-child, .rx-add .d-field:nth-child(3) { grid-column: 1 / -1; }
+  .fhir-list li { grid-template-columns: minmax(0, 1fr); }
+  .pt-facts { grid-template-columns: minmax(0, 1fr); }
+  .crm-tools input { width: 100%; }
+  .bill__head { flex-direction: column; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .odo-svg .odo-s { transition: none; }
+}
+@media (min-width: 1181px) { .d-stats--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.px-tooth[aria-invalid="true"] { border-color: var(--color-danger); box-shadow: 0 0 0 1px var(--color-danger); }
+@media (min-width: 641px) { .q-row { grid-template-columns: 6.5rem minmax(0, 1fr); } }
+.trail .d-list__meta { overflow-wrap: anywhere; }
+.d-cell-btn { display: block; margin-top: var(--space-3xs); }

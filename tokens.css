@@ -1,0 +1,372 @@
+/* ==========================================================================
+   TIJARAH DESIGN SYSTEM (Modern Clean SaaS / Bento Grid UI with Soft Modernism)
+   Palet: Deep Emerald (#0B5D4B) · Gold Ochre (#D9A441) · Slate (#0F172A)
+   Tipografi: Plus Jakarta Sans · JetBrains Mono
+   Strict Anti-Slop: NO PILL/BADGE BUBBLES · Clean Typographic Matrix
+   ========================================================================== */
+
+:root {
+  /* — Brand Primary: Deep Emerald (#0B5D4B) — */
+  --brand-emerald: #0B5D4B;
+  --brand-emerald-hover: #084A3C;
+  --brand-emerald-light: #0E7761;
+  --brand-emerald-surface: rgba(11, 93, 75, 0.05);
+  --brand-emerald-border: rgba(11, 93, 75, 0.12);
+
+  /* — Brand Accent: Gold Ochre (#D9A441) — */
+  --brand-gold: #D9A441;
+  --brand-gold-hover: #C39032;
+  --brand-gold-surface: rgba(217, 164, 65, 0.08);
+  --brand-gold-border: rgba(217, 164, 65, 0.25);
+
+  /* — Colour · Paper & Surfaces (Soft Modernism) — */
+  --color-paper: #F8FAF9;
+  --color-paper-2: #FFFFFF;
+  --color-paper-3: #F1F5F4;
+  --color-surface-hover: #EEF4F2;
+
+  /* — Colour · Ink & Typography — */
+  --color-ink: #0F172A;
+  --color-ink-2: #334155;
+  --color-muted: #64748B;
+  --color-rule: #E2E8F0;
+  --color-rule-2: #CBD5E1;
+  --color-rule-emerald: rgba(11, 93, 75, 0.1);
+
+  /* — Colour · The Signal / Accent — */
+  --color-accent: var(--brand-emerald);
+  --color-accent-hover: var(--brand-emerald-hover);
+  --color-accent-ink: #FFFFFF;
+  --color-accent-soft: rgba(11, 93, 75, 0.08);
+  --color-focus: var(--brand-emerald);
+
+  /* — Colour · Secondary / Highlight Accent — */
+  --color-signal: var(--brand-gold);
+  --color-signal-hover: var(--brand-gold-hover);
+  --color-signal-soft: rgba(217, 164, 65, 0.12);
+
+  /* — Colour · Graphite & Dark Modals — */
+  --color-graphite: #0F172A;
+  --color-graphite-2: #1E293B;
+  --color-graphite-rule: rgba(255, 255, 255, 0.1);
+  --color-on-graphite: #F8FAFC;
+  --color-on-graphite-2: #CBD5E1;
+  --color-accent-on-dark: #34D399;
+
+  /* — Colour · Semantic — */
+  --color-ok: #0D9488;
+  --color-ok-soft: rgba(13, 148, 136, 0.08);
+  --color-ok-on-dark: #2DD4BF;
+  --color-warn: #D97706;
+  --color-warn-soft: rgba(217, 119, 6, 0.08);
+  --color-warn-on-dark: #FBBF24;
+  --color-danger: #DC2626;
+  --color-danger-soft: rgba(220, 38, 38, 0.08);
+
+  /* — Status Meja & Layanan (Non-Pill, Typographic) — */
+  --color-st-available: #0D9488;
+  --color-st-available-soft: rgba(13, 148, 136, 0.08);
+  --color-st-occupied: #DC2626;
+  --color-st-occupied-soft: rgba(220, 38, 38, 0.08);
+  --color-st-cooking: #D97706;
+  --color-st-cooking-soft: rgba(217, 119, 6, 0.08);
+  --color-st-reserved: #0284C7;
+  --color-st-reserved-soft: rgba(2, 132, 199, 0.08);
+  --color-st-dirty: #64748B;
+  --color-st-dirty-soft: rgba(100, 116, 139, 0.08);
+
+  /* — Type: DM Sans (Heading/Warm) + Outfit (Metrics) + Inter (Body) + JetBrains Mono (Finance) — */
+  --font-display: "DM Sans", "Outfit", system-ui, sans-serif;
+  --font-brand: "Outfit", "DM Sans", system-ui, sans-serif;
+  --font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* — Warm Soft-Modernism & Bento Colors (Inspired by Runut / Gambar 1 & 2) — */
+  --banner-plum-bg: #381534;
+  --banner-plum-gradient: linear-gradient(135deg, #381534 0%, #4f1d47 50%, #2f122c 100%);
+  --banner-cta-orange: #F97316;
+  --banner-cta-orange-hover: #EA580C;
+  --banner-cta-text: #1C1917;
+
+  /* Pastel Bento Cards */
+  --bento-lavender-bg: #FAF5FF;
+  --bento-lavender-border: #F3E8FF;
+  --bento-lavender-ink: #6B21A8;
+
+  --bento-peach-bg: #FFFBEB;
+  --bento-peach-border: #FEF3C7;
+  --bento-peach-ink: #92400E;
+
+  --bento-sky-bg: #F0F9FF;
+  --bento-sky-border: #E0F2FE;
+  --bento-sky-ink: #0369A1;
+
+  --bento-mint-bg: #F0FDF4;
+  --bento-mint-border: #DCFCE7;
+  --bento-mint-ink: #15803D;
+
+  --text-2xs: 0.6875rem;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: clamp(1.375rem, 1.1rem + 1vw, 1.875rem);
+  --text-3xl: clamp(1.75rem, 1.3rem + 1.6vw, 2.5rem);
+  --text-display: clamp(2.25rem, 1.6rem + 3.2vw, 4rem);
+
+  /* — Space Scale — */
+  --space-3xs: 0.25rem;
+  --space-2xs: 0.5rem;
+  --space-xs: 0.75rem;
+  --space-sm: 1rem;
+  --space-md: 1.5rem;
+  --space-lg: 2rem;
+  --space-xl: 3rem;
+  --space-2xl: 4rem;
+  --space-3xl: 6rem;
+  --space-4xl: 8rem;
+  --gutter: clamp(1rem, 0.6rem + 2vw, 2.5rem);
+  --measure: 64ch;
+  --max-w: 82rem;
+
+  /* — Shape & Borders (Soft Modernism: Crisp, Not Over-Rounded) — */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --rule-hair: 1px;
+
+  /* — Motion & GSAP GPU Optimization — */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-micro: 140ms;
+  --dur-normal: 240ms;
+  --dur-macro: 500ms;
+
+  /* — Elevation (Soft Modernism Clean Shadow) — */
+  --shadow-subtle: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.03), 0 6px 16px rgba(11, 93, 75, 0.03);
+  --shadow-lift: 0 4px 12px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.02);
+  --shadow-overlay: 0 20px 48px -12px rgba(15, 23, 42, 0.2);
+  --color-scrim: rgba(15, 23, 42, 0.35);
+}
+
+/* ==========================================================================
+   BENTO GRID UTILITY & COMPONENTS (Soft Modernism)
+   ========================================================================== */
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: var(--space-md);
+  width: 100%;
+}
+
+.bento-card {
+  background: var(--color-paper-2);
+  border: var(--rule-hair) solid var(--color-rule);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  box-shadow: var(--shadow-card);
+  transition: border-color var(--dur-micro) var(--ease-out), box-shadow var(--dur-normal) var(--ease-out);
+  position: relative;
+  overflow: hidden;
+  will-change: transform;
+}
+
+.bento-card:hover {
+  border-color: var(--color-rule-emerald);
+  box-shadow: var(--shadow-lift);
+}
+
+.bento-card--soft {
+  background: var(--color-paper-3);
+  border-color: rgba(11, 93, 75, 0.06);
+}
+
+.bento-card--emerald {
+  background: linear-gradient(135deg, #0B5D4B 0%, #074739 100%);
+  color: #FFFFFF;
+  border-color: rgba(217, 164, 65, 0.2);
+}
+
+.bento-card--emerald h1,
+.bento-card--emerald h2,
+.bento-card--emerald h3,
+.bento-card--emerald p {
+  color: #FFFFFF;
+}
+
+/* Bento Column Spans */
+.bento-span-12 { grid-column: span 12; }
+.bento-span-8  { grid-column: span 8; }
+.bento-span-7  { grid-column: span 7; }
+.bento-span-6  { grid-column: span 6; }
+.bento-span-5  { grid-column: span 5; }
+.bento-span-4  { grid-column: span 4; }
+.bento-span-3  { grid-column: span 3; }
+
+@media (max-width: 1024px) {
+  .bento-span-8,
+  .bento-span-7,
+  .bento-span-6,
+  .bento-span-5,
+  .bento-span-4,
+  .bento-span-3 {
+    grid-column: span 6;
+  }
+}
+
+@media (max-width: 640px) {
+  .bento-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-sm);
+  }
+  .bento-span-12,
+  .bento-span-8,
+  .bento-span-7,
+  .bento-span-6,
+  .bento-span-5,
+  .bento-span-4,
+  .bento-span-3 {
+    grid-column: span 1;
+  }
+}
+
+/* ==========================================================================
+   STRICT ANTI-AI-SLOP: TYPOGRAPHIC STATUS MARKERS (NO ROUNDED PILL BADGES)
+   ========================================================================== */
+.d-status-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font: 600 var(--text-2xs)/1.2 var(--font-mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-ink-2);
+  padding: 0.2rem 0.45rem;
+  border-radius: var(--radius-xs);
+  border: var(--rule-hair) solid var(--color-rule);
+  background: var(--color-paper-3);
+  white-space: nowrap;
+}
+
+.d-status-indicator {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 1px;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.d-status-tag--ok {
+  color: var(--color-ok);
+  background: var(--color-ok-soft);
+  border-color: rgba(13, 148, 136, 0.2);
+}
+
+.d-status-tag--warn {
+  color: var(--color-warn);
+  background: var(--color-warn-soft);
+  border-color: rgba(217, 119, 6, 0.2);
+}
+
+.d-status-tag--danger {
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+  border-color: rgba(220, 38, 38, 0.2);
+}
+
+.d-status-tag--accent {
+  color: var(--brand-emerald);
+  background: var(--brand-emerald-surface);
+  border-color: var(--brand-emerald-border);
+}
+
+/* Overhaul .d-badge to be crisp rectangular, not a bubble pill */
+.d-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.1875rem 0.4375rem;
+  border-radius: var(--radius-xs);
+  font: 600 var(--text-2xs)/1.2 var(--font-mono);
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+  border: var(--rule-hair) solid var(--color-rule-2);
+  color: var(--color-ink-2);
+  background: var(--color-paper-2);
+}
+.d-badge--accent {
+  border-color: var(--brand-emerald-border);
+  background: var(--brand-emerald-surface);
+  color: var(--brand-emerald);
+}
+.d-badge--ok {
+  border-color: rgba(13, 148, 136, 0.25);
+  background: var(--color-ok-soft);
+  color: var(--color-ok);
+}
+.d-badge--warn {
+  border-color: rgba(217, 119, 6, 0.25);
+  background: var(--color-warn-soft);
+  color: var(--color-warn);
+}
+.d-badge--danger {
+  border-color: rgba(220, 38, 38, 0.25);
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+/* Overhaul .d-role-chip into a crisp B2B role tag */
+.d-role-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-left: auto;
+  font: 600 var(--text-2xs)/1.2 var(--font-mono);
+  letter-spacing: 0.03em;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-xs);
+  background: var(--brand-emerald-surface);
+  color: var(--brand-emerald);
+  border: var(--rule-hair) solid var(--brand-emerald-border);
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   Dual Mode: Obsidian Dark Theme Support
+   ========================================================================== */
+[data-theme="dark"],
+.dark,
+body.dark {
+  --color-paper: #080D0C;
+  --color-paper-2: #0F1615;
+  --color-paper-3: #141E1C;
+  --color-surface-hover: #192724;
+  --color-ink: #F8FAFC;
+  --color-ink-2: #CBD5E1;
+  --color-muted: #8E9FA5;
+  --color-rule: rgba(255, 255, 255, 0.08);
+  --color-rule-2: rgba(255, 255, 255, 0.14);
+  --color-rule-emerald: rgba(52, 211, 153, 0.2);
+
+  --brand-emerald-surface: rgba(52, 211, 153, 0.1);
+  --brand-emerald-border: rgba(52, 211, 153, 0.25);
+  --color-accent-soft: rgba(52, 211, 153, 0.12);
+  --color-focus: #34D399;
+
+  --color-graphite: #0A0F0E;
+  --color-graphite-2: #121A19;
+  --color-graphite-rule: rgba(255, 255, 255, 0.08);
+  --color-on-graphite: #F8FAFC;
+  --color-on-graphite-2: #CBD5E1;
+
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.3);
+  --shadow-lift: 0 4px 20px -4px rgba(0, 0, 0, 0.6);
+  --shadow-overlay: 0 24px 64px -16px rgba(0, 0, 0, 0.8);
+  --color-scrim: rgba(0, 0, 0, 0.7);
+}

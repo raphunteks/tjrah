@@ -1,0 +1,49 @@
+{
+  "name": "tijarah",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "postinstall": "node scripts/patch-vite-babel.mjs",
+    "prepare": "node scripts/install-hooks.mjs",
+    "secret:scan": "node scripts/secret-scan.mjs",
+    "gen:seed": "node scripts/gen-seed.mjs",
+    "demo:users": "node --env-file=.env.local scripts/create-demo-users.mjs",
+    "test": "node --test \"tests/*.test.mjs\"",
+    "test:rls": "npm run db:audit",
+    "db:doctor": "node --env-file=.env.local scripts/db.mjs doctor",
+    "db:migrate": "node --env-file=.env.local scripts/db.mjs migrate",
+    "db:seed": "node --env-file=.env.local scripts/db.mjs seed",
+    "db:setup": "node --env-file=.env.local scripts/db.mjs setup",
+    "db:audit": "node --env-file=.env.local scripts/db.mjs audit",
+    "db:reload": "node --env-file=.env.local scripts/db.mjs reload",
+    "db:wipe": "node --env-file=.env.local scripts/db.mjs wipe",
+    "setup:demo": "npm run db:setup && npm run demo:users",
+    "test:rls:psql": "sh -c 'set -a; . ./.env.local; set +a; psql \"$DATABASE_URL_DIRECT\" -v ON_ERROR_STOP=1 -f supabase/tests/rls_audit.sql'",
+    "gen:bootstrap": "node scripts/gen-bootstrap.mjs",
+    "gen:pdf": "node scripts/generate-pdf.mjs",
+    "supabase:create": "node --env-file=.env.local scripts/supabase-create.mjs",
+    "test:smtp": "node --env-file=.env.local scripts/test-smtp-invite.mjs"
+  },
+  "dependencies": {
+    "@gsap/react": "2.1.2",
+    "@supabase/supabase-js": "2.45.4",
+    "gsap": "3.13.0",
+    "leaflet": "^1.9.4",
+    "nodemailer": "^10.1.2",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "4.3.4",
+    "pg": "8.13.1",
+    "vite": "5.4.11"
+  },
+  "engines": {
+    "node": ">=20.6"
+  }
+}

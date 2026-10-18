@@ -1,0 +1,19 @@
+# Konfigurasi minimal Supabase CLI. Jalankan `supabase link --project-ref <ref>` sebelum `supabase db push`.
+project_id = "harum-in"
+
+# Dipanggil oleh cron/webhook dengan header rahasia sendiri (bukan JWT pengguna).
+[functions.hermes-dispatch]
+verify_jwt = false
+
+[functions.satusehat-sync]
+verify_jwt = false
+
+[functions.member-auth]
+verify_jwt = false
+
+[functions.qris-webhook]
+verify_jwt = false
+
+[functions.qris-charge]
+verify_jwt = false
+

@@ -1,5 +1,51 @@
-# Object file
-*.o
+# Dependencies
+node_modules/
+/.pnp
+.pnp.js
 
-# Ada Library Information
-*.ali
+# Production build outputs & caches
+dist/
+build/
+.vite/
+
+# Local environment secrets & credentials (NEVER COMMIT)
+.env
+.env.*
+.env.local
+.env.example
+*.pem
+*.key
+*.cert
+
+# Supabase local temp files
+supabase/.temp/
+supabase/.branches/
+
+# Archives & Temporary directories
+_to_delete/
+.hallmark/
+.scratch/
+*.tgz
+*.tar.gz
+*.zip
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS metadata & Editor
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*.swp
+*.swo
+*~
+*.bak
+.idea/
+.vscode/
