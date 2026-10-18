@@ -260,6 +260,51 @@ export default function Attendance() {
   const alreadyCompletedToday = Boolean(todayIn && todayOut);
   const nextKind = !todayIn ? "in" : !todayOut ? "out" : null;
 
+  // Evaluasi jendela waktu masuk (Clock-In Window) di zona waktu aktif
+  const shiftStartTime = todayShift?.start_time || "08:00:00";
+  const { isBeforeClockIn, shiftStartTimeStr, minutesUntilShiftStart } = useMemo(() => {
+    if (nextKind !== "in") {
+      return { isBeforeClockIn: false, shiftStartTimeStr: "", minutesUntilShiftStart: 0 };
+    }
+    const [sh, sm] = shiftStartTime.split(":").map(Number);
+    const shiftStartMin = sh * 60 + sm;
+    const timeStr = `${String(sh).padStart(2, "0")}:${String(sm).padStart(2, "0")}`;
+
+    const nowTzStr = new Date().toLocaleTimeString("en-US", { timeZone: appTimezone, hour12: false });
+    const [nowH, nowM] = nowTzStr.split(":").map(Number);
+    const nowMin = nowH * 60 + nowM;
+
+    // Evaluasi jika shift lintas malam atau hari biasa
+    const [eh, em] = (todayShift?.end_time || "17:00:00").split(":").map(Number);
+    const shiftEndMin = eh * 60 + em;
+    const isOvernight = shiftEndMin < shiftStartMin;
+
+    let isBefore = false;
+    let diff = 0;
+    if (isOvernight) {
+      if (nowMin < shiftStartMin && nowMin >= shiftEndMin) {
+        isBefore = true;
+        diff = shiftStartMin - nowMin;
+      }
+    } else {
+      if (nowMin < shiftStartMin) {
+        isBefore = true;
+        diff = shiftStartMin - nowMin;
+      }
+    }
+
+    if (isBefore) {
+      return {
+        isBeforeClockIn: true,
+        shiftStartTimeStr: timeStr,
+        minutesUntilShiftStart: diff,
+      };
+    }
+    return { isBeforeClockIn: false, shiftStartTimeStr: timeStr, minutesUntilShiftStart: 0 };
+  }, [shiftStartTime, todayShift?.end_time, nextKind, appTimezone]);
+
+  const isLockedClockIn = nextKind === "in" && isBeforeClockIn;
+
   // Evaluasi jendela waktu pulang (Clock-Out Window) di zona waktu aktif
   const shiftEndTime = todayShift?.end_time;
   const { isBeforeClockOut, shiftEndTimeStr, minutesUntilShiftEnd } = useMemo(() => {
@@ -329,17 +374,21 @@ export default function Attendance() {
     };
   }, [stopCamera]);
 
-  // Hentikan kamera secara otomatis jika masuk mode terkunci sebelum jam keluar
+  // Hentikan kamera secara otomatis jika masuk mode terkunci (sebelum jam masuk atau jam pulang)
   useEffect(() => {
-    if (isLockedClockOut && isCameraActive) {
+    if ((isLockedClockIn || isLockedClockOut) && isCameraActive) {
       stopCamera();
     }
-  }, [isLockedClockOut, isCameraActive, stopCamera]);
+  }, [isLockedClockIn, isLockedClockOut, isCameraActive, stopCamera]);
 
   // Start live webcam stream & deteksi alamat Google Maps
   const startCamera = async () => {
+    if (isLockedClockIn) {
+      setCameraError(`Kamera Terkunci · Belum masuk waktu jam kerja shift Anda (Mulai pukul ${shiftStartTimeStr || "08:00"} ${appTzAbbr}).`);
+      return;
+    }
     if (isLockedClockOut) {
-      setCameraError(`Presensi pulang terkunci hingga pukul ${shiftEndTimeStr || "12:00"} WITA.`);
+      setCameraError(`Presensi pulang terkunci hingga pukul ${shiftEndTimeStr || "12:00"} ${appTzAbbr}.`);
       return;
     }
     setCameraError(null);
@@ -378,10 +427,11 @@ export default function Attendance() {
   const capturePhotoWithWatermark = (coords, branchName, fullAddress) => {
     const canvas = document.createElement("canvas");
     const vid = videoRef.current;
+    // Gunakan dimensi natural video kamera tanpa pemaksaan paksa rasio agar foto tidak gepeng
     const vw = (vid && vid.videoWidth) ? vid.videoWidth : 1280;
     const vh = (vid && vid.videoHeight) ? vid.videoHeight : 960;
-    const width = Math.max(vw, 1280);
-    const height = Math.max(vh, 960);
+    const width = vw;
+    const height = vh;
     canvas.width = width;
     canvas.height = height;
     const ctx = canvas.getContext("2d");
@@ -413,9 +463,9 @@ export default function Attendance() {
       ctx.textAlign = "left";
     }
 
-    // Sematkan logo resmi tijarah-header.svg HD di pojok kiri bawah (tanpa tulisan teks berlebih)
+    // Sematkan logo resmi tijarah-header.svg HD di pojok kiri bawah (proporsional terhadap lebar/tinggi)
     if (cachedLogo && cachedLogo.complete && cachedLogo.naturalWidth > 0) {
-      const logoW = Math.round(width * 0.16);
+      const logoW = Math.round(Math.min(width, height) * 0.28);
       const logoH = Math.round(logoW * (cachedLogo.naturalHeight / cachedLogo.naturalWidth));
       const padX = Math.round(width * 0.03);
       const padY = Math.round(height * 0.035);
@@ -437,11 +487,18 @@ export default function Attendance() {
       throw new Error("Setujui penggunaan foto selfie dan data lokasi untuk absensi (UU PDP).");
     }
 
+    // Validasi Waktu Masuk: jika kasir mencoba clock-in sebelum jam shift mulai
+    if (nextKind === "in" && isBeforeClockIn) {
+      throw new Error(
+        `Kamera Terkunci · Belum masuk waktu jam kerja shift Anda (Mulai pukul ${shiftStartTimeStr || "08:00"} ${appTzAbbr}).`
+      );
+    }
+
     // Validasi Waktu Pulang: jika kasir mencoba clock-out sebelum jam shift berakhir
     if (nextKind === "out" && isBeforeClockOut) {
       if (!allowEarlyCheckout) {
         throw new Error(
-          `Belum waktu absen pulang. Shift Anda berakhir pukul ${shiftEndTimeStr || todayShift?.end_time?.slice(0, 5) || "12:00"} WITA (tersisa ±${minutesUntilShiftEnd} menit lagi).`
+          `Belum waktu absen pulang. Shift Anda berakhir pukul ${shiftEndTimeStr || todayShift?.end_time?.slice(0, 5) || "12:00"} ${appTzAbbr} (tersisa ±${minutesUntilShiftEnd} menit lagi).`
         );
       }
       if (!notes || notes === "-" || notes.trim().length < 5) {
@@ -627,7 +684,23 @@ export default function Attendance() {
                   />
 
                   {/* Layar saat kamera belum aktif atau terkunci */}
-                  {isLockedClockOut ? (
+                  {isLockedClockIn ? (
+                    <div className="att-viewfinder__locked">
+                      <div className="att-viewfinder__lock-icon">
+                        <i className="fa-solid fa-lock" />
+                      </div>
+                      <p className="att-viewfinder__lock-title">
+                        Kamera Terkunci
+                      </p>
+                      <p className="att-viewfinder__lock-desc">
+                        Belum masuk waktu jam kerja shift Anda (Mulai pukul <strong>{shiftStartTimeStr || "08:00"} {appTzAbbr}</strong>). Tersisa ±{minutesUntilShiftStart} menit lagi.
+                      </p>
+                      <span className="att-viewfinder__lock-badge">
+                        <i className="fa-solid fa-shield-halved" />
+                        Kamera Tidak Bisa Dinyalakan Sebelum Jam Kerja
+                      </span>
+                    </div>
+                  ) : isLockedClockOut ? (
                     <div className="att-viewfinder__locked">
                       <div className="att-viewfinder__lock-icon">
                         <i className="fa-solid fa-lock" />
@@ -636,7 +709,7 @@ export default function Attendance() {
                         Presensi Pulang Terkunci
                       </p>
                       <p className="att-viewfinder__lock-desc">
-                        Belum memasuki jam pulang shift (<strong>{shiftEndTimeStr || todayShift?.end_time?.slice(0, 5) || "12:00"} WITA</strong>). Tersisa ±{minutesUntilShiftEnd} menit lagi.
+                        Belum memasuki jam pulang shift (<strong>{shiftEndTimeStr || todayShift?.end_time?.slice(0, 5) || "12:00"} {appTzAbbr}</strong>). Tersisa ±{minutesUntilShiftEnd} menit lagi.
                       </p>
                       <span className="att-viewfinder__lock-badge">
                         <i className="fa-solid fa-shield-halved" />
@@ -801,6 +874,7 @@ export default function Attendance() {
                           style={{ padding: "0.75rem" }}
                           disabled={
                             a.busy ||
+                            isLockedClockIn ||
                             (nextKind === "out" && isBeforeClockOut && !allowEarlyCheckout) ||
                             (nextKind === "out" && isBeforeClockOut && allowEarlyCheckout && (!notes || notes === "-" || notes.trim().length < 5))
                           }
@@ -808,10 +882,15 @@ export default function Attendance() {
                         >
                           {a.busy ? (
                             lang === "en" ? "Recording Attendance..." : "Merekam Presensi..."
+                          ) : isLockedClockIn ? (
+                            <>
+                              <i className="fa-solid fa-lock" style={{ marginRight: "0.4rem" }} />
+                              {lang === "en" ? `Locked Before Shift (${shiftStartTimeStr || "08:00"} ${appTzAbbr})` : `Kamera Terkunci · Mulai Pukul ${shiftStartTimeStr || "08:00"} ${appTzAbbr}`}
+                            </>
                           ) : nextKind === "out" && isBeforeClockOut && !allowEarlyCheckout ? (
                             <>
                               <i className="fa-solid fa-lock" style={{ marginRight: "0.4rem" }} />
-                              {lang === "en" ? `Waiting for Clock-Out Time (${shiftEndTimeStr || todayShift?.end_time?.slice(0, 5) || "12:00"} WITA)` : `Menunggu Jam Pulang (${shiftEndTimeStr || todayShift?.end_time?.slice(0, 5) || "12:00"} WITA)`}
+                              {lang === "en" ? `Waiting for Clock-Out Time (${shiftEndTimeStr || todayShift?.end_time?.slice(0, 5) || "12:00"} ${appTzAbbr})` : `Menunggu Jam Pulang (${shiftEndTimeStr || todayShift?.end_time?.slice(0, 5) || "12:00"} ${appTzAbbr})`}
                             </>
                           ) : (
                             <>

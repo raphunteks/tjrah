@@ -140,179 +140,10 @@ export function seedSdm(db, users) {
     );
   }
 
-  // 3. Formulir & Kuis Pengetahuan Staf
-  if (db.knowledge_forms.length === 0) {
-    db.knowledge_forms.push(
-      {
-        id: "kf-001",
-        tenant_id: T1,
-        title: "Checklist Pembukaan Kasir & Kalibrasi Mesin Kopi",
-        description: "Wajib diisi oleh kasir yang bertugas membuka outlet sebelum operasional pukul 08:00 WITA.",
-        form_type: "checklist",
-        target_type: "all",
-        target_branch_id: null,
-        target_profile_id: null,
-        passing_grade: 100,
-        frequency: "daily",
-        deadline: "08:00",
-        questions: [
-          { id: "q1", text: "Hitung dan pastikan uang modal kas awal laci kasir tepat Rp 200.000", type: "checkbox", required: true },
-          { id: "q2", text: "Periksa level air tangki espresso dan nyalakan pemanas mesin kopi", type: "checkbox", required: true },
-          { id: "q3", text: "Kalibrasi grinder espresso (Dosis 18.0g, yield 36g dalam 26-30 detik)", type: "checkbox", required: true },
-          { id: "q4", text: "Cek ketersediaan cup 16oz, sedotan ramah lingkungan, dan kantong take-away", type: "checkbox", required: true },
-          { id: "q5", text: "Pastikan meja kasir dan layar POS bersih bebas dari noda cairan", type: "checkbox", required: true },
-          { id: "q6", text: "Foto bukti kesiapan station barista & laci kasir", type: "photo", required: false }
-        ],
-        status: "active",
-        created_by: "u2",
-        created_at: iso(now - 10 * DAY)
-      },
-      {
-        id: "kf-002",
-        tenant_id: T1,
-        title: "Kuis Standar Kompetensi POS & Keramahan Kasir",
-        description: "Uji pemahaman alur POS, penanganan void, promosi, dan standar hospitality 5S Harum.in.",
-        form_type: "quiz",
-        target_type: "all",
-        target_branch_id: null,
-        target_profile_id: null,
-        passing_grade: 80,
-        frequency: "one_off",
-        deadline: addDays(new Date(), 7),
-        questions: [
-          {
-            id: "qq1",
-            text: "Kapan otorisasi PIN GM atau Owner diwajibkan pada mesin POS?",
-            type: "radio",
-            required: true,
-            options: [
-              "Setiap kali melayani pesanan dine-in",
-              "Saat membatalkan nota (Void) atau memberikan diskon di luar wewenang kasir",
-              "Saat mencetak struk kedua untuk pelanggan",
-              "Saat pelanggan membayar dengan QRIS"
-            ],
-            correct_index: 1,
-            points: 25
-          },
-          {
-            id: "qq2",
-            text: "Berapa toleransi keterlambatan clock-in sebelum dikenakan penalti di Harum.in?",
-            type: "radio",
-            required: true,
-            options: [
-              "Tidak ada toleransi (0 menit)",
-              "5 Menit dari jadwal shift kerja",
-              "30 Menit",
-              "60 Menit"
-            ],
-            correct_index: 1,
-            points: 25
-          },
-          {
-            id: "qq3",
-            text: "Apa langkah pertama jika pelanggan mengeluhkan rasa kopi terlalu asam atau encer?",
-            type: "radio",
-            required: true,
-            options: [
-              "Menyalahkan pemasok biji kopi",
-              "Meminta maaf dengan tulus, tanyakan detail keluhan, dan tawarkan pembuatan ulang segera",
-              "Menolak keluhan karena resep sudah standar pabrik",
-              "Menyuruh pelanggan membeli menu makanan lain"
-            ],
-            correct_index: 1,
-            points: 25
-          },
-          {
-            id: "qq4",
-            text: "Dokumen apa yang wajib dilampirkan jika mengajukan izin kategori Sakit (SK)?",
-            type: "radio",
-            required: true,
-            options: [
-              "Kuitansi pembelian vitamin",
-              "Surat Keterangan Sakit resmi dari Dokter atau Faskes",
-              "Foto selfie di tempat tidur",
-              "Surat pernyataan bermaterai"
-            ],
-            correct_index: 1,
-            points: 25
-          }
-        ],
-        status: "active",
-        created_by: "u2",
-        created_at: iso(now - 7 * DAY)
-      },
-      {
-        id: "kf-003",
-        tenant_id: T1,
-        title: "SOP Standar Keramahan Pelanggan (Hospitality 5S)",
-        description: "Panduan interaksi: Senyum, Salam, Sapa, Sopan, dan Santun di seluruh gerai Harum.in.",
-        form_type: "sop",
-        target_type: "all",
-        target_branch_id: null,
-        target_profile_id: null,
-        passing_grade: 100,
-        frequency: "one_off",
-        deadline: null,
-        questions: [
-          { id: "s1", text: "1. Sambut setiap pelanggan dalam 3 detik setelah melangkah ke area kasir dengan senyum hangat.", type: "checkbox", required: true },
-          { id: "s2", text: "2. Ucapkan salam ramah: 'Selamat pagi/siang/malam, selamat datang di Kopi Harum!'", type: "checkbox", required: true },
-          { id: "s3", text: "3. Tawarkan rekomendasi menu bintang dan tanyakan preferensi tingkat kemanisan / es.", type: "checkbox", required: true },
-          { id: "s4", text: "4. Bacakan ulang pesanan dengan jelas sebelum memproses pembayaran.", type: "checkbox", required: true },
-          { id: "s5", text: "5. Serahkan struk dengan kedua tangan disertai ucapan: 'Terima kasih, mohon ditunggu ya Kak!'", type: "checkbox", required: true }
-        ],
-        status: "active",
-        created_by: "u1",
-        created_at: iso(now - 14 * DAY)
-      },
-      {
-        id: "kf-004",
-        tenant_id: T1,
-        title: "Survei Kesiapan Logistik & Fasilitas Toko",
-        description: "Laporan kondisi fisik gerai, kebersihan toilet, AC, dan usulan perbaikan peralatan kerja.",
-        form_type: "survey",
-        target_type: "all",
-        target_branch_id: null,
-        target_profile_id: null,
-        passing_grade: 0,
-        frequency: "weekly",
-        deadline: addDays(new Date(), 3),
-        questions: [
-          { id: "sv1", text: "Bagaimana kondisi kebersihan area makan dan toilet cabang hari ini?", type: "radio", required: true, options: ["Sangat Bersih & Wangi", "Cukup Bersih", "Perlu Pembersihan Tambahan", "Kotor"] },
-          { id: "sv2", text: "Apakah ada fasilitas pelanggan atau mesin operasional yang rusak?", type: "text", required: false },
-          { id: "sv3", text: "Catatan atau usulan staf untuk meningkatkan kenyamanan kerja kasir", type: "paragraph", required: false }
-        ],
-        status: "active",
-        created_by: "u2",
-        created_at: iso(now - 5 * DAY)
-      }
-    );
-  }
-
-  // 4. Sample Acknowledge & Respon Awal
-  if (db.knowledge_reads.length === 0) {
-    db.knowledge_reads.push({
-      id: "kr-001",
-      tenant_id: T1,
-      sop_id: "kf-003",
-      profile_id: "u3",
-      read_at: iso(now - 2 * DAY),
-      ip_address: "182.253.112.44"
-    });
-  }
-
-  if (db.knowledge_responses.length === 0) {
-    db.knowledge_responses.push({
-      id: "krsp-001",
-      tenant_id: T1,
-      form_id: "kf-001",
-      profile_id: "u3",
-      answers: { q1: true, q2: true, q3: true, q4: true, q5: true },
-      score: 100,
-      passed: true,
-      evaluator_note: "Bagus, checklist pembukaan lengkap.",
-      submitted_at: iso(now - 10 * HOUR)
-    });
-  }
+  // 3. Formulir & Kuis Pengetahuan Staf (Mulai bersih dari database riil)
+  db.knowledge_forms ??= [];
+  db.knowledge_reads ??= [];
+  db.knowledge_responses ??= [];
 
   // 5. Tambahkan work shifts untuk hari ini agar Roster Hari Ini (Widget 1) lengkap
   const todayShifts = db.work_shifts.filter((w) => w.work_date === todayIso);
@@ -624,7 +455,7 @@ export function createSdm(ctx) {
           id: w.id,
           branch_name: branch?.name ?? "Semua",
           profile_id: w.profile_id,
-          full_name: staff?.full_name ?? "⚠️ Belum Ditugaskan (Shift Kosong)",
+          full_name: staff?.full_name ?? "Belum Ditugaskan (Shift Kosong)",
           shift_time: `${(w.start_time || "").slice(0, 5)} - ${(w.end_time || "").slice(0, 5)}`,
           status_color: statusColor,
           status_text: statusText,
@@ -977,6 +808,16 @@ export function createSdm(ctx) {
 
       audit("knowledge_form_saved", "knowledge_forms", formItem.id, { title: formItem.title }, t);
       return done(structuredClone(formItem), ["knowledge_forms"]);
+    },
+
+    delete_knowledge_form({ p_id }) {
+      need(13, "d");
+      const t = user().tenant_id;
+      const idx = (db.knowledge_forms ?? []).findIndex((f) => f.id === p_id && f.tenant_id === t);
+      if (idx !== -1) {
+        db.knowledge_forms.splice(idx, 1);
+      }
+      return done(true, ["knowledge_forms"]);
     },
 
     submit_knowledge_response({ p_form_id, p_answers }) {

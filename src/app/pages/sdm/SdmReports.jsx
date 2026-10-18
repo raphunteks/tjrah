@@ -52,10 +52,8 @@ export default function SdmReports() {
   const ppl = useIndex(people);
   const br = useIndex(branches);
 
-  // Dynamic Computation Fallback agar data selalu terisi akurat
+  // Perhitungan murni dari database Supabase (Tanpa data fiktif / tiruan)
   const cashierKpis = useMemo(() => {
-    if (rawCashierKpis.length > 0) return rawCashierKpis;
-
     const horizonDays = Number(periodFilter) || 30;
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - horizonDays);
@@ -67,10 +65,17 @@ export default function SdmReports() {
     });
 
     return targetStaff.map((p) => {
-      const pAtt = attendance.filter((a) => a.profile_id === p.id && a.kind === "in" && new Date(a.created_at) >= cutoffDate);
+      const pAtt = attendance.filter((a) => {
+        if (a.profile_id !== p.id || a.kind !== "in") return false;
+        try {
+          return new Date(a.created_at) >= cutoffDate;
+        } catch {
+          return true;
+        }
+      });
       const totalAtt = pAtt.length;
       const onTimeAtt = pAtt.filter((a) => !a.late_min || a.late_min <= 5).length;
-      const onTimePct = totalAtt > 0 ? Math.round((onTimeAtt / totalAtt) * 100) : 100;
+      const onTimePct = totalAtt > 0 ? Math.round((onTimeAtt / totalAtt) * 100) : null;
 
       const totalLateMin = pAtt.reduce((sum, a) => sum + (Number(a.late_min) || 0), 0);
       const avgLateMin = totalAtt > 0 ? Math.round(totalLateMin / totalAtt) : 0;
@@ -78,31 +83,39 @@ export default function SdmReports() {
       const overtimeHours = Math.round(totalOvertimeMin / 60);
       const weeklyHours = totalAtt * 8 + overtimeHours;
 
-      const tier = onTimePct >= 90 ? "Prima" : onTimePct >= 75 ? "Perlu Perhatian" : "Kritis";
+      const tier = totalAtt === 0
+        ? "Belum Ada Data"
+        : onTimePct >= 90
+        ? "Prima"
+        : onTimePct >= 75
+        ? "Perlu Perhatian"
+        : "Kritis";
 
       return {
         profile_id: p.id,
         full_name: p.full_name,
         branch_name: br[p.branch_id]?.name || "Outlet Utama",
+        has_data: totalAtt > 0,
+        total_att: totalAtt,
         on_time_pct: onTimePct,
         avg_late_min: avgLateMin,
         weekly_hours: weeklyHours,
         overtime_hours: overtimeHours,
-        base_salary: 3000000,
+        base_salary: Number(p.base_salary) || 0,
         tier
       };
     });
-  }, [rawCashierKpis, people, attendance, branches, branchFilter, periodFilter, br]);
+  }, [people, attendance, branches, branchFilter, periodFilter, br]);
 
   const comparativeBranches = useMemo(() => {
-    if (rawCompBranches.length > 0) return rawCompBranches;
-
     return branches.map((b) => {
       const bStaff = people.filter((p) => p.branch_id === b.id && p.role === "staff");
       const bAtt = attendance.filter((a) => a.branch_id === b.id && a.kind === "in");
       const bShifts = shifts.filter((s) => s.branch_id === b.id);
 
-      const attRate = bShifts.length > 0 ? Math.round((bAtt.length / bShifts.length) * 100) : 100;
+      const attRate = bShifts.length > 0
+        ? Math.round((bAtt.length / bShifts.length) * 100)
+        : (bAtt.length > 0 ? 100 : null);
       const avgLate = bAtt.length > 0 ? Math.round(bAtt.reduce((acc, a) => acc + (a.late_min || 0), 0) / bAtt.length) : 0;
       const otHours = Math.round(bAtt.reduce((acc, a) => acc + (a.overtime_min || 0), 0) / 60);
 
@@ -110,13 +123,13 @@ export default function SdmReports() {
         branch_id: b.id,
         branch_name: b.name,
         total_staff: bStaff.length,
-        attendance_rate: Math.min(100, Math.max(0, attRate)),
+        attendance_rate: attRate,
         avg_late_minutes: avgLate,
         overtime_hours: otHours,
-        labour_pct: 18.5
+        labour_pct: null // Hanya terisi jika ada kalkulasi omzet aktual
       };
     });
-  }, [rawCompBranches, branches, people, attendance, shifts]);
+  }, [branches, people, attendance, shifts]);
 
   // Real CSV Generator Download
   const handleExportCsv = (title, headers, rows) => {
@@ -248,15 +261,19 @@ export default function SdmReports() {
                           <td style={{ fontWeight: 600 }}>{k.full_name}</td>
                           <td>{k.branch_name}</td>
                           <td className="d-num">
-                            <Badge tone={k.on_time_pct >= 90 ? "ok" : k.on_time_pct >= 80 ? "warn" : "danger"}>
-                              {k.on_time_pct}%
-                            </Badge>
+                            {k.on_time_pct !== null ? (
+                              <Badge tone={k.on_time_pct >= 90 ? "ok" : k.on_time_pct >= 80 ? "warn" : "danger"}>
+                                {k.on_time_pct}%
+                              </Badge>
+                            ) : (
+                              <span className="d-muted">-</span>
+                            )}
                           </td>
-                          <td className="d-num">{k.avg_late_min} Menit</td>
-                          <td className="d-num">{k.weekly_hours} Jam</td>
-                          <td className="d-num">{k.overtime_hours} Jam</td>
+                          <td className="d-num">{k.has_data ? `${k.avg_late_min} Menit` : "-"}</td>
+                          <td className="d-num">{k.has_data ? `${k.weekly_hours} Jam` : "-"}</td>
+                          <td className="d-num">{k.has_data ? `${k.overtime_hours} Jam` : "-"}</td>
                           <td>
-                            <Badge tone={k.tier === "Prima" ? "ok" : k.tier === "Perlu Perhatian" ? "warn" : "danger"}>
+                            <Badge tone={k.tier === "Prima" ? "ok" : k.tier === "Perlu Perhatian" ? "warn" : k.tier === "Kritis" ? "danger" : "neutral"}>
                               {k.tier}
                             </Badge>
                           </td>
@@ -280,8 +297,9 @@ export default function SdmReports() {
                     "Laporan Biaya Lembur",
                     ["Nama Staf", "Cabang", "Jam Lembur", "Upah Lembur Est", "Menit Terlambat", "Potongan Denda Est"],
                     cashierKpis.map((k) => {
-                      const otPay = Math.round(k.overtime_hours * (k.base_salary / 173) * 1.5);
-                      const pen = Math.round(k.avg_late_min * 1000);
+                      const hourlyRate = k.base_salary > 0 ? (k.base_salary / 173) : 0;
+                      const otPay = Math.round(k.overtime_hours * hourlyRate * 1.5);
+                      const pen = Math.round(k.avg_late_min * (hourlyRate > 0 ? (hourlyRate / 60) : 0));
                       return [k.full_name, k.branch_name, `${k.overtime_hours} jam`, otPay, `${k.avg_late_min} mnt`, pen];
                     })
                   )}
@@ -307,15 +325,16 @@ export default function SdmReports() {
                     </thead>
                     <tbody>
                       {cashierKpis.map((k) => {
-                        const overtimePay = Math.round(k.overtime_hours * ((k.base_salary || 3000000) / 173) * 1.5);
-                        const penalty = Math.round(k.avg_late_min * 1000);
+                        const hourlyRate = k.base_salary > 0 ? (k.base_salary / 173) : 0;
+                        const overtimePay = Math.round(k.overtime_hours * hourlyRate * 1.5);
+                        const penalty = Math.round(k.avg_late_min * (hourlyRate > 0 ? (hourlyRate / 60) : 0));
                         return (
                           <tr key={k.profile_id}>
                             <td style={{ fontWeight: 600 }}>{k.full_name}</td>
                             <td>{k.branch_name}</td>
-                            <td className="d-num">{k.overtime_hours} Jam</td>
-                            <td className="d-num" style={{ color: "var(--color-ok, #10b981)" }}>{rupiah(overtimePay)}</td>
-                            <td className="d-num">{k.avg_late_min} Menit</td>
+                            <td className="d-num">{k.has_data ? `${k.overtime_hours} Jam` : "-"}</td>
+                            <td className="d-num" style={{ color: overtimePay > 0 ? "var(--color-ok, #10b981)" : "inherit" }}>{rupiah(overtimePay)}</td>
+                            <td className="d-num">{k.has_data ? `${k.avg_late_min} Menit` : "-"}</td>
                             <td className="d-num" style={{ color: penalty > 0 ? "var(--color-danger, #ef4444)" : "inherit" }}>
                               {rupiah(penalty)}
                             </td>
@@ -339,7 +358,7 @@ export default function SdmReports() {
                   onClick={() => handleExportCsv(
                     "Laporan Labour Cost",
                     ["Outlet Cabang", "Total Staf", "Tingkat Kehadiran", "Rata-rata Terlambat", "Total Lembur", "Labour Cost %"],
-                    comparativeBranches.map((b) => [b.branch_name, b.total_staff, `${b.attendance_rate}%`, `${b.avg_late_minutes} mnt`, `${b.overtime_hours} jam`, `${b.labour_pct}%`])
+                    comparativeBranches.map((b) => [b.branch_name, b.total_staff, b.attendance_rate !== null ? `${b.attendance_rate}%` : "-", b.attendance_rate !== null ? `${b.avg_late_minutes} mnt` : "-", `${b.overtime_hours} jam`, b.labour_pct !== null ? `${b.labour_pct}%` : "-"])
                   )}
                 >
                   Ekspor CSV
@@ -367,14 +386,18 @@ export default function SdmReports() {
                         <tr key={b.branch_id}>
                           <td style={{ fontWeight: 600 }}>{b.branch_name}</td>
                           <td className="d-num">{b.total_staff} Orang</td>
-                          <td className="d-num">{b.attendance_rate}%</td>
-                          <td className="d-num">{b.avg_late_minutes} Menit</td>
-                          <td className="d-num">{b.overtime_hours} Jam</td>
-                          <td className="d-num" style={{ fontWeight: 700 }}>{b.labour_pct}%</td>
+                          <td className="d-num">{b.attendance_rate !== null ? `${b.attendance_rate}%` : "-"}</td>
+                          <td className="d-num">{b.attendance_rate !== null ? `${b.avg_late_minutes} Menit` : "-"}</td>
+                          <td className="d-num">{b.attendance_rate !== null ? `${b.overtime_hours} Jam` : "-"}</td>
+                          <td className="d-num" style={{ fontWeight: 700 }}>{b.labour_pct !== null ? `${b.labour_pct}%` : "-"}</td>
                           <td>
-                            <Badge tone={b.labour_pct <= 20 ? "ok" : b.labour_pct <= 25 ? "warn" : "danger"}>
-                              {b.labour_pct <= 20 ? "Efisien (<20%)" : b.labour_pct <= 25 ? "Waspada" : "Overload"}
-                            </Badge>
+                            {b.labour_pct !== null ? (
+                              <Badge tone={b.labour_pct <= 20 ? "ok" : b.labour_pct <= 25 ? "warn" : "danger"}>
+                                {b.labour_pct <= 20 ? "Efisien (<20%)" : b.labour_pct <= 25 ? "Waspada" : "Overload"}
+                              </Badge>
+                            ) : (
+                              <span className="d-muted" style={{ fontSize: "0.8rem" }}>Menunggu Transaksi POS</span>
+                            )}
                           </td>
                         </tr>
                       ))}

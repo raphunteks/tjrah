@@ -98,7 +98,60 @@ export default function KnowledgeForms() {
     });
   };
 
-  // Simpan Form Baru
+  const handleOpenNewForm = () => {
+    setBuilderForm({
+      title: "",
+      description: "",
+      form_type: "checklist",
+      target_type: "all",
+      target_branch_id: "",
+      passing_grade: 80,
+      frequency: "daily",
+      deadline: "",
+      questions: [
+        { id: `q_${Date.now()}`, text: "Periksa kebersihan area kasir & mesin POS", type: "checkbox", required: true }
+      ]
+    });
+    setShowBuilder(true);
+  };
+
+  const handleEditForm = (f) => {
+    setBuilderForm({
+      id: f.id,
+      title: f.title || "",
+      description: f.description || "",
+      form_type: f.form_type || "checklist",
+      target_type: f.target_type || "all",
+      target_branch_id: f.target_branch_id || "",
+      passing_grade: f.passing_grade ?? 80,
+      frequency: f.frequency || "daily",
+      deadline: f.deadline || "",
+      questions: Array.isArray(f.questions) && f.questions.length > 0
+        ? structuredClone(f.questions)
+        : [{ id: `q_${Date.now()}`, text: "Periksa kesiapan", type: "checkbox", required: true }]
+    });
+    setShowBuilder(true);
+  };
+
+  const handleDeleteForm = async (f) => {
+    if (!window.confirm(`Apakah Anda yakin ingin menghapus formulir "${f.title}"?`)) return;
+    setBusy(true);
+    try {
+      try {
+        await api.rpc("delete_knowledge_form", { p_id: f.id });
+      } catch (e) {
+        console.warn("[knowledge] RPC fallback delete:", e.message);
+        await api.remove("knowledge_forms", f.id);
+      }
+      q.reload();
+    } catch (err) {
+      alert("Gagal menghapus formulir: " + err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Simpan Form Baru atau Ubah Form
   const handleSaveForm = async (e) => {
     e.preventDefault();
     setBusy(true);
@@ -106,7 +159,7 @@ export default function KnowledgeForms() {
       try {
         await api.rpc("save_knowledge_form", { p_form: builderForm });
       } catch (rpcErr) {
-        console.warn("[knowledge] RPC fallback to insert:", rpcErr.message);
+        console.warn("[knowledge] RPC fallback to insert/update:", rpcErr.message);
         if (builderForm.id) {
           await api.update("knowledge_forms", builderForm.id, {
             ...builderForm,
@@ -131,7 +184,7 @@ export default function KnowledgeForms() {
         passing_grade: 80,
         frequency: "daily",
         deadline: "",
-        questions: [{ id: "q1", text: "Periksa kebersihan kasir", type: "checkbox", required: true }]
+        questions: [{ id: `q_${Date.now()}`, text: "Periksa kebersihan kasir", type: "checkbox", required: true }]
       });
       q.reload();
     } catch (err) {
@@ -224,7 +277,7 @@ export default function KnowledgeForms() {
             <button
               type="button"
               className="d-btn d-btn--sm d-btn--primary"
-              onClick={() => setShowBuilder(true)}
+              onClick={handleOpenNewForm}
             >
               + Buat Formulir / Kuis Baru
             </button>
@@ -322,14 +375,34 @@ export default function KnowledgeForms() {
                           </Badge>
                         </td>
 
-                        <td>
-                          <button
-                            type="button"
-                            className="d-btn d-btn--sm d-btn--ghost"
-                            onClick={() => setEvalModal(f)}
-                          >
-                            Hasil Respons ({formResponses.length})
-                          </button>
+                        <td className="d-row-actions">
+                          <div style={{ display: "inline-flex", gap: "0.35rem", alignItems: "center" }}>
+                            <button
+                              type="button"
+                              className="d-btn d-btn--sm d-btn--ghost"
+                              onClick={() => setEvalModal(f)}
+                            >
+                              Hasil ({formResponses.length})
+                            </button>
+                            {isManager && (
+                              <>
+                                <button
+                                  type="button"
+                                  className="d-btn d-btn--sm d-btn--ghost"
+                                  onClick={() => handleEditForm(f)}
+                                >
+                                  Ubah
+                                </button>
+                                <button
+                                  type="button"
+                                  className="d-btn d-btn--sm d-btn--danger-ghost"
+                                  onClick={() => handleDeleteForm(f)}
+                                >
+                                  Hapus
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -498,7 +571,7 @@ export default function KnowledgeForms() {
 
       {/* ──────── MODAL FORM BUILDER (GM / OWNER) ──────── */}
       {showBuilder && (
-        <Modal title="Penyusun Instrumen &amp; Form Builder Dinamis" onClose={() => setShowBuilder(false)}>
+        <Modal open={showBuilder} title={builderForm.id ? "Ubah Instrumen & Form" : "Penyusun Instrumen & Form Builder Dinamis"} onClose={() => setShowBuilder(false)}>
           <form onSubmit={handleSaveForm} className="d-form">
             <Field label="Judul Instrumen" id="fb-title">
               <input
@@ -650,7 +723,7 @@ export default function KnowledgeForms() {
 
       {/* ──────── MODAL MENGERJAKAN TUGAS (MOBILE-FIRST KASIR) ──────── */}
       {activeTask && (
-        <Modal title={`${activeTask.title}`} onClose={() => setActiveTask(null)}>
+        <Modal open={Boolean(activeTask)} title={`${activeTask.title}`} onClose={() => setActiveTask(null)}>
           {taskResult ? (
             <div style={{ textAlign: "center", padding: "1rem 0" }}>
               <div style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}>
@@ -753,7 +826,7 @@ export default function KnowledgeForms() {
 
       {/* ──────── MODAL HASIL RESPONS (GM VIEW) ──────── */}
       {evalModal && (
-        <Modal title={`Rekapitulasi Respon · ${evalModal.title}`} onClose={() => setEvalModal(null)}>
+        <Modal open={Boolean(evalModal)} title={`Rekapitulasi Respon · ${evalModal.title}`} onClose={() => setEvalModal(null)}>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
             <div style={{ padding: "0.6rem 0.8rem", background: "var(--color-paper-2)", borderRadius: "var(--radius-md)", fontSize: "0.85rem" }}>
               Total Respons Terkumpul: <strong>{responses.filter((r) => r.form_id === evalModal.id).length} Kasir</strong>
