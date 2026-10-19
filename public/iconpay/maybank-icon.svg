@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <rect width="120" height="120" rx="24" fill="#FFC800"/>
+  <circle cx="60" cy="42" r="22" fill="#231F20"/>
+  <path d="M52 38c0-4.4 3.6-8 8-8s8 3.6 8 8c0 3.2-1.9 6-4.6 7.3l2.6 6.7h-12l2.6-6.7C53.9 44 52 41.2 52 38z" fill="#FFC800"/>
+  <circle cx="56" cy="37" r="1.5" fill="#231F20"/>
+  <circle cx="64" cy="37" r="1.5" fill="#231F20"/>
+  <text x="60" y="82" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="14" font-weight="900" fill="#231F20" text-anchor="middle" letter-spacing="0.5">MAYBANK</text>
+  <text x="60" y="98" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="9" font-weight="700" fill="#665200" text-anchor="middle" letter-spacing="1">VIRTUAL ACCOUNT</text>
+</svg>

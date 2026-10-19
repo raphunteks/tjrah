@@ -14,7 +14,7 @@ import "../../../styles/dashboard.css";
 export default function PaymentModal({ isOpen, onClose, plan, onSuccess, tenant, tenantId }) {
   if (!isOpen || !plan) return null;
 
-  const [selectedMethod, setSelectedMethod] = useState("mandiri_va");
+  const [selectedMethod, setSelectedMethod] = useState("qris");
   const [fees, setFees] = useState({});
   const [loadingFees, setLoadingFees] = useState(true);
   const [referralCode, setReferralCode] = useState("");
@@ -283,9 +283,69 @@ export default function PaymentModal({ isOpen, onClose, plan, onSuccess, tenant,
                 Metode Pembayaran
               </div>
 
-              {/* LIST CHANNEL PEMBAYARAN SESUAI GAMBAR 1 & 2 */}
-              <div style={{ maxHeight: "300px", overflowY: "auto", paddingRight: "4px" }}>
-                {PAYMENT_CHANNELS.map((ch) => {
+              {/* LIST CHANNEL PEMBAYARAN RESMI PAKASIR (DIKELOMPOKKAN SECARA ELEGAN) */}
+              <div style={{ maxHeight: "320px", overflowY: "auto", paddingRight: "4px" }}>
+                {/* KELOMPOK 1: INSTAN & DIGITAL */}
+                <div
+                  style={{
+                    fontSize: "0.72rem",
+                    fontWeight: 700,
+                    color: "#64748b",
+                    margin: "4px 0 6px",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.04em"
+                  }}
+                >
+                  Instan &amp; Digital
+                </div>
+                {PAYMENT_CHANNELS.filter((ch) => ch.type === "qris" || ch.type === "link").map((ch) => {
+                  const isSel = selectedMethod === ch.id;
+                  const channelFee = fees[ch.id] != null ? fees[ch.id] : ch.defaultFee;
+                  return (
+                    <div
+                      key={ch.id}
+                      className={`tjr-pay-channel-card ${isSel ? "tjr-pay-channel-card--active" : ""}`}
+                      onClick={() => setSelectedMethod(ch.id)}
+                      role="radio"
+                      aria-checked={isSel}
+                      tabIndex={0}
+                    >
+                      <div className="tjr-pay-channel-left">
+                        <div className="tjr-pay-channel-logo-wrap">
+                          <img src={ch.icon} alt={ch.name} className="tjr-pay-channel-logo" />
+                        </div>
+                        <div className="tjr-pay-channel-info">
+                          <span className="tjr-pay-channel-name">{ch.name}</span>
+                          <span className="tjr-pay-channel-fee">
+                            {cfg.feePayer === "merchant"
+                              ? "Gratis (Biaya Ditanggung)"
+                              : cfg.feePayer === "split"
+                              ? `Biaya ${rupiah(Math.round(channelFee / 2))} (Subsidi 50%)`
+                              : `Biaya ${rupiah(channelFee)}`}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="tjr-pay-radio-dot">
+                        {isSel && <div className="tjr-pay-radio-inner" />}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* KELOMPOK 2: VIRTUAL ACCOUNT BANK */}
+                <div
+                  style={{
+                    fontSize: "0.72rem",
+                    fontWeight: 700,
+                    color: "#64748b",
+                    margin: "12px 0 6px",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.04em"
+                  }}
+                >
+                  Virtual Account Bank Otomatis
+                </div>
+                {PAYMENT_CHANNELS.filter((ch) => ch.type === "va").map((ch) => {
                   const isSel = selectedMethod === ch.id;
                   const channelFee = fees[ch.id] != null ? fees[ch.id] : ch.defaultFee;
                   return (
@@ -503,6 +563,62 @@ export default function PaymentModal({ isOpen, onClose, plan, onSuccess, tenant,
                   <p style={{ margin: 0, fontSize: "0.82rem", color: "var(--color-muted, #64748b)" }}>
                     Pindai QRIS di atas melalui BCA Mobile, GoPay, OVO, ShopeePay, DANA, atau Livin' Mandiri.
                   </p>
+                </div>
+              ) : selectedMethod === "payment_link" ? (
+                /* JIKA METODE PAYMENT LINK */
+                <div style={{ width: "100%", textAlign: "left", background: "#f8fafc", borderRadius: "12px", padding: "1.25rem", border: "1px solid #e2e8f0" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.75rem" }}>
+                    <div className="tjr-pay-channel-logo-wrap" style={{ width: "42px", height: "42px" }}>
+                      <img src={activeChannel.icon} alt={activeChannel.name} className="tjr-pay-channel-logo" />
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: "0.95rem" }}>{activeChannel.name}</div>
+                      <div style={{ fontSize: "0.75rem", color: "#64748b" }}>Tautan Pembayaran Resmi Pakasir</div>
+                    </div>
+                  </div>
+
+                  <p style={{ margin: "0 0 0.85rem", fontSize: "0.82rem", color: "#475569", lineHeight: 1.5 }}>
+                    Silakan buka tautan pembayaran resmi di bawah ini untuk menyelesaikan tagihan via checkout Pakasir:
+                  </p>
+
+                  <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
+                    <input
+                      readOnly
+                      value={txData.payment_url || `https://app.pakasir.com/pay/${cfg.slug || "harumin"}/${txData.order_id}`}
+                      style={{
+                        flex: 1,
+                        padding: "0.5rem 0.75rem",
+                        borderRadius: "8px",
+                        border: "1px solid #cbd5e1",
+                        fontSize: "0.8rem",
+                        fontFamily: "monospace",
+                        background: "#ffffff"
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const link = txData.payment_url || `https://app.pakasir.com/pay/${cfg.slug || "harumin"}/${txData.order_id}`;
+                        navigator.clipboard?.writeText(link);
+                        setCopiedVa(true);
+                        setTimeout(() => setCopiedVa(false), 2000);
+                      }}
+                      className="d-btn d-btn--ghost d-btn--sm"
+                    >
+                      {copiedVa ? "Tersalin!" : "Salin"}
+                    </button>
+                  </div>
+
+                  <a
+                    href={txData.payment_url || `https://app.pakasir.com/pay/${cfg.slug || "harumin"}/${txData.order_id}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="d-btn d-btn--primary"
+                    style={{ display: "inline-flex", width: "100%", justifyContent: "center", textDecoration: "none" }}
+                  >
+                    <i className="fa-solid fa-arrow-up-right-from-square" aria-hidden="true" style={{ marginRight: "0.4rem" }} />
+                    Buka Halaman Checkout Pakasir
+                  </a>
                 </div>
               ) : (
                 /* JIKA METODE VIRTUAL ACCOUNT */

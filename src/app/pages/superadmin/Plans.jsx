@@ -192,7 +192,9 @@ export default function Plans() {
     setApiPreviewNotice("Menghubungi endpoint API Pakasir /payment-fee/2500000...");
     try {
       const fees = await calculateChannelFees(2500000);
-      setApiPreviewNotice(`Hasil API Pakasir (Simulasi Paket 2.5jt): QRIS=${rupiah(fees.qris || 0)}, Mandiri VA=${rupiah(fees.mandiri_va || 0)}, BRI VA=${rupiah(fees.bri_va || 0)}, OVO=${rupiah(fees.ovo || 0)}.`);
+      setApiPreviewNotice(
+        `Hasil Kalkulasi Pakasir (Simulasi Paket 2.5jt): QRIS=${rupiah(fees.qris || 0)}, BRI VA=${rupiah(fees.bri_va || 0)}, BNI VA=${rupiah(fees.bni_va || 0)}, Maybank VA=${rupiah(fees.maybank_va || 0)}, Payment Link=${rupiah(fees.payment_link || 0)}.`
+      );
     } catch (e) {
       setApiPreviewNotice("Gagal memuat API Pakasir: " + e.message);
     }

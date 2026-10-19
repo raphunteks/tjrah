@@ -31,10 +31,20 @@ export default defineConfig(({ mode, command }) => {
   const supabaseInstalled = hasPkg("@supabase/supabase-js");
   if (!supabaseInstalled) {
     if (command === "build") throw new Error("@supabase/supabase-js belum terpasang. Jalankan `npm install` sebelum build.");
-    console.warn("\n⚠ @supabase/supabase-js belum terpasang — dev server jalan di mode demo. Jalankan `npm install` untuk mode Supabase.\n");
+    console.warn("\n[WARN] @supabase/supabase-js belum terpasang - dev server jalan di mode demo. Jalankan `npm install` untuk mode Supabase.\n");
   }
   return {
     plugins: [react(), inviteSmtpPlugin()],
+    server: {
+      proxy: {
+        "/api/pakasir-proxy": {
+          target: "https://app.pakasir.com",
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path) => path.replace(/^\/api\/pakasir-proxy/, "")
+        }
+      }
+    },
     optimizeDeps: {
       include: ["leaflet"],
     },

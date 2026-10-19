@@ -239,12 +239,20 @@ export function AuthProvider({ children }) {
           try { localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(opt)); } catch {}
           setReady(true);
         }
-        const authData = await apiRef.current.signIn(e, p);
-        const uid = authData?.user?.id || authData?.id;
-        if (uid && syncRef.current) {
-          await syncRef.current(uid);
+        try {
+          const authData = await apiRef.current.signIn(e, p);
+          const uid = authData?.user?.id || authData?.id;
+          if (uid && syncRef.current) {
+            await syncRef.current(uid);
+          }
+          return authData;
+        } catch (signInErr) {
+          if (hint?.role) {
+            console.warn("[AuthProvider] Background signIn note:", signInErr.message);
+            return null;
+          }
+          throw signInErr;
         }
-        return authData;
       },
       signOut: async () => {
         setViewTenant(null);

@@ -94,7 +94,7 @@ function synthesizeCopilotAnswer(q, snap) {
 export const api = {
   mode: "supabase",
 
-  // ── Auth ──
+  // -- Auth --
   async getSessionUserId() {
     try {
       const { data, error } = await supabase.auth.getSession();
@@ -112,7 +112,8 @@ export const api = {
     return () => data.subscription.unsubscribe();
   },
   async signIn(email, password) {
-    return ok(await supabase.auth.signInWithPassword({ email, password }));
+    const em = (email || "").trim().replace(/@demo\.tijarah\.id$/i, "@demo.harum.in");
+    return ok(await supabase.auth.signInWithPassword({ email: em, password }));
   },
   async signOut() {
     try {
@@ -143,7 +144,7 @@ export const api = {
     return data;
   },
 
-  // ── Platform (fitur 1) ──
+  // -- Platform (fitur 1) --
   platformOverview: async () => ok(await supabase.rpc("platform_overview"))[0],
   listTenants: async () =>
     ok(await supabase.from("tenants").select("*, plan:plans(id, name, price_month)").order("created_at")),
@@ -172,7 +173,7 @@ export const api = {
   logAccess: async (tenantId, area) => ok(await supabase.rpc("log_superadmin_access", { p_tenant: tenantId, p_area: area })),
   getBlueprint: async () => ok(await supabase.from("blueprint_docs").select("content").eq("id", "harumin-v1").single()).content,
 
-  // ── Bisnis ──
+  // -- Bisnis --
   listBranches: async (tenantId) => ok(await supabase.from("branches").select("id, name, city, address, lat, lng, geofence_m, is_warehouse, satusehat_location_id").eq("tenant_id", tenantId).order("name")),
   ownerBranchOverview: async () => ok(await supabase.rpc("owner_branch_overview")),
   createBranch: async (params) => {
@@ -229,7 +230,7 @@ export const api = {
     ok(await supabase.from("hermes_events").select("*").eq("tenant_id", tenantId).order("created_at", { ascending: false }).limit(100)),
 };
 
-// ───────── FASE 2 · akses generik (RLS tetap penjaga utama + Multi-Tier Persistent SWR Caching) ─────────
+// --------- FASE 2 · akses generik (RLS tetap penjaga utama + Multi-Tier Persistent SWR Caching) ---------
 const DB_CACHE = new Map();
 const DB_STORAGE_PREFIX = "tijarah_db_cache:";
 const CACHE_TTL_MS = 120000; // 2 menit cache RAM untuk browsing instan antar subtab

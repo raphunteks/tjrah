@@ -6,14 +6,14 @@ import "../styles/dashboard.css";
 
 // Hanya tampil saat `npm run dev` dengan Supabase asli (dibuang dari build produksi). Email tetap; kata sandi = DEMO_PASSWORD di .env.local.
 const DEV_ACCOUNTS = [
-  ["superadmin@demo.tijarah.id", "superadmin"],
-  ["owner@demo.tijarah.id", "owner"],
-  ["gm@demo.tijarah.id", "gm"],
-  ["staff@demo.tijarah.id", "staff"],
-  ["dokter@demo.tijarah.id", "dokter"],
-  ["kasir.klinik@demo.tijarah.id", "staff", "Kasir klinik"],
-  ["owner.klinik@demo.tijarah.id", "owner", "Owner klinik"],
-  ["member@demo.tijarah.id", "member"],
+  ["superadmin@demo.harum.in", "superadmin"],
+  ["owner@demo.harum.in", "owner"],
+  ["gm@demo.harum.in", "gm"],
+  ["staff@demo.harum.in", "staff"],
+  ["dokter@demo.harum.in", "dokter"],
+  ["kasir.klinik@demo.harum.in", "staff", "Kasir klinik"],
+  ["owner.klinik@demo.harum.in", "owner", "Owner klinik"],
+  ["member@demo.harum.in", "member"],
 ];
 
 export default function Login() {
@@ -65,7 +65,8 @@ export default function Login() {
     setBusy(true);
     setErr(null);
     try {
-      const emailToUse = creds?.email ?? email;
+      const rawEmail = (creds?.email ?? email).trim();
+      const emailToUse = rawEmail.replace(/@demo\.tijarah\.id$/i, "@demo.harum.in");
       const passToUse = creds?.password ?? password;
       const targetRole = creds?.role;
 
@@ -74,7 +75,7 @@ export default function Login() {
         navigate(targetRole === "member" ? "/m" : "/app", { replace: true });
       }
 
-      await signIn(emailToUse, passToUse, creds);
+      await signIn(emailToUse, passToUse, creds ? { ...creds, email: emailToUse } : null);
 
       if (!creds?.role) {
         navigate(targetRole === "member" ? "/m" : "/app", { replace: true });

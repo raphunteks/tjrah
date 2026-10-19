@@ -8,20 +8,16 @@ const STORAGE_KEY_TRANSACTIONS = "tijarah:pakasir_transactions";
 
 export const PAYMENT_CHANNELS = [
   { id: "qris", name: "QRIS Dinamis", type: "qris", icon: "/iconpay/qris-icon.png", defaultFee: 0.7, feeType: "percent", feeUnit: "%" },
-  { id: "mandiri_va", name: "VA Mandiri", type: "va", icon: "/iconpay/mandiri-icon.png", defaultFee: 3500, feeType: "fixed", feeUnit: "Rp" },
-  { id: "permata_va", name: "VA Permata", type: "va", icon: "/iconpay/permatabank-icon.png", defaultFee: 3000, feeType: "fixed", feeUnit: "Rp" },
-  { id: "bri_va", name: "VA BRI", type: "va", icon: "/iconpay/bankbri-icon.png", defaultFee: 3000, feeType: "fixed", feeUnit: "Rp" },
-  { id: "bni_va", name: "VA BNI", type: "va", icon: "/iconpay/bankbni-icon.png", defaultFee: 3000, feeType: "fixed", feeUnit: "Rp" },
-  { id: "danamon_va", name: "VA Danamon", type: "va", icon: "/iconpay/bankdanamon-icon.png", defaultFee: 3000, feeType: "fixed", feeUnit: "Rp" },
-  { id: "cimb_niaga_va", name: "VA CIMB Niaga", type: "va", icon: "/iconpay/bankcimbniaga-icon.png", defaultFee: 3000, feeType: "fixed", feeUnit: "Rp" },
-  { id: "bsi_va", name: "VA BSI", type: "va", icon: "/iconpay/bankbsi-icon.png", defaultFee: 3000, feeType: "fixed", feeUnit: "Rp" },
-  { id: "maybank_va", name: "VA Maybank", type: "va", icon: "/iconpay/bankbni-icon.png", defaultFee: 3000, feeType: "fixed", feeUnit: "Rp" },
-  { id: "bnc_va", name: "VA Bank Neo Commerce", type: "va", icon: "/iconpay/neobank-icon.webp", defaultFee: 3000, feeType: "fixed", feeUnit: "Rp" },
-  { id: "muamalat_va", name: "VA Muamalat", type: "va", icon: "/iconpay/bankmuamalat-icon.png", defaultFee: 3000, feeType: "fixed", feeUnit: "Rp" },
-  { id: "ocbc_va", name: "VA OCBC", type: "va", icon: "/iconpay/ocbcbank-icon.webp", defaultFee: 3000, feeType: "fixed", feeUnit: "Rp" },
-  { id: "ovo", name: "OVO", type: "ewallet", icon: "/iconpay/ovo-icon.png", defaultFee: 2.1, feeType: "percent", feeUnit: "%" },
-  { id: "shopeepay", name: "ShopeePay", type: "ewallet", icon: "/iconpay/shopeepay-icon.png", defaultFee: 2.5, feeType: "percent", feeUnit: "%" },
-  { id: "linkaja", name: "LinkAja", type: "ewallet", icon: "/iconpay/linkaja-icon.png", defaultFee: 1.5, feeType: "percent", feeUnit: "%" },
+  { id: "payment_link", name: "Payment Link", type: "link", icon: "/iconpay/paymentlink-icon.svg", defaultFee: 3500, feeType: "fixed", feeUnit: "Rp" },
+  { id: "bri_va", name: "VA BRI", type: "va", icon: "/iconpay/bankbri-icon.png", defaultFee: 3500, feeType: "fixed", feeUnit: "Rp" },
+  { id: "bni_va", name: "VA BNI", type: "va", icon: "/iconpay/bankbni-icon.png", defaultFee: 3500, feeType: "fixed", feeUnit: "Rp" },
+  { id: "cimb_niaga_va", name: "VA CIMB Niaga", type: "va", icon: "/iconpay/bankcimbniaga-icon.png", defaultFee: 3500, feeType: "fixed", feeUnit: "Rp" },
+  { id: "maybank_va", name: "VA Maybank", type: "va", icon: "/iconpay/maybank-icon.svg", defaultFee: 3500, feeType: "fixed", feeUnit: "Rp" },
+  { id: "danamon_va", name: "VA Danamon", type: "va", icon: "/iconpay/bankdanamon-icon.png", defaultFee: 3500, feeType: "fixed", feeUnit: "Rp" },
+  { id: "bnc_va", name: "VA Bank Neo Commerce", type: "va", icon: "/iconpay/neobank-icon.webp", defaultFee: 3500, feeType: "fixed", feeUnit: "Rp" },
+  { id: "bsi_va", name: "VA BSI", type: "va", icon: "/iconpay/bankbsi-icon.png", defaultFee: 3500, feeType: "fixed", feeUnit: "Rp" },
+  { id: "muamalat_va", name: "VA Muamalat", type: "va", icon: "/iconpay/bankmuamalat-icon.png", defaultFee: 3500, feeType: "fixed", feeUnit: "Rp" },
+  { id: "ocbc_va", name: "VA OCBC", type: "va", icon: "/iconpay/ocbcbank-icon.webp", defaultFee: 3500, feeType: "fixed", feeUnit: "Rp" },
 ];
 
 function emitFeesUpdated(payload) {
@@ -96,16 +92,32 @@ export async function calculateChannelFees(amount) {
   const customFees = getProviderFeeSettings();
   let apiFees = null;
 
+  // Coba ambil dari proxy atau API jika useDynamicFee aktif
   if (cfg.useDynamicFee && amount > 0) {
     try {
-      const res = await fetch(`${cfg.apiBase || "https://app.pakasir.com/api/v2"}/payment-fee/${amount}`, {
-        headers: { Accept: "application/json" }
-      });
-      if (res.ok) {
-        apiFees = await res.json();
+      const isBrowser = typeof window !== "undefined";
+      const isDev = isBrowser && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+      const proxyUrl = isDev
+        ? `/api/pakasir-proxy/api/v2/payment-fee/${amount}`
+        : isBrowser
+        ? `/api/pakasir/fee?amount=${amount}`
+        : `${cfg.apiBase || "https://app.pakasir.com/api/v2"}/payment-fee/${amount}`;
+
+      const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+      const timeoutId = controller ? setTimeout(() => controller.abort(), 2000) : null;
+
+      const res = await fetch(proxyUrl, {
+        headers: { Accept: "application/json" },
+        signal: controller?.signal
+      }).catch(() => null);
+
+      if (timeoutId) clearTimeout(timeoutId);
+
+      if (res && res.ok) {
+        apiFees = await res.json().catch(() => null);
       }
-    } catch (e) {
-      console.warn("[Pakasir] Gagal memuat biaya dinamis dari API, beralih ke tarif kustom:", e);
+    } catch {
+      // Fallback mulus ke kalkulasi deterministik resmi Pakasir tanpa spam ke console
     }
   }
 
@@ -116,7 +128,12 @@ export async function calculateChannelFees(amount) {
     } else {
       const c = customFees[ch.id] || { fee: ch.defaultFee, feeType: ch.feeType };
       if (c.feeType === "percent") {
-        result[ch.id] = Math.round((amount * Number(c.fee)) / 100);
+        // Formula resmi Pakasir untuk QRIS: jika amount <= 105.000 -> 0.7% + 310, jika > 105.000 -> 0.7% / 1%
+        if (ch.id === "qris" && Number(c.fee) === 0.7 && amount <= 105000) {
+          result[ch.id] = Math.round(amount * 0.007 + 310);
+        } else {
+          result[ch.id] = Math.round((amount * Number(c.fee)) / 100);
+        }
       } else {
         result[ch.id] = Math.round(Number(c.fee)) || Math.round(Number(ch.defaultFee));
       }
@@ -171,19 +188,36 @@ export async function createPakasirTransaction({ orderId, method, amount, custom
 
   // Simulator Fallback jika API Key offline atau mode dev
   const channel = PAYMENT_CHANNELS.find((x) => x.id === method) || PAYMENT_CHANNELS[0];
-  const fee = channel.defaultFee;
+  const customFees = getProviderFeeSettings();
+  const c = customFees[method] || { fee: channel.defaultFee, feeType: channel.feeType };
+  const calculatedFee =
+    c.feeType === "percent"
+      ? method === "qris" && Number(c.fee) === 0.7 && Number(amount) <= 105000
+        ? Math.round(Number(amount) * 0.007 + 310)
+        : Math.round((Number(amount) * Number(c.fee)) / 100)
+      : Math.round(Number(c.fee)) || 3500;
+
   const mockTxnId = "txn_" + Math.random().toString(36).slice(2, 11);
-  const mockVa = method === "qris" ? "" : "8809" + Math.floor(1000000000 + Math.random() * 9000000000);
-  const mockQr = method === "qris" ? "00020101021226610016ID.CO.TIJARAH.WWW01189360091800216005230208216005230303UME51440014ID.CO.QRIS.WWW0215ID10243228429300303UME5204792953033605409100003.005802ID5907Tijarah6012KOTA MAKASSAR61055439262230519SP25RZRATEQI2HQ65Q46304A079" : "";
+  const mockVa =
+    method === "qris" || method === "payment_link"
+      ? ""
+      : "8809" + Math.floor(1000000000 + Math.random() * 9000000000);
+  const mockQr =
+    method === "qris"
+      ? "00020101021226610016ID.CO.TIJARAH.WWW01189360091800216005230208216005230303UME51440014ID.CO.QRIS.WWW0215ID10243228429300303UME5204792953033605409100003.005802ID5907Tijarah6012KOTA MAKASSAR61055439262230519SP25RZRATEQI2HQ65Q46304A079"
+      : "";
+  const paymentUrl =
+    method === "payment_link" ? `https://app.pakasir.com/pay/${cfg.slug || "harumin"}/${orderId}` : "";
 
   const mockData = {
     txn_id: mockTxnId,
     project: cfg.slug,
     order_id: orderId,
     amount: Number(amount),
-    fee: fee,
-    total_payment: Number(amount) + fee,
+    fee: calculatedFee,
+    total_payment: Number(amount) + calculatedFee,
     payment_method: method,
+    payment_url: paymentUrl,
     qr_string: mockQr,
     va_number: mockVa,
     expired_at: new Date(Date.now() + (method === "qris" ? 15 * 60e3 : 24 * 3600e3)).toISOString(),
@@ -249,8 +283,8 @@ export function listLocalTransactions() {
     {
       order_id: "ORD-SUB-2610-001",
       txn_id: "pakasir_txn_91024",
-      method: "mandiri_va",
-      payment_method: "mandiri_va",
+      method: "bri_va",
+      payment_method: "bri_va",
       amount: 2500000,
       fee: 3500,
       total_payment: 2503500,
