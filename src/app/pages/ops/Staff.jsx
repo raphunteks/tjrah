@@ -1782,7 +1782,7 @@ export default function Staff() {
         }
       >
         {rolling && (
-          <div className="d-form" style={{ maxHeight: "calc(100dvh - 12rem)", overflowY: "auto", paddingRight: "4px" }}>
+          <div className="d-form" style={{ maxHeight: "calc(100dvh - 9rem)", overflowY: "auto", overflowX: "hidden", paddingRight: "2px", width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
 
             <div className="d-form__row d-form__row--2">
               <Field label="Cabang Outlet *" id="roll-branch">
@@ -1816,12 +1816,12 @@ export default function Staff() {
             </div>
 
             {/* Checklist Staf yang Terlibat */}
-            <div style={{ marginBottom: "0.75rem", border: "1px solid var(--color-rule, #e2e8f0)", borderRadius: "8px", padding: "10px 12px", background: "var(--color-paper, #ffffff)" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+            <div style={{ marginBottom: "0.75rem", border: "1px solid var(--color-rule, #e2e8f0)", borderRadius: "8px", padding: "8px 10px", background: "var(--color-paper, #ffffff)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.4rem", marginBottom: "0.5rem" }}>
                 <span style={{ fontSize: "0.8125rem", fontWeight: 600, color: "var(--color-ink, #0f172a)" }}>
                   Pilih Staf / Kasir Terlibat ({rolling.staff_ids.length} Staf Terpilih) *
                 </span>
-                <div style={{ display: "flex", gap: "0.5rem", fontSize: "0.72rem" }}>
+                <div style={{ display: "flex", gap: "0.4rem", fontSize: "0.72rem" }}>
                   <button
                     type="button"
                     className="d-btn d-btn--sm d-btn--ghost"
@@ -1844,7 +1844,7 @@ export default function Staff() {
                 </div>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "0.5rem", maxHeight: "140px", overflowY: "auto", padding: "4px 0" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(125px, 1fr))", gap: "0.4rem", maxHeight: "140px", overflowY: "auto", padding: "4px 0" }}>
                 {r.data.people.filter((p) => p.role !== "owner").map((p) => {
                   const isChecked = rolling.staff_ids.includes(p.id);
                   return (
@@ -1946,8 +1946,8 @@ export default function Staff() {
             </div>
 
             {/* Pengaturan Jam Shift Dinamis (Dapat ditambah tanpa batas) */}
-            <div style={{ background: "var(--color-paper-2, #f8fafc)", padding: "10px 12px", borderRadius: "8px", border: "1px solid var(--color-rule, #e2e8f0)", marginBottom: "0.75rem" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+            <div style={{ background: "var(--color-paper-2, #f8fafc)", padding: "8px 10px", borderRadius: "8px", border: "1px solid var(--color-rule, #e2e8f0)", marginBottom: "0.75rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.4rem", marginBottom: "0.5rem" }}>
                 <span style={{ fontSize: "0.8125rem", fontWeight: 600, color: "var(--color-ink, #0f172a)" }}>
                   Alokasi Jam Shift ({(rolling.shift_slots || []).length} Slot Shift):
                 </span>
@@ -1990,8 +1990,8 @@ export default function Staff() {
                     marginBottom: "0.5rem",
                   }}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.35rem" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.35rem", marginBottom: "0.35rem" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", flex: 1, minWidth: "130px" }}>
                       <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--color-muted, #64748b)" }}>
                         #{sIdx + 1}
                       </span>
@@ -2000,7 +2000,7 @@ export default function Staff() {
                         className="d-input"
                         value={slot.label}
                         placeholder={`Nama Shift ${sIdx + 1}`}
-                        style={{ fontSize: "0.78rem", fontWeight: 600, padding: "2px 6px", width: "170px" }}
+                        style={{ fontSize: "0.78rem", fontWeight: 600, padding: "2px 6px", width: "100%", maxWidth: "160px" }}
                         onChange={(e) => {
                           const updated = [...(rolling.shift_slots || [])];
                           updated[sIdx] = { ...updated[sIdx], label: e.target.value };

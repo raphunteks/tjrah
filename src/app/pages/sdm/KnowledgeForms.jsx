@@ -285,8 +285,8 @@ export default function KnowledgeForms() {
         }
       />
 
-      {/* ──────── TAB SELEKTOR UTAMA ──────── */}
-      <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.25rem", borderBottom: "1px solid var(--color-rule)", paddingBottom: "0.5rem" }}>
+      {/* ──────── TAB SELEKTOR UTAMA (RESPONSIF MOBILE DENGAN SCROLL HALUS) ──────── */}
+      <div className="d-subtabs">
         {isManager && (
           <button
             type="button"

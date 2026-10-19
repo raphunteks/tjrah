@@ -235,8 +235,8 @@ export default function LeaveManagement() {
         />
       </section>
 
-      {/* ──────── TAB SELEKTOR CUTI ──────── */}
-      <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.25rem", borderBottom: "1px solid var(--color-rule)", paddingBottom: "0.5rem" }}>
+      {/* ──────── TAB SELEKTOR CUTI (RESPONSIF MOBILE DENGAN SCROLL HALUS) ──────── */}
+      <div className="d-subtabs">
         <button
           type="button"
           className={`d-btn d-btn--sm ${tab === "requests" ? "d-btn--primary" : "d-btn--ghost"}`}
