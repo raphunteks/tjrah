@@ -7,6 +7,11 @@ const ok = ({ data, error }) => {
   return data;
 };
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const isUuid = (val) => typeof val === "string" && UUID_REGEX.test(val);
+const isUuidCol = (col) => col === "id" || (typeof col === "string" && col.endsWith("_id"));
+
+
 async function fnError(error) {
   let msg = error.message;
   let extra = {};
@@ -334,13 +339,39 @@ Object.assign(api, {
       if (stored) return stored;
     }
 
+    // Hindari query ke PostgREST jika filter kolom UUID menerima format non-UUID (misal 'temp-gm', 'temp-owner') yang menyebabkan 400 Bad Request
+    for (const [k, v] of Object.entries(eq)) {
+      if (isUuidCol(k) && typeof v === "string" && v !== "" && v !== "undefined" && v !== "null" && !isUuid(v)) {
+        const fallback = DB_CACHE.get(cacheKey)?.data || getDbStorage(cacheKey);
+        return fallback || [];
+      }
+    }
+
     let q = supabase.from(table).select(select);
     for (const [k, v] of Object.entries(eq)) {
       if (v !== undefined && v !== null && v !== "" && v !== "undefined" && v !== "null") {
         q = q.eq(k, v);
       }
     }
-    if (inList) q = q.in(inList[0], inList[1]);
+    if (inList) {
+      const [inCol, inVals] = inList;
+      if (Array.isArray(inVals)) {
+        if (inVals.length === 0) {
+          const fallback = DB_CACHE.get(cacheKey)?.data || getDbStorage(cacheKey);
+          return fallback || [];
+        }
+        if (isUuidCol(inCol)) {
+          const validUuids = inVals.filter((x) => isUuid(x));
+          if (validUuids.length === 0) {
+            const fallback = DB_CACHE.get(cacheKey)?.data || getDbStorage(cacheKey);
+            return fallback || [];
+          }
+          q = q.in(inCol, validUuids);
+        } else {
+          q = q.in(inCol, inVals);
+        }
+      }
+    }
     if (order) q = q.order(order[0], { ascending: order[1] !== "desc" });
     if (limit) q = q.limit(limit);
 
@@ -362,10 +393,12 @@ Object.assign(api, {
       // Fallback ke cache lokal jika server lambat atau offline
       const fallback = DB_CACHE.get(cacheKey)?.data || getDbStorage(cacheKey);
       if (fallback) {
-        console.warn(`[supabase] ${table} respons lambat, menggunakan cache lokal:`, err.message);
+        console.warn(`[supabase] ${table} respons lambat / kendala jaringan, menggunakan cache lokal:`, err.message);
         return fallback;
       }
-      throw err;
+      // Failsafe cadangan aman: jika belum ada cache lokal di panggilan pertama, kembalikan array kosong agar UI tidak crash
+      console.warn(`[supabase] ${table} gagal memuat data (${err.message}), menggunakan fallback aman.`);
+      return [];
     }
   },
   insert: async (table, row) => {

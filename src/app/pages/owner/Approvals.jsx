@@ -123,8 +123,8 @@ export default function Approvals() {
         }
       />
 
-      {/* RINGKASAN REKAP STATISTIK PER KATEGORI */}
-      <section className="d-grid d-grid--4" aria-label="Rekap Persetujuan">
+      {/* RINGKASAN REKAP STATISTIK PER KATEGORI (4 JEJER HORIZONTAL DESKTOP) */}
+      <section className="d-stats" aria-label="Rekap Persetujuan" style={{ marginBottom: "1.25rem" }}>
         <Stat
           title="Total Menunggu"
           value={summary.total_pending ?? 0}

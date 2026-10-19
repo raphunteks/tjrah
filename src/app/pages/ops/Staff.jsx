@@ -1782,14 +1782,7 @@ export default function Staff() {
         }
       >
         {rolling && (
-          <div className="d-form" style={{ maxHeight: "70vh", overflowY: "auto", paddingRight: "4px" }}>
-            <div style={{ background: "var(--color-paper-2, #f8fafc)", padding: "10px 14px", borderRadius: "8px", border: "1px solid var(--color-rule, #e2e8f0)", marginBottom: "0.75rem" }}>
-              <p style={{ margin: 0, fontSize: "0.8125rem", color: "var(--color-ink, #0f172a)", fontWeight: 500 }}>
-                {rolling?.is_edit
-                  ? "Mode Ubah Roster: Mengubah jadwal rotasi untuk seluruh rekan staf terkait. Anda dapat menambah atau mengurangi staf dan memilih model baru. Jadwal lama periode ini akan disinkronkan ulang secara rapi tanpa bentrok."
-                  : "Fitur ini secara otomatis membuat rotasi shift selang-seling untuk 2, 3, 4, 5+ staf/kasir secara adil tanpa perlu input manual harian."}
-              </p>
-            </div>
+          <div className="d-form" style={{ maxHeight: "calc(100dvh - 12rem)", overflowY: "auto", paddingRight: "4px" }}>
 
             <div className="d-form__row d-form__row--2">
               <Field label="Cabang Outlet *" id="roll-branch">
@@ -1905,16 +1898,6 @@ export default function Staff() {
                 ))}
               </select>
             </Field>
-
-            {/* Kotak Penjelasan Model Terpilih */}
-            <div style={{ background: "#f0fdf4", border: "1px solid #86efac", borderRadius: "8px", padding: "8px 12px", marginBottom: "0.75rem" }}>
-              <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#166534", display: "block", marginBottom: "2px" }}>
-                Penjelasan Logika:
-              </span>
-              <p style={{ margin: 0, fontSize: "0.75rem", color: "#15803d", lineHeight: 1.4 }}>
-                {SHIFT_ROTATION_MODELS.find((m) => m.id === rolling.model)?.desc}
-              </p>
-            </div>
 
             {/* Durasi Roster */}
             <div style={{ marginBottom: "0.75rem" }}>

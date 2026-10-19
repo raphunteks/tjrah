@@ -571,7 +571,7 @@ export default function KnowledgeForms() {
 
       {/* ──────── MODAL FORM BUILDER (GM / OWNER) ──────── */}
       {showBuilder && (
-        <Modal open={showBuilder} title={builderForm.id ? "Ubah Instrumen & Form" : "Penyusun Instrumen & Form Builder Dinamis"} onClose={() => setShowBuilder(false)}>
+        <Modal open={showBuilder} title={builderForm.id ? "Ubah Instrumen & Form" : "Penyusun Instrumen & Form"} onClose={() => setShowBuilder(false)}>
           <form onSubmit={handleSaveForm} className="d-form">
             <Field label="Judul Instrumen" id="fb-title">
               <input

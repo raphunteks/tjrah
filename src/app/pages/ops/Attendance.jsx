@@ -147,7 +147,7 @@ if (typeof window !== "undefined") {
 }
 
 export default function Attendance() {
-  const { api, profile, role, tenant } = useAuth();
+  const { api, profile, role, tenant, tenantId } = useAuth();
   const { lang } = useAccountLang();
   const isManager = ["owner", "gm", "superadmin"].includes(role);
   const a = useAction();
@@ -167,7 +167,7 @@ export default function Attendance() {
   const [allowEarlyCheckout, setAllowEarlyCheckout] = useState(false);
 
   // Checkbox checklist konfigurasi Anomali Presensi (dapat diaktifkan/dinonaktifkan)
-  const tenantKey = tenant?.id || "default";
+  const tenantKey = tenantId || tenant?.id || "default";
   const [anomalyEnabled, setAnomalyEnabled] = useState(() => {
     try {
       const s = localStorage.getItem(`sdm_anomaly_flag_${tenantKey}`);
@@ -195,23 +195,27 @@ export default function Attendance() {
 
   const r = useAsync(async () => {
     const isStaff = profile?.branch_id && role === "staff";
+    const effectiveTenantId = tenantId || tenant?.id || profile?.tenant_id;
     const [rows, branches, people, shifts] = await Promise.all([
       api.list("attendance", {
         eq: {
-          ...(tenant?.id ? { tenant_id: tenant.id } : {}),
+          ...(effectiveTenantId ? { tenant_id: effectiveTenantId } : {}),
           ...(isStaff && profile?.id ? { profile_id: profile.id } : {})
         },
         order: ["created_at", "desc"],
         limit: isStaff ? 60 : 120,
+      }).catch((err) => {
+        console.warn("[Attendance] Catatan koneksi attendance:", err?.message);
+        return [];
       }),
-      api.list("branches", { eq: { ...(tenant?.id ? { tenant_id: tenant.id } : {}) } }),
-      api.list("profiles", { eq: { ...(tenant?.id ? { tenant_id: tenant.id } : {}) } }).catch(() => []),
+      api.list("branches", { eq: { ...(effectiveTenantId ? { tenant_id: effectiveTenantId } : {}) } }).catch(() => []),
+      api.list("profiles", { eq: { ...(effectiveTenantId ? { tenant_id: effectiveTenantId } : {}) } }).catch(() => []),
       isStaff && profile?.id
-        ? api.list("work_shifts", { eq: { ...(tenant?.id ? { tenant_id: tenant.id } : {}), profile_id: profile.id } }).catch(() => [])
+        ? api.list("work_shifts", { eq: { ...(effectiveTenantId ? { tenant_id: effectiveTenantId } : {}), profile_id: profile.id } }).catch(() => [])
         : Promise.resolve([]),
     ]);
-    return { rows, branches, people, shifts };
-  }, [api, profile?.id, profile?.branch_id, role, tenant?.id], { key: `attendance@${tenant?.id || "d"}@${profile?.id || "u"}` });
+    return { rows: rows || [], branches: branches || [], people: people || [], shifts: shifts || [] };
+  }, [api, profile?.id, profile?.branch_id, role, tenant?.id, tenantId], { key: `attendance@${tenantId || tenant?.id || "d"}@${profile?.id || "u"}` });
 
   // Realtime subscription agar riwayat absensi kasir langsung terupdate di role Staf, Owner, dan GM
   useLive(["attendance", "work_shifts", "profiles", "branches"], () => {
