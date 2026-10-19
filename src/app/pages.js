@@ -31,7 +31,7 @@ export const PAGES = [
     gate: (r) => isOwnerOrGm(r) && can(r, 13, "u"), Comp: lazy(() => import("./pages/service/PolicyBuilder.jsx")) },
   { path: "/app/layanan/pantau", label: "Monitoring GM & Kasir/Staf", group: "Layanan & Akses", code: "F13·5", tenant: true,
     gate: (r) => isOwner(r) && can(r, 13, "r") && can(r, 5, "r"), Comp: lazy(() => import("./pages/service/Pulse.jsx")) },
-  { path: "/app/layanan/bantuan", label: "Tiket ke Harum.in", group: "Layanan & Akses", code: "CS", tenant: true,
+  { path: "/app/layanan/bantuan", label: "Tiket ke Dukungan Tijarah", group: "Layanan & Akses", code: "CS", tenant: true,
     gate: (r) => isOwner(r), Comp: lazy(() => import("./pages/service/Help.jsx")) },
   { path: "/app/layanan/kasir", label: "Kelola Kasir Cabang", group: "Layanan & Akses", code: "F13", tenant: true,
     gate: (r) => isGm(r) && can(r, 13, "u"), Comp: lazy(() => import("./pages/service/Team.jsx")) },

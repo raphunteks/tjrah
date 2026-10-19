@@ -434,10 +434,10 @@ export function createGrowth(ctx) {
         const stage = d >= 14 ? 4 : d >= 7 ? 3 : d >= 3 ? 2 : d >= 1 ? 1 : 0;
         if (stage <= i.reminder_stage) continue;
         const per = String(i.period).slice(0, 7);
-        const msg = [null, `Pengingat: tagihan Harum.in ${per} sebesar ${rp(i.amount)} jatuh tempo ${i.due_date}. Mohon segera dibayar.`,
+        const msg = [null, `Pengingat: tagihan Tijarah ${per} sebesar ${rp(i.amount)} jatuh tempo ${i.due_date}. Mohon segera dibayar.`,
           `Tagihan ${per} (${rp(i.amount)}) terlambat ${d} hari. Akun masuk status tertunggak.`,
           `PERINGATAN AKHIR: tagihan ${per} (${rp(i.amount)}) terlambat ${d} hari. Akun akan ditangguhkan pada H+14 jika belum dibayar.`,
-          `Akun ${t.name} ditangguhkan karena tagihan ${per} (${rp(i.amount)}) belum dibayar. Hubungi tim Harum.in untuk mengaktifkan kembali.`][stage];
+          `Akun ${t.name} ditangguhkan karena tagihan ${per} (${rp(i.amount)}) belum dibayar. Hubungi tim Tijarah untuk mengaktifkan kembali.`][stage];
         hermes(t.id, "whatsapp", "Owner", "dunning", msg, { invoice_id: i.id, stage });
         i.reminder_stage = stage;
         if (stage >= 2 && t.status === "active") t.status = "past_due";

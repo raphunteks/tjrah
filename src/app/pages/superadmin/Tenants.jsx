@@ -56,7 +56,7 @@ export default function Tenants() {
       <PageHead
         eyebrow="Superadmin · Fitur 1"
         title="Tenant"
-        desc="Merchant yang berlangganan Harum.in. Membuka dashboard tenant dicatat di audit log."
+        desc="Merchant yang berlangganan Tijarah. Membuka dashboard tenant dicatat di audit log."
         actions={can(role, 1, "c") && <button type="button" className="d-btn d-btn--primary" onClick={() => { setErr(null); setEdit({ ...EMPTY }); }}>Tambah tenant</button>}
       />
       <Panel>

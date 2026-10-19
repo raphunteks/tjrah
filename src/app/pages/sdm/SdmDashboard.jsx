@@ -623,7 +623,7 @@ export default function SdmDashboard() {
                               <Badge tone="accent">Kasir POS (Staff)</Badge>
                             </td>
                             <td>{br?.name || "Cabang Hasanuddin (Utama)"}</td>
-                            <td className="d-mono">{s.email || "staff@demo.harum.in"}</td>
+                            <td className="d-mono">{s.email || "staff@demo.tijarah.id"}</td>
                             <td>
                               <Badge tone="ok">Aktif</Badge>
                             </td>

@@ -48,7 +48,7 @@ export default function Conclusion() {
           <h2 id="end-title">Siap dibangun, setelah empat keputusan dikunci.</h2>
           <p className="section-head__lede">
             Blueprint asli menyimpulkan bahwa lima peran, 9router sebagai gerbang AI, dan Hermes Agent di
-            WhatsApp dan Discord membuat Harum.in cepat, hemat biaya VPS, dan siap diskalakan. Kesimpulan itu
+            WhatsApp dan Discord membuat Tijarah cepat, hemat biaya VPS, dan siap diskalakan. Kesimpulan itu
             berlaku dengan {total} catatan revisi di bawah ini.
           </p>
         </header>

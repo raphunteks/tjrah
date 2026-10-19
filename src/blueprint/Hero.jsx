@@ -90,7 +90,7 @@ export default function Hero() {
               <span className="tok-punc">{"}"}</span>{"\n"}
               {"\n"}
               <span className="code__resp"><span className="tok-muted"># 9router: claude → gemini (failover)</span>{"\n"}</span>
-              <span className="code__resp"><span className="tok-key">tool</span> harum.sales.summary<span className="tok-punc">(</span><span className="tok-str">branch="makassar"</span><span className="tok-punc">,</span> <span className="tok-str">date="today"</span><span className="tok-punc">)</span>{"\n"}</span>
+              <span className="code__resp"><span className="tok-key">tool</span> tijarah.sales.summary<span className="tok-punc">(</span><span className="tok-str">branch="makassar"</span><span className="tok-punc">,</span> <span className="tok-str">date="today"</span><span className="tok-punc">)</span>{"\n"}</span>
               <span className="code__resp"><span className="tok-muted"># → dibalas ke WhatsApp Owner</span></span>
             </code>
           </pre>

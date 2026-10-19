@@ -15,7 +15,7 @@ const KIND = {
   leave: "Cuti & Izin (SDM)",
   swap: "Tukar Shift (SDM)",
   loan: "Kasbon Staf (SDM)",
-  supplies: "Harum.in Supplies (F20)"
+  supplies: "Tijarah Supplies"
 };
 
 const KIND_TONE = {

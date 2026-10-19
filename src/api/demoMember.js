@@ -72,7 +72,7 @@ export function createMemberAuth(db, { now = () => Date.now(), code = () => Stri
       let made = false;
       if (!pr) {
         pr = { id: "mb-" + id().slice(0, 8), tenant_id: o.tenant_id, branch_id: null, role: "member", full_name: (name ?? "").trim() || c.name || "Member",
-          email: `member-${o.id}@member.harum.in`, customer_id: c.id, is_active: true };
+          email: `member-${o.id}@member.tijarah.id`, customer_id: c.id, is_active: true };
         db.profiles.push(pr);
         const at = new Date(now()).toISOString();
         db.member_consents.push(

@@ -30,7 +30,7 @@ export default function TicketThread({ ticket, messages, tenantName, isSA, busy,
         {messages.map((m) => (
           <li key={m.id} className={`tk__msg tk__msg--${m.author_role === "owner" ? "owner" : "cs"}${m.internal ? " is-internal" : ""}`}>
             <p className="tk__meta">
-              <strong>{m.author_role === "owner" ? "Owner" : "Tim Harum.in"}</strong> · {dateTime(m.created_at)}
+              <strong>{m.author_role === "owner" ? "Owner" : "Tim Tijarah"}</strong> · {dateTime(m.created_at)}
               {m.internal && <Badge tone="warn">Catatan internal · tidak terlihat Owner</Badge>}
             </p>
             <p className="tk__body">{m.body}</p>

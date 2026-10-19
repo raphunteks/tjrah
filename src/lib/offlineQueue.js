@@ -1,15 +1,15 @@
 // Antrean penjualan offline untuk kasir (Fase 4.5). Penyimpanan: localStorage (cukup untuk ratusan transaksi; ganti ke IndexedDB bila perlu).
 // Alur: enqueue() saat offline/gagal kirim → flush() saat online → server memakai client_ref sehingga kirim ulang aman (tidak dobel).
 // Server tetap memakai HARGA TERKINI; selisih dengan expected_total dikembalikan di total_diff untuk ditinjau GM.
-const KEY = "harumin-offline-queue";
-const DEV = "harumin-device-id";
+const KEY = "tijarah-offline-queue";
+const DEV = "tijarah-device-id";
 
-const read = () => { try { return JSON.parse(localStorage.getItem(KEY) || "[]"); } catch { return []; } };
+const read = () => { try { return JSON.parse(localStorage.getItem(KEY) || localStorage.getItem("harumin-offline-queue") || "[]"); } catch { return []; } };
 const write = (q) => { try { localStorage.setItem(KEY, JSON.stringify(q)); } catch { /* penyimpanan penuh/diblokir */ } };
 
 export function deviceId() {
   try {
-    let id = localStorage.getItem(DEV);
+    let id = localStorage.getItem(DEV) || localStorage.getItem("harumin-device-id");
     if (!id) { id = (crypto.randomUUID?.() ?? String(Date.now()) + Math.random().toString(16).slice(2)).slice(0, 36); localStorage.setItem(DEV, id); }
     return id;
   } catch { return "tanpa-penyimpanan"; }

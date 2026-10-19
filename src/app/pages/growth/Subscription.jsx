@@ -6,6 +6,7 @@ import { useAction, Feedback, useLive } from "../../ops.jsx";
 import AccountTabs from "../account/AccountTabs.jsx";
 import { AccountKpiGrid, AccountKpiCard } from "../account/AccountKpiGrid.jsx";
 import { useAccountLang } from "../account/i18n.js";
+import PaymentModal from "./PaymentModal.jsx";
 
 const MET = { avg_ticket: ["Rata-rata struk", rupiah], cogs_pct: ["HPP %", (v) => `${v}%`], void_pct: ["Void %", (v) => `${v}%`], discount_pct: ["Diskon %", (v) => `${v}%`], revenue_per_branch: ["Omzet per cabang", rupiah] };
 
@@ -314,8 +315,9 @@ function Templates() {
 }
 
 export default function Subscription() {
-  const { api, tenantId } = useAuth();
+  const { api, tenantId, tenant } = useAuth();
   const { t } = useAccountLang();
+  const [checkoutPlan, setCheckoutPlan] = useState(null);
   const ai = useAsync(() => api.rpc("ai_usage_summary"), [api, tenantId]);
   const fl = useAsync(() => api.rpc("my_flags"), [api, tenantId]);
   useLive(["tenants", "invoices", "ai_usage", "copilot_logs"], ai.reload);
@@ -365,7 +367,7 @@ export default function Subscription() {
       </AccountKpiGrid>
 
       <div className="d-grid" style={{ gap: "1.25rem" }}>
-        {/* PANEL 3 TIER RESMI TIJARAH (SESUAI GAMBAR 2) */}
+        {/* PANEL 3 TIER RESMI TIJARAH */}
         <Panel title="Pilihan Tingkat Paket Langganan Tijarah OS">
           <p className="d-text d-muted" style={{ margin: "0 0 1.25rem", fontSize: "0.85rem" }}>
             Struktur paket resmi disesuaikan dengan skala usaha toko Anda dengan pembagian kuota pertanyaan AI yang adil.
@@ -385,15 +387,24 @@ export default function Subscription() {
                   Rp 500.000 / bulan
                 </div>
                 <ul style={{ listStyle: "none", padding: 0, margin: 0, fontSize: "0.85rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> 1 Outlet / Cabang</li>
-                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> Maksimal 3 Akun Kasir POS</li>
-                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> Modul Kasir &amp; Inventori Bahan</li>
+                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> 1 Gerai / Outlet Toko Utama</li>
+                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> 3 Akun Kasir POS &amp; Supervisor Toko</li>
+                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> Aplikasi Kasir POS Cepat, Struk &amp; Meja</li>
+                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> Pencatatan Arus Kas Kasir, Modal &amp; rwallet</li>
+                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> Manajemen Inventori Bahan &amp; Resep Dasar</li>
+                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> Laporan Penjualan Harian &amp; X-Report</li>
+                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> Bebas Biaya Aplikasi (0% Platform Fee)</li>
                   <li><i className="fa-solid fa-xmark" style={{ color: "var(--color-danger)", marginRight: "0.5rem" }} /> <strong>0 Kuota Pertanyaan AI</strong></li>
                 </ul>
               </div>
               <div style={{ marginTop: "1.25rem" }}>
-                <button type="button" className="d-btn d-btn--ghost d-btn--sm" style={{ width: "100%" }}>
-                  Pilih Starter
+                <button
+                  type="button"
+                  className="d-btn d-btn--ghost d-btn--sm"
+                  style={{ width: "100%", fontWeight: 600 }}
+                  onClick={() => setCheckoutPlan({ id: "p1", code: "STARTER", name: "Starter (1 Bulan)", price: 500000, durationMonths: 1, durationLabel: "1 bulan" })}
+                >
+                  Berlangganan Starter
                 </button>
               </div>
             </div>
@@ -414,16 +425,28 @@ export default function Subscription() {
                   Rp 416.666 / bulan
                 </div>
                 <ul style={{ listStyle: "none", padding: 0, margin: 0, fontSize: "0.85rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> Hingga 5 Outlet / Cabang</li>
-                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> Maksimal 15 Akun Kasir POS</li>
-                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> Modul Lengkap SDM &amp; Penggajian Kasir</li>
+                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> Hingga 5 Cabang / Outlet Usaha</li>
+                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> 15 Akun Kasir POS &amp; Manajer Cabang</li>
+                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> Seluruh Fitur Paket Starter</li>
+                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> Otorisasi PIN Manajer &amp; Pemilik Toko</li>
+                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> Presensi Kamera GPS &amp; Roster Shift</li>
+                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> Penggajian Kasir &amp; Pengajuan Cuti</li>
+                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> Laporan Laba Rugi, HPP Riil &amp; SOP</li>
                   <li><i className="fa-solid fa-brain" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> <strong style={{ color: "var(--color-accent)" }}>250 Pertanyaan AI / Bulan</strong></li>
                 </ul>
               </div>
-              <div style={{ marginTop: "1.25rem" }}>
+              <div style={{ marginTop: "1.25rem", display: "flex", flexDirection: "column", gap: "0.4rem" }}>
                 <Badge tone="ok" style={{ width: "100%", justifyContent: "center", padding: "0.4rem 0" }}>
                   Sedang Digunakan
                 </Badge>
+                <button
+                  type="button"
+                  className="d-btn d-btn--ghost d-btn--sm"
+                  style={{ width: "100%", fontWeight: 600, fontSize: "0.8rem" }}
+                  onClick={() => setCheckoutPlan({ id: "p2", code: "GROWTH", name: "Growth (6 Bulan)", price: 2500000, durationMonths: 6, durationLabel: "6 bulan" })}
+                >
+                  Perpanjang / Berlangganan Growth
+                </button>
               </div>
             </div>
 
@@ -441,14 +464,23 @@ export default function Subscription() {
                 </div>
                 <ul style={{ listStyle: "none", padding: 0, margin: 0, fontSize: "0.85rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                   <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> Multi-Outlet Tanpa Batas Cabang</li>
-                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> Akun Kasir POS Tanpa Batas</li>
+                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> Akun Kasir POS &amp; Dokter Medis Tanpa Batas</li>
+                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> Seluruh Fitur Paket Growth</li>
+                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> Otorisasi Berjenjang &amp; Audit Trail Forensik</li>
+                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> Akses Referral Eksklusif &amp; Komisi Merchant</li>
+                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> Layanan B2B Tijarah Supplies Bahan Baku</li>
                   <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> Dedicated Account Manager &amp; SLA 99.9%</li>
                   <li><i className="fa-solid fa-infinity" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> <strong>Unlimited Pertanyaan AI</strong></li>
                 </ul>
               </div>
               <div style={{ marginTop: "1.25rem" }}>
-                <button type="button" className="d-btn d-btn--ghost d-btn--sm" style={{ width: "100%" }}>
-                  Pilih Enterprise
+                <button
+                  type="button"
+                  className="d-btn d-btn--ghost d-btn--sm"
+                  style={{ width: "100%", fontWeight: 600 }}
+                  onClick={() => setCheckoutPlan({ id: "p3", code: "ENTERPRISE", name: "Enterprise (1 Tahun)", price: 3500000, durationMonths: 12, durationLabel: "12 bulan" })}
+                >
+                  Berlangganan Enterprise
                 </button>
               </div>
             </div>
@@ -499,6 +531,21 @@ export default function Subscription() {
 
       {/* ──────── PUSAT NAVIGASI AKUN & TATA KELOLA SISTEM (DOCK BAWAH) ──────── */}
       <AccountTabs />
+
+      {/* ──────── MODAL PEMBAYARAN GATEWAY PAKASIR ──────── */}
+      {checkoutPlan && (
+        <PaymentModal
+          isOpen={Boolean(checkoutPlan)}
+          plan={checkoutPlan}
+          onClose={() => setCheckoutPlan(null)}
+          tenant={tenant}
+          tenantId={tenantId}
+          onSuccess={() => {
+            ai.reload();
+            setCheckoutPlan(null);
+          }}
+        />
+      )}
     </>
   );
 }

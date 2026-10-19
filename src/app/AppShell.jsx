@@ -185,7 +185,7 @@ function SidebarUserFooter({ profile, role, roleLabel, collapsed, lang, setLang,
     if (isPWAStandalone()) return;
 
     const handler = (e) => {
-      e.preventDefault();
+      // Simpan event instalasi tanpa memanggil preventDefault dini agar Chromium tidak mencetak warning di console
       setInstallPrompt(e);
     };
     window.addEventListener("beforeinstallprompt", handler);
@@ -426,7 +426,7 @@ export default function AppShell() {
   const [loggingOut, setLoggingOut] = useState(false);
   const [collapsed, setCollapsed] = useState(() => {
     try {
-      return sessionStorage.getItem("harumin:sidebar_collapsed") === "1";
+      return (sessionStorage.getItem("tijarah:sidebar_collapsed") ?? sessionStorage.getItem("harumin:sidebar_collapsed")) === "1";
     } catch {
       return false;
     }
@@ -442,7 +442,7 @@ export default function AppShell() {
     setCollapsed((prev) => {
       const next = !prev;
       try {
-        sessionStorage.setItem("harumin:sidebar_collapsed", next ? "1" : "0");
+        sessionStorage.setItem("tijarah:sidebar_collapsed", next ? "1" : "0");
       } catch {
         /* abaikan */
       }
@@ -470,7 +470,7 @@ export default function AppShell() {
     if (collapsed) {
       setCollapsed(false);
       try {
-        sessionStorage.setItem("harumin:sidebar_collapsed", "0");
+        sessionStorage.setItem("tijarah:sidebar_collapsed", "0");
       } catch {}
     }
     setOpenGroups((prev) => ({

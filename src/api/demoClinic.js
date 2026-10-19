@@ -366,7 +366,7 @@ export function createClinic(ctx) {
     let c = db.customers.find((x) => x.tenant_id === o.tenant_id && x.phone === phone);
     if (!c) db.customers.unshift((c = { id: id(), tenant_id: o.tenant_id, phone, name: o.customer_name ?? null, points: 0, total_spent: 0, visits: 0, last_visit_at: null, note: null, created_at: nowIso() }));
     Object.assign(c, { points: c.points + pts, total_spent: c.total_spent + o.total, visits: c.visits + 1, last_visit_at: nowIso(), name: c.name ?? o.customer_name ?? null });
-    hermes(o.tenant_id, "whatsapp", `Pelanggan ${phone.slice(0, 4)}••••${phone.slice(-3)}`, "receipt", `Struk ${o.code}: total ${rp(o.total)}. +${pts} poin Harum.in.`);
+    hermes(o.tenant_id, "whatsapp", `Pelanggan ${phone.slice(0, 4)}••••${phone.slice(-3)}`, "receipt", `Struk ${o.code}: total ${rp(o.total)}. +${pts} poin Tijarah.`);
     emit("customers");
     emit("prescriptions");
   }

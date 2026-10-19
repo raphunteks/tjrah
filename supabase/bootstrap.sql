@@ -748,16 +748,16 @@ insert into public.rbac_matrix (feature, feature_name, role, label, can_create, 
   (18, 'Reservasi & Antrean Ruang Tunggu', 'gm', 'CRUD', true, true, true, true, false, false, null),
   (18, 'Reservasi & Antrean Ruang Tunggu', 'staff', 'CRUD', true, true, true, true, false, false, null),
   (18, 'Reservasi & Antrean Ruang Tunggu', 'dokter', 'RU', false, true, true, false, false, false, null),
-  (19, 'Pengajuan Harum.in Capital & Payout', 'superadmin', 'CRUD', true, true, true, true, false, false, null),
-  (19, 'Pengajuan Harum.in Capital & Payout', 'owner', 'CRUD', true, true, true, true, false, false, null),
-  (19, 'Pengajuan Harum.in Capital & Payout', 'gm', 'RU', false, true, true, false, false, false, null),
-  (19, 'Pengajuan Harum.in Capital & Payout', 'staff', '-', false, false, false, false, false, false, null),
-  (19, 'Pengajuan Harum.in Capital & Payout', 'dokter', '-', false, false, false, false, false, false, null),
-  (20, 'Pengadaan Bahan Harum.in Supplies', 'superadmin', 'CRUD', true, true, true, true, false, false, null),
-  (20, 'Pengadaan Bahan Harum.in Supplies', 'owner', 'Approval', false, true, false, false, true, false, null),
-  (20, 'Pengadaan Bahan Harum.in Supplies', 'gm', 'CRUD', true, true, true, true, false, false, null),
-  (20, 'Pengadaan Bahan Harum.in Supplies', 'staff', '-', false, false, false, false, false, false, null),
-  (20, 'Pengadaan Bahan Harum.in Supplies', 'dokter', '-', false, false, false, false, false, false, null);
+  (19, 'Pengajuan Tijarah Capital & Payout', 'superadmin', 'CRUD', true, true, true, true, false, false, null),
+  (19, 'Pengajuan Tijarah Capital & Payout', 'owner', 'CRUD', true, true, true, true, false, false, null),
+  (19, 'Pengajuan Tijarah Capital & Payout', 'gm', 'RU', false, true, true, false, false, false, null),
+  (19, 'Pengajuan Tijarah Capital & Payout', 'staff', '-', false, false, false, false, false, false, null),
+  (19, 'Pengajuan Tijarah Capital & Payout', 'dokter', '-', false, false, false, false, false, false, null),
+  (20, 'Pengadaan Bahan Tijarah Supplies', 'superadmin', 'CRUD', true, true, true, true, false, false, null),
+  (20, 'Pengadaan Bahan Tijarah Supplies', 'owner', 'Approval', false, true, false, false, true, false, null),
+  (20, 'Pengadaan Bahan Tijarah Supplies', 'gm', 'CRUD', true, true, true, true, false, false, null),
+  (20, 'Pengadaan Bahan Tijarah Supplies', 'staff', '-', false, false, false, false, false, false, null),
+  (20, 'Pengadaan Bahan Tijarah Supplies', 'dokter', '-', false, false, false, false, false, false, null);
 
 -- ══════════════════════════════════════════════════════════════════════
 -- MIGRASI 20261011000005_operations.sql
@@ -1488,7 +1488,7 @@ begin
                       non_cash_sales = non_cash_sales - coalesce((select sum(amount) from payments where order_id = o.id and method <> 'cash'), 0)
   where s.id = o.shift_id and s.status = 'open';
   perform _hermes(o.tenant_id, 'discord', '#alert-sistem', 'void_alert',
-    format('⚠️ SECURITY ALERT: Void transaksi %s sebesar %s disetujui oleh %s di %s. %s',
+    format('[SECURITY ALERT] Void transaksi %s sebesar %s disetujui oleh %s di %s. %s',
       o.code, _rp(o.total), (select full_name from profiles where id = auth.uid()),
       (select name from branches where id = o.branch_id), coalesce(p_note, '')));
 end $$;

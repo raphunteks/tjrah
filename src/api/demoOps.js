@@ -35,7 +35,7 @@ export function seedOps(users) {
   const item = (n, code, name, unit, cost, min, semi = false) => ({ id: `d${n}`, tenant_id: T1, code, name, unit, cost_per_unit: cost, min_qty: min, is_semi: semi });
   const items = [
     item("001", "BHN-001", "Biji kopi arabika", "g", 190, 2000), item("002", "BHN-002", "Susu segar", "ml", 22, 3000),
-    item("003", "BHN-003", "Gula aren cair", "ml", 40, 1000), item("004", "BHN-004", "Sirup kopi Harum.in", "botol", 70000, 5),
+    item("003", "BHN-003", "Gula aren cair", "ml", 40, 1000), item("004", "BHN-004", "Sirup kopi Tijarah", "botol", 70000, 5),
     item("005", "BHN-005", "Es batu", "g", 2, 5000), item("006", "BHN-006", "Cup 16oz", "pcs", 950, 200),
     item("007", "BHN-007", "Beras", "g", 14, 5000), item("008", "BHN-008", "Telur", "pcs", 2200, 30),
     item("009", "BHN-009", "Daging ayam", "g", 55, 2000), item("010", "BHN-010", "Minyak goreng", "ml", 18, 2000),
@@ -70,7 +70,7 @@ export function seedOps(users) {
   for (const [b, n] of [[B1, 10], [B2, 8]]) for (let k = 1; k <= n; k++)
     tables.push({ id: `tb-${b}-${k}`, tenant_id: T1, branch_id: b, label: String(k).padStart(2, "0"), area: k <= 6 ? "Lantai 1" : "Lantai 2", seats: k === 1 || k === 6 ? 6 : 4, status: "available", sort: k });
   const now = Date.now();
-  const voidOrder = { id: "ord-v1", tenant_id: T1, branch_id: B2, code: "ORD-HARUM-9102", status: "paid", channel: "dine_in", table_id: null, table_label: "05",
+  const voidOrder = { id: "ord-v1", tenant_id: T1, branch_id: B2, code: "ORD-TIJARAH-9102", status: "paid", channel: "dine_in", table_id: null, table_label: "05",
     subtotal: 96000, discount: 0, tax: 9600, total: 105600, cogs: 15852, cashier_id: "u3", shift_id: null, created_at: new Date(now - 3 * 3600e3).toISOString(), paid_at: new Date(now - 3 * 3600e3).toISOString() };
   const k = seedClinic();
   const t08 = tables.find((t) => t.id === "tb-b1-8");
@@ -498,7 +498,7 @@ export function createOps(ctx) {
     const s = db.shifts.find((x) => x.id === o.shift_id && x.status === "open");
     if (s) for (const p of db.payments.filter((p) => p.order_id === oid)) p.method === "cash" ? (s.cash_sales -= p.amount) : (s.non_cash_sales -= p.amount);
     const br = db.branches.find((b) => b.id === o.branch_id);
-    hermes(o.tenant_id, "discord", "#alert-sistem", "void_alert", `⚠️ SECURITY ALERT: Void transaksi ${o.code} sebesar ${rp(o.total)} disetujui oleh ${user().full_name} di ${br?.name}. ${note ?? ""}`);
+    hermes(o.tenant_id, "discord", "#alert-sistem", "void_alert", `[SECURITY ALERT] Void transaksi ${o.code} sebesar ${rp(o.total)} disetujui oleh ${user().full_name} di ${br?.name}. ${note ?? ""}`);
   }
 
   const RPC = {

@@ -147,7 +147,7 @@ if (typeof window !== "undefined") {
 }
 
 export default function Attendance() {
-  const { api, profile, role, tenant, tenantId } = useAuth();
+  const { api, profile, role, tenant, tenantId } = useAuth() || {};
   const { lang } = useAccountLang();
   const isManager = ["owner", "gm", "superadmin"].includes(role);
   const a = useAction();
@@ -194,6 +194,7 @@ export default function Attendance() {
   const autoClockoutRunRef = useRef(false);
 
   const r = useAsync(async () => {
+    if (!api) return { rows: [], branches: [], people: [], shifts: [] };
     const isStaff = profile?.branch_id && role === "staff";
     const effectiveTenantId = tenantId || tenant?.id || profile?.tenant_id;
     const [rows, branches, people, shifts] = await Promise.all([

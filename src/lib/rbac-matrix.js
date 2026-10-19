@@ -35,8 +35,8 @@ export const MATRIX = [
   [16, "Integrasi Omnichannel & Marketplace", "CRUD", "CRUD", "CRUD", "R (Proses Pesanan)", "-"],
   [17, "Rekam Medis & SATUSEHAT Kemenkes", "CRUD", "R", "R", "R (Billing Obat)", "CRUD"],
   [18, "Reservasi & Antrean Ruang Tunggu", "CRUD", "CRUD", "CRUD", "CRUD", "RU"],
-  [19, "Pengajuan Harum.in Capital & Payout", "CRUD", "CRUD", "RU", "-", "-"],
-  [20, "Pengadaan Bahan Harum.in Supplies", "CRUD", "Approval", "CRUD", "-", "-"],
+  [19, "Pengajuan Tijarah Capital & Payout", "CRUD", "CRUD", "RU", "-", "-"],
+  [20, "Pengadaan Bahan Tijarah Supplies", "CRUD", "Approval", "CRUD", "-", "-"],
 ];
 
 // Peran Member (L5) — TAMBAHAN di luar dokumen asli (keputusan Q12, lihat docs/MEMBER-DASHBOARD.md).

@@ -311,7 +311,7 @@ export function createAccess(ctx) {
       const tk = db.support_tickets.find((x) => x.id === p_ticket);
       if (!tk || !(me === "superadmin" || (me === "owner" && tk.tenant_id === user().tenant_id))) err("Tiket tidak ditemukan");
       if (!String(p_body ?? "").trim()) err("Pesan kosong");
-      if (me === "owner" && p_internal) err("Catatan internal hanya untuk tim Harum.in");
+      if (me === "owner" && p_internal) err("Catatan internal hanya untuk tim Tijarah");
       db.ticket_messages.push({ id: id(), ticket_id: tk.id, tenant_id: tk.tenant_id, author_id: user().id, author_role: me, body: String(p_body).trim(), internal: Boolean(p_internal), created_at: nowIso() });
       tk.updated_at = nowIso();
       if (me === "owner") { tk.status = tk.status === "new" ? "new" : "in_progress"; tk.closed_at = null; }

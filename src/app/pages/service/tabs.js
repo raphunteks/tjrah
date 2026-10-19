@@ -9,7 +9,7 @@ export const SERVICE_TABS = {
     { path: "/app/layanan/tim", label: "Kelola GM & Kasir/Staf" },
     { path: "/app/layanan/kebijakan", label: "Kebijakan Berjenjang (3 Lapis)" },
     { path: "/app/layanan/pantau", label: "Monitoring GM & Kasir/Staf" },
-    { path: "/app/layanan/bantuan", label: "Tiket ke Harum.in" },
+    { path: "/app/layanan/bantuan", label: "Tiket ke Dukungan Tijarah" },
   ],
   gm: [
     { path: "/app/layanan/kasir", label: "Kelola Kasir Cabang" },

@@ -8,7 +8,7 @@ import TicketThread from "./TicketThread.jsx";
 
 const CATEGORIES = ["Tagihan", "Teknis", "Data", "Integrasi", "SATUSEHAT", "Lainnya"];
 
-/** Owner · Tiket ke Harum.in: buat tiket, ikuti balasan, nilai layanan, dan otorisasi Break-Glass Support Session. */
+/** Owner · Tiket ke Dukungan Tijarah: buat tiket, ikuti balasan, nilai layanan, dan otorisasi Break-Glass Support Session. */
 export default function Help() {
   const { api, tenantId } = useAuth();
   const now = useNow(60000);
@@ -38,12 +38,12 @@ export default function Help() {
     setForm(null);
     setSel(tk.id);
     await r.reload();
-  }, "Tiket terkirim. Tim Harum.in akan membalas di sini.");
+  }, "Tiket terkirim. Tim Tijarah akan membalas di sini.");
 
   const handleGrant = (grant) => a.run(async () => {
     await api.grantSupportSession(pendingSession.id, grant);
     await r.reload();
-  }, grant ? "Izin akses dukungan diberikan ke tim Harum.in." : "Permintaan akses ditolak.");
+  }, grant ? "Izin akses dukungan diberikan ke tim Tijarah." : "Permintaan akses ditolak.");
 
   const handleRevoke = () => a.run(async () => {
     await api.revokeSupportSession(activeSession.id);
@@ -52,8 +52,8 @@ export default function Help() {
 
   return (
     <>
-      <PageHead eyebrow="Owner · Layanan & Akses" title="Tiket ke Harum.in"
-        desc="Laporkan kendala langsung ke tim Harum.in. Balasan dan izin akses dukungan darurat dikelola di halaman ini."
+      <PageHead eyebrow="Owner · Layanan & Akses" title="Tiket ke Dukungan Tijarah"
+        desc="Laporkan kendala langsung ke tim Tijarah. Balasan dan izin akses dukungan darurat dikelola di halaman ini."
         actions={<button type="button" className="d-btn d-btn--primary" onClick={() => { a.setError(null); a.setOk(null); setForm({ category: "Teknis", subject: "", body: "" }); }}>Butuh bantuan</button>} />
       <ServiceTabs />
       <Feedback a={a} />
@@ -64,7 +64,7 @@ export default function Help() {
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <Badge tone="warn">Permintaan Akses Masuk</Badge>
-              <strong style={{ color: "var(--d-warn)" }}>Tim Dukungan Harum.in Meminta Akses Bantuan Teknis</strong>
+              <strong style={{ color: "var(--d-warn)" }}>Tim Dukungan Tijarah Meminta Akses Bantuan Teknis</strong>
             </div>
             <p style={{ margin: "0.4rem 0 0 0", fontSize: "0.9rem" }}>
               Alasan: <em>"{pendingSession.reason}"</em> · Durasi diminta: <strong>{pendingSession.duration_hours} Jam</strong>
@@ -82,7 +82,7 @@ export default function Help() {
           <div>
             <Badge tone="ok">Sesi Dukungan Aktif</Badge>
             <span style={{ marginLeft: "0.5rem", fontSize: "0.9rem" }}>
-              Tim Harum.in sedang menginvestigasi sistem toko Anda (Berakhir: {new Date(activeSession.expires_at).toLocaleTimeString()}). Seluruh aktivitas dicatat di Audit Log.
+              Tim Tijarah sedang menginvestigasi sistem toko Anda (Berakhir: {new Date(activeSession.expires_at).toLocaleTimeString()}). Seluruh aktivitas dicatat di Audit Log.
             </span>
           </div>
           <button type="button" className="d-btn d-btn--danger-ghost d-btn--sm" disabled={a.busy} onClick={handleRevoke}>Cabut Akses Sekarang</button>

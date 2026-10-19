@@ -2480,7 +2480,7 @@
   letter-spacing: 0.05em;
 }
 
-/* ──────── SDM HARUM DASHBOARD (GBR 2 SAAS CHARTS SUITE) ──────── */
+/* ──────── SDM TIJARAH DASHBOARD (GBR 2 SAAS CHARTS SUITE) ──────── */
 .sdm-gbr2-row1 {
   display: grid;
   grid-template-columns: 1.4fr 1fr;
@@ -3709,6 +3709,103 @@
   text-transform: uppercase;
   margin-top: 0.25rem;
 }
+
+/* ───────── Bento KPI 3-Cards Proportion ───────── */
+.d-stats--3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+@media (max-width: 1180px) {
+  .d-stats--3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  .d-stats--3 .d-stat:last-child {
+    grid-column: 1 / -1 !important;
+  }
+}
+@media (max-width: 640px) {
+  .d-stats .d-stat:last-child:nth-child(odd) {
+    grid-column: 1 / -1 !important;
+  }
+}
+
+/* ───────── Modal Checkout Pembayaran Pakasir (Sesuai GBR 1 & GBR 2) ───────── */
+.tjr-pay-channel-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-lg, 12px);
+  border: 1.5px dashed var(--color-rule, #cbd5e1);
+  background: var(--color-paper-1, #ffffff);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 0.65rem;
+}
+.tjr-pay-channel-card:hover {
+  border-color: #f97316;
+  background: var(--color-paper-2, #f8fafc);
+}
+.tjr-pay-channel-card--active {
+  border: 2px solid #f97316 !important;
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.12);
+  background: #fffaf0 !important;
+}
+.tjr-pay-channel-left {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+.tjr-pay-channel-logo-wrap {
+  width: 48px;
+  height: 36px;
+  border-radius: 8px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  flex-shrink: 0;
+}
+.tjr-pay-channel-logo {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.tjr-pay-channel-info {
+  display: flex;
+  flex-direction: column;
+}
+.tjr-pay-channel-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--color-ink, #0f172a);
+}
+.tjr-pay-channel-fee {
+  font-size: 0.78rem;
+  color: var(--color-muted, #64748b);
+  margin-top: 2px;
+}
+.tjr-pay-radio-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+.tjr-pay-channel-card--active .tjr-pay-radio-dot {
+  border-color: #f97316;
+}
+.tjr-pay-radio-inner {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #f97316;
+}
+
 
 
 

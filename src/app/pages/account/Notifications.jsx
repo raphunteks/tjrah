@@ -219,7 +219,7 @@ export default function Notifications() {
       const payload = {
         event: "test_alert",
         role: ROLE_META[currentActualRole]?.label || "Owner Merchant",
-        tenant_name: profile?.tenant_name || "Harumin Merchant",
+        tenant_name: profile?.tenant_name || "Tijarah Merchant",
         branch_name: profile?.branch_name || "Cabang Utama",
         target: targetPhone,
         target_phone: targetPhone,

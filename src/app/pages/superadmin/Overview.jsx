@@ -19,7 +19,7 @@ export default function Overview() {
 
   return (
     <>
-      <PageHead eyebrow="Superadmin · Fitur 1" title="Ringkasan platform" desc="Kesehatan langganan seluruh tenant Harum.in." />
+      <PageHead eyebrow="Superadmin · Fitur 1" title="Ringkasan platform" desc="Kesehatan langganan seluruh tenant Tijarah." />
       <div className="d-stats">
         <Stat label="Tenant" value={o.tenants} sub={`${o.active} aktif · ${o.trial} trial`} />
         <Stat label="MRR (tenant aktif)" value={rupiah(o.mrr)} sub="Dari harga paket" />

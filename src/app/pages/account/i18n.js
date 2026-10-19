@@ -914,7 +914,7 @@ export const PAGE_TRANSLATIONS = {
   "/app/layanan/tim": { id: "Kelola GM & Kasir/Staf", en: "Manage GM & Staff" },
   "/app/layanan/kebijakan": { id: "Kebijakan Berjenjang", en: "Tiered Policies" },
   "/app/layanan/pantau": { id: "Monitoring GM & Kasir/Staf", en: "GM & Staff Monitoring" },
-  "/app/layanan/bantuan": { id: "Tiket ke Harum.in", en: "Ticket to Harum.in" },
+  "/app/layanan/bantuan": { id: "Tiket ke Dukungan Tijarah", en: "Ticket to Tijarah Support" },
   "/app/layanan/kasir": { id: "Kelola Kasir Cabang", en: "Manage Branch Cashiers" },
   "/app/layanan/bertugas": { id: "Monitoring Kasir Bertugas", en: "On-Duty Cashier Monitor" },
   "/app/platform": { id: "Ringkasan platform", en: "Platform Overview" },

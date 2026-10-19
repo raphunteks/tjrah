@@ -12,20 +12,20 @@ import { searchIcd } from "../lib/icd.js";
 
 const T1 = "t1", T2 = "t2", T3 = "t3", T4 = "t4";
 const B1 = "b1", B2 = "b2", B3 = "b3";
-const STORE_KEY = "harumin-demo-v6"; // v6: paket resmi (Starter 500k, Growth 2.5jt 6 bln 12 Okt 2026 - 12 Apr 2027, Enterprise 3.5jt)
-const SESSION_KEY = "harumin-demo-session";
+const STORE_KEY = "tijarah-demo-v6"; // v6: paket resmi (Starter 500k, Growth 2.5jt 6 bln 12 Okt 2026 - 12 Apr 2027, Enterprise 3.5jt)
+const SESSION_KEY = "tijarah-demo-session";
 
 export const DEMO_USERS = [
-  { id: "u0", email: "superadmin@demo.harum.in", role: "superadmin", full_name: "Superadmin Demo", tenant_id: null, branch_id: null },
-  { id: "u1", email: "owner@demo.harum.in", role: "owner", full_name: "Owner Demo", tenant_id: T1, branch_id: null },
-  { id: "u2", email: "gm@demo.harum.in", role: "gm", full_name: "GM Demo", tenant_id: T1, branch_id: null, pin: "246810" },
-  { id: "u3", email: "staff@demo.harum.in", role: "staff", full_name: "Staff Demo", tenant_id: T1, branch_id: B1 },
-  { id: "u4", email: "dokter@demo.harum.in", role: "dokter", full_name: "drg. Demo", tenant_id: T2, branch_id: B3, commission_rate: 0.3, nik: "7371990101800009" },
-  { id: "u5", email: "kasir.klinik@demo.harum.in", role: "staff", full_name: "Kasir Klinik Demo", tenant_id: T2, branch_id: B3, label: "Kasir klinik" },
-  { id: "u6", email: "owner.klinik@demo.harum.in", role: "owner", full_name: "Owner Klinik Demo", tenant_id: T2, branch_id: null, label: "Owner klinik" },
+  { id: "u0", email: "superadmin@demo.tijarah.id", role: "superadmin", full_name: "Superadmin Demo", tenant_id: null, branch_id: null },
+  { id: "u1", email: "owner@demo.tijarah.id", role: "owner", full_name: "Owner Demo", tenant_id: T1, branch_id: null },
+  { id: "u2", email: "gm@demo.tijarah.id", role: "gm", full_name: "GM Demo", tenant_id: T1, branch_id: null, pin: "246810" },
+  { id: "u3", email: "staff@demo.tijarah.id", role: "staff", full_name: "Staff Demo", tenant_id: T1, branch_id: B1 },
+  { id: "u4", email: "dokter@demo.tijarah.id", role: "dokter", full_name: "drg. Demo", tenant_id: T2, branch_id: B3, commission_rate: 0.3, nik: "7371990101800009" },
+  { id: "u5", email: "kasir.klinik@demo.tijarah.id", role: "staff", full_name: "Kasir Klinik Demo", tenant_id: T2, branch_id: B3, label: "Kasir klinik" },
+  { id: "u6", email: "owner.klinik@demo.tijarah.id", role: "owner", full_name: "Owner Klinik Demo", tenant_id: T2, branch_id: null, label: "Owner klinik" },
   // Member (L5): terikat ke satu Pelanggan (cu1/cu2 di data demo). Masuk lewat Kode Masuk di dunia nyata; di demo cukup pilih akun.
-  { id: "um1", email: "member@demo.harum.in", role: "member", full_name: "Hasan (demo)", tenant_id: T1, branch_id: null, customer_id: "cu1", label: "Member" },
-  { id: "um2", email: "member2@demo.harum.in", role: "member", full_name: "Mega (demo)", tenant_id: T1, branch_id: null, customer_id: "cu2", label: "Member 2" },
+  { id: "um1", email: "member@demo.tijarah.id", role: "member", full_name: "Hasan (demo)", tenant_id: T1, branch_id: null, customer_id: "cu1", label: "Member" },
+  { id: "um2", email: "member2@demo.tijarah.id", role: "member", full_name: "Mega (demo)", tenant_id: T1, branch_id: null, customer_id: "cu2", label: "Member 2" },
 ];
 
 // ── RNG deterministik ──
@@ -49,7 +49,7 @@ function seed() {
       { id: "p3", code: "enterprise", name: "Enterprise (1 Tahun)", price_month: 291666, price_total: 3500000, duration_months: 12, max_branches: 99, max_cashiers: null, ai_queries_month: null, modules: ["M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9", "M10", "M11", "M12"], is_active: true },
     ],
     tenants: [
-      { id: T1, name: "Kopi Harum Makassar", slug: "kopi-harum", pillar: "fnb", tax_label: "PBJT", tax_rate: 0.1, status: "active", plan_id: "p2", current_period_end: "2027-04-12", owner_email: "owner@demo.harum.in", created_at: "2026-10-12" },
+      { id: T1, name: "Kopi Harum Makassar", slug: "kopi-harum", pillar: "fnb", tax_label: "PBJT", tax_rate: 0.1, status: "active", plan_id: "p2", current_period_end: "2027-04-12", owner_email: "owner@demo.tijarah.id", created_at: "2026-10-12" },
       { id: T2, name: "Klinik Gigi Senyum", slug: "klinik-senyum", pillar: "health", tax_label: "Tanpa pajak", tax_rate: 0, status: "trial", plan_id: "p3", current_period_end: "2027-10-12", owner_email: "drg@klinik-senyum.test", created_at: ago(20) },
       { id: T3, name: "Toko Bangunan Jaya", slug: "tb-jaya", pillar: "retail", tax_label: "PPN", tax_rate: 0.11, status: "past_due", plan_id: "p1", current_period_end: ago(4), owner_email: "admin@tbjaya.test", created_at: ago(120) },
       { id: T4, name: "Salon Ayu", slug: "salon-ayu", pillar: "service", tax_label: "Pajak", tax_rate: 0, status: "suspended", plan_id: "p1", current_period_end: ago(40), owner_email: "ayu@salon.test", created_at: ago(300) },
@@ -77,8 +77,8 @@ function seed() {
     approvals: [
       { id: "a1", tenant_id: T1, branch_id: B1, feature: 9, kind: "po", ref: "PO-2610-014", title: "PO biji kopi arabika Toraja 25 kg", amount: 4750000, detail: { po_id: "po1", vendor: "CV Kopi Toraja (demo)", termin: "Net 14" }, status: "pending", requested_at: new Date(Date.now() - 5 * 3600e3).toISOString() },
       { id: "a2", tenant_id: T1, branch_id: null, feature: 14, kind: "payroll", ref: "PAY-2609", title: "Payroll September · 14 karyawan", amount: 52300000, detail: { karyawan: 14 }, status: "pending", requested_at: new Date(Date.now() - 26 * 3600e3).toISOString() },
-      { id: "a3", tenant_id: T1, branch_id: B2, feature: 6, kind: "void", ref: "ORD-HARUM-9102", title: "Void transaksi · salah input kasir", amount: 105600, detail: { order_id: "ord-v1", alasan: "Salah Input Kasir", catatan: "Jumlah es kopi tertulis 3, seharusnya 2" }, status: "pending", requested_at: new Date(Date.now() - 2 * 3600e3).toISOString(), requested_by: "u3" },
-      { id: "a4", tenant_id: T1, branch_id: null, feature: 20, kind: "supplies", ref: "SUP-0031", title: "Harum.in Supplies · cup 16oz 2.000 pcs", amount: 1900000, detail: { distributor: "demo" }, status: "pending", requested_at: new Date(Date.now() - 50 * 3600e3).toISOString() },
+      { id: "a3", tenant_id: T1, branch_id: B2, feature: 6, kind: "void", ref: "ORD-TIJARAH-9102", title: "Void transaksi · salah input kasir", amount: 105600, detail: { order_id: "ord-v1", alasan: "Salah Input Kasir", catatan: "Jumlah es kopi tertulis 3, seharusnya 2" }, status: "pending", requested_at: new Date(Date.now() - 2 * 3600e3).toISOString(), requested_by: "u3" },
+      { id: "a4", tenant_id: T1, branch_id: null, feature: 20, kind: "supplies", ref: "SUP-0031", title: "Tijarah Supplies · cup 16oz 2.000 pcs", amount: 1900000, detail: { distributor: "demo" }, status: "pending", requested_at: new Date(Date.now() - 50 * 3600e3).toISOString() },
       { id: "a5", tenant_id: T1, branch_id: B2, feature: 10, kind: "sto", ref: "STO-0007", title: "Transfer stok sirup kopi 12 botol ke Panakkukang", amount: 840000, detail: { sto_id: "sto1", dari: "Gudang Pusat", ke: "Cabang Panakkukang" }, status: "pending", requested_at: new Date(Date.now() - 3 * 3600e3).toISOString() },
     ],
     capital: [{ id: "c1", tenant_id: T1, amount: 75000000, tenor_months: 12, purpose: "Renovasi cabang ketiga (demo)", status: "review", created_at: ago(6) }],
@@ -94,7 +94,7 @@ function seed() {
     hermes: [
       { id: "h1", tenant_id: T1, channel: "whatsapp", target: "Owner", kind: "z_report", message: "Z-Report kemarin terkirim: ringkasan 2 cabang.", status: "simulated", created_at: new Date(Date.now() - 9 * 3600e3).toISOString() },
       { id: "h2", tenant_id: T1, channel: "whatsapp", target: "GM", kind: "low_stock", message: "Sirup Kopi Cabang Panakkukang tersisa 2 botol (minimum 5).", status: "simulated", created_at: new Date(Date.now() - 5 * 3600e3).toISOString() },
-      { id: "h3", tenant_id: T1, channel: "discord", target: "#alert-sistem", kind: "void_alert", message: "Permintaan void ORD-HARUM-9102 Rp 185.000 menunggu otorisasi.", status: "simulated", created_at: new Date(Date.now() - 2 * 3600e3).toISOString() },
+      { id: "h3", tenant_id: T1, channel: "discord", target: "#alert-sistem", kind: "void_alert", message: "Permintaan void ORD-TIJARAH-9102 Rp 185.000 menunggu otorisasi.", status: "simulated", created_at: new Date(Date.now() - 2 * 3600e3).toISOString() },
       { id: "h4", tenant_id: T1, channel: "discord", target: "#laporan-harian", kind: "margin_drop", message: "Marjin kotor Cabang Panakkukang turun dibanding rata-rata 7 hari.", status: "simulated", created_at: new Date(Date.now() - 40 * 60e3).toISOString() },
     ],
     tenant_branding: [
@@ -136,7 +136,7 @@ const emitTable = (t) => (bus.get(t) ?? new Set()).forEach((cb) => { try { cb({ 
 function load() {
   if (db) return db;
   try {
-    const raw = localStorage.getItem(STORE_KEY);
+    const raw = localStorage.getItem(STORE_KEY) || localStorage.getItem("harumin-demo-v6");
     db = raw ? JSON.parse(raw) : seed();
   } catch {
     db = seed();
@@ -216,7 +216,7 @@ function persist() {
 
 let currentUser = null;
 try {
-  const id = sessionStorage.getItem(SESSION_KEY);
+  const id = sessionStorage.getItem(SESSION_KEY) || sessionStorage.getItem("harumin-demo-session");
   currentUser = DEMO_USERS.find((u) => u.id === id) ?? null;
 } catch { /* abaikan */ }
 // Pengguna aktif = akun statis + baris profilnya yang hidup (nama, cabang utama, status) agar perubahan terbawa.
@@ -275,7 +275,8 @@ export const api = {
   async getSessionUserId() { return currentUser?.id ?? null; },
   onAuthChange(cb) { listeners.add(cb); return () => listeners.delete(cb); },
   async signIn(email) {
-    const em = email.trim().toLowerCase();
+    let em = email.trim().toLowerCase();
+    em = em.replace(/@demo\.harum\.in$/, "@demo.tijarah.id");
     const prof = load().profiles.find((x) => (x.email ?? "").toLowerCase() === em);
     const base = DEMO_USERS.find((x) => x.email === em);
     const u = base ?? (prof && { id: prof.id, email: prof.email, role: prof.role, full_name: prof.full_name, tenant_id: prof.tenant_id, branch_id: prof.branch_id });
@@ -785,7 +786,7 @@ export const api = {
     if (currentUser.role !== "superadmin") {   // sama dengan capital_guard() di SQL
       const old = row.id ? db.capital.find((x) => x.id === row.id) : null;
       if (!old && row.status && !["draft", "submitted"].includes(row.status)) throw new Error("Status awal pengajuan harus draf atau diajukan");
-      if (old && row.status && row.status !== old.status && !(old.status === "draft" && row.status === "submitted")) throw new Error("Status pengajuan diputuskan tim Harum.in (lender), bukan oleh tenant");
+      if (old && row.status && row.status !== old.status && !(old.status === "draft" && row.status === "submitted")) throw new Error("Status pengajuan diputuskan tim Tijarah (lender), bukan oleh tenant");
       if (old && old.status !== "draft" && ["amount", "tenor_months", "purpose"].some((k) => k in row && row[k] !== old[k])) throw new Error("Pengajuan yang sudah dikirim tidak dapat diubah");
     }
     if (row.id) db.capital = db.capital.map((x) => (x.id === row.id ? { ...x, ...row } : x));
@@ -795,7 +796,7 @@ export const api = {
   },
   async decideCapital(id, status, note) {
     load();
-    if (currentUser.role !== "superadmin") throw new Error("Hanya tim Harum.in yang dapat memutuskan pengajuan modal");
+    if (currentUser.role !== "superadmin") throw new Error("Hanya tim Tijarah yang dapat memutuskan pengajuan modal");
     if (!["review", "approved", "rejected"].includes(status)) throw new Error("Status tidak valid");
     const c = db.capital.find((x) => x.id === id);
     if (!c) throw new Error("Pengajuan tidak ditemukan");

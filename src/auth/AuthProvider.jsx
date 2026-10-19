@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { loadApi } from "../api/index.js";
 
 const Ctx = createContext(null);
-const VIEW_KEY = "harumin-view-tenant";
+const VIEW_KEY = "tijarah-view-tenant";
 const PROFILE_CACHE_KEY = "tijarah-auth-profile";
 
 const remember = (t) => {
@@ -35,7 +35,7 @@ export function AuthProvider({ children }) {
   // Superadmin memilih tenant yang sedang dilihat (konteks lintas tenant).
   // Disimpan per tab (sessionStorage) agar tidak hilang saat halaman dimuat ulang.
   const [viewTenant, setViewTenant] = useState(() => {
-    try { return sessionStorage.getItem(VIEW_KEY); } catch { return null; }
+    try { return sessionStorage.getItem(VIEW_KEY) || sessionStorage.getItem("harumin-view-tenant"); } catch { return null; }
   });
   // Jenis usaha tenant aktif (fnb, health, …) menentukan ruang kerja yang relevan.
   const [tenant, setTenant] = useState(null);
@@ -88,7 +88,7 @@ export function AuthProvider({ children }) {
                 setTenant(p.tenant);
               }
               try { localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(p)); } catch {}
-              const key = `harumin-login-${uid}`;
+              const key = `tijarah-login-${uid}`;
               let first = true;
               try { first = !sessionStorage.getItem(key); sessionStorage.setItem(key, "1"); } catch { /* abaikan */ }
               a.touchPresence?.(first).catch(() => {});
@@ -103,7 +103,7 @@ export function AuthProvider({ children }) {
             const m = String(e?.message ?? e);
             setProblem(
               /schema cache|column|does not exist|relation|PGRST20[45]/i.test(m)
-                ? `Login berhasil, tetapi database proyek Supabase ini bukan skema Harum.in (${m}). Jalankan \`npm run db:doctor\` di terminal, lalu ikuti langkahnya.`
+                ? `Login berhasil, tetapi database proyek Supabase ini bukan skema Tijarah (${m}). Jalankan \`npm run db:doctor\` di terminal, lalu ikuti langkahnya.`
                 : /multiple \(or no\) rows|no rows|PGRST116/i.test(m)
                   ? "Login berhasil, tetapi profil akun ini belum ada di tabel profiles. Jalankan `npm run demo:users` (atau bootstrap.sql)."
                   : `Login berhasil, tetapi profil gagal dimuat: ${m}`,
@@ -268,4 +268,20 @@ export function AuthProvider({ children }) {
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 
-export const useAuth = () => useContext(Ctx);
+export const useAuth = () => {
+  const ctx = useContext(Ctx);
+  return ctx || {
+    api: null,
+    profile: null,
+    role: null,
+    tenant: null,
+    tenantId: null,
+    ready: false,
+    blocked: null,
+    problem: null,
+    viewTenant: null,
+    chooseTenant: () => {},
+    signIn: async () => {},
+    signOut: async () => {}
+  };
+};

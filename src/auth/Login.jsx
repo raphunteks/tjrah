@@ -6,14 +6,14 @@ import "../styles/dashboard.css";
 
 // Hanya tampil saat `npm run dev` dengan Supabase asli (dibuang dari build produksi). Email tetap; kata sandi = DEMO_PASSWORD di .env.local.
 const DEV_ACCOUNTS = [
-  ["superadmin@demo.harum.in", "superadmin"],
-  ["owner@demo.harum.in", "owner"],
-  ["gm@demo.harum.in", "gm"],
-  ["staff@demo.harum.in", "staff"],
-  ["dokter@demo.harum.in", "dokter"],
-  ["kasir.klinik@demo.harum.in", "staff", "Kasir klinik"],
-  ["owner.klinik@demo.harum.in", "owner", "Owner klinik"],
-  ["member@demo.harum.in", "member"],
+  ["superadmin@demo.tijarah.id", "superadmin"],
+  ["owner@demo.tijarah.id", "owner"],
+  ["gm@demo.tijarah.id", "gm"],
+  ["staff@demo.tijarah.id", "staff"],
+  ["dokter@demo.tijarah.id", "dokter"],
+  ["kasir.klinik@demo.tijarah.id", "staff", "Kasir klinik"],
+  ["owner.klinik@demo.tijarah.id", "owner", "Owner klinik"],
+  ["member@demo.tijarah.id", "member"],
 ];
 
 export default function Login() {
@@ -225,7 +225,7 @@ export default function Login() {
           )}
           {!err && !problem && blocked && (
             <p className="d-field__error" role="alert">
-              <strong>Akses ditolak.</strong> {blocked} Hubungi pemilik bisnis Anda atau dukungan Harum.in.
+              <strong>Akses ditolak.</strong> {blocked} Hubungi pemilik bisnis Anda atau dukungan Tijarah.
             </p>
           )}
           <button type="submit" className="d-btn d-btn--primary d-btn--block" disabled={busy || !api}>
