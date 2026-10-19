@@ -35,22 +35,38 @@ export default function PaymentModal({ isOpen, onClose, plan, onSuccess, tenant,
   const isUpgrade = plan.code?.toLowerCase().includes("growth") || plan.code?.toLowerCase().includes("enterprise");
   const modalTitle = isUpgrade ? `Upgrade ke Langganan ${plan.name}` : `Berlangganan ${plan.name}`;
 
+  const [cfg, setCfg] = useState(() => getPakasirConfig());
+
   // Hitung perkiraan biaya dari kalkulator fee Pakasir (dinamis / kustom)
   useEffect(() => {
     let active = true;
-    setLoadingFees(true);
-    calculateChannelFees(basePrice)
-      .then((calc) => {
-        if (active) {
-          setFees(calc);
-          setLoadingFees(false);
-        }
-      })
-      .catch(() => {
-        if (active) setLoadingFees(false);
-      });
+
+    const refreshFeeData = () => {
+      setLoadingFees(true);
+      calculateChannelFees(basePrice)
+        .then((calc) => {
+          if (active) {
+            setFees(calc);
+            setLoadingFees(false);
+          }
+        })
+        .catch(() => {
+          if (active) setLoadingFees(false);
+        });
+      setCfg(getPakasirConfig());
+    };
+
+    refreshFeeData();
+
+    // Dengarkan event sinkronisasi dinamis dari Superadmin / Dev
+    const handleFeesUpdated = () => {
+      refreshFeeData();
+    };
+
+    window.addEventListener("tijarah:fees_updated", handleFeesUpdated);
     return () => {
       active = false;
+      window.removeEventListener("tijarah:fees_updated", handleFeesUpdated);
     };
   }, [basePrice]);
 
@@ -68,8 +84,12 @@ export default function PaymentModal({ isOpen, onClose, plan, onSuccess, tenant,
   }, [selectedMethod]);
 
   const gatewayFee = fees[selectedMethod] != null ? fees[selectedMethod] : activeChannel.defaultFee;
-  const cfg = getPakasirConfig();
-  const feePaidByCustomer = cfg.feePayer === "customer" ? gatewayFee : cfg.feePayer === "split" ? Math.round(gatewayFee / 2) : 0;
+  const feePaidByCustomer =
+    cfg.feePayer === "merchant"
+      ? 0
+      : cfg.feePayer === "split"
+      ? Math.round(gatewayFee / 2)
+      : gatewayFee;
   const totalAmount = Math.max(0, basePrice - referralDiscount + feePaidByCustomer);
 
   const handleApplyReferral = (e) => {
@@ -284,7 +304,11 @@ export default function PaymentModal({ isOpen, onClose, plan, onSuccess, tenant,
                         <div className="tjr-pay-channel-info">
                           <span className="tjr-pay-channel-name">{ch.name}</span>
                           <span className="tjr-pay-channel-fee">
-                            Biaya {rupiah(channelFee)}
+                            {cfg.feePayer === "merchant"
+                              ? "Gratis (Biaya Ditanggung)"
+                              : cfg.feePayer === "split"
+                              ? `Biaya ${rupiah(Math.round(channelFee / 2))} (Subsidi 50%)`
+                              : `Biaya ${rupiah(channelFee)}`}
                           </span>
                         </div>
                       </div>
@@ -403,8 +427,18 @@ export default function PaymentModal({ isOpen, onClose, plan, onSuccess, tenant,
                 )}
 
                 <div style={{ display: "flex", justifyContent: "space-between", color: "var(--color-muted, #64748b)" }}>
-                  <span>Biaya {activeChannel.name}</span>
-                  <span style={{ fontWeight: 600, color: "var(--color-ink, #0f172a)" }}>{rupiah(gatewayFee)}</span>
+                  <span>
+                    Biaya {activeChannel.name}
+                    {cfg.feePayer === "merchant" ? " (Ditanggung)" : cfg.feePayer === "split" ? " (Subsidi 50%)" : ""}
+                  </span>
+                  <span
+                    style={{
+                      fontWeight: 600,
+                      color: feePaidByCustomer === 0 ? "#16a34a" : "var(--color-ink, #0f172a)"
+                    }}
+                  >
+                    {feePaidByCustomer === 0 ? "Gratis" : rupiah(feePaidByCustomer)}
+                  </span>
                 </div>
 
                 <div

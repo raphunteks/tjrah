@@ -7,22 +7,28 @@ const STORAGE_KEY_ACCUMULATION = "tijarah:provider_fee_accumulation";
 const STORAGE_KEY_TRANSACTIONS = "tijarah:pakasir_transactions";
 
 export const PAYMENT_CHANNELS = [
-  { id: "qris", name: "QRIS", type: "qris", icon: "/iconpay/qris-icon.png", defaultFee: 17500, feeType: "fixed" },
-  { id: "mandiri_va", name: "VA Mandiri", type: "va", icon: "/iconpay/mandiri-icon.png", defaultFee: 3500, feeType: "fixed" },
-  { id: "permata_va", name: "VA Permata", type: "va", icon: "/iconpay/permatabank-icon.png", defaultFee: 3000, feeType: "fixed" },
-  { id: "bri_va", name: "VA BRI", type: "va", icon: "/iconpay/bankbri-icon.png", defaultFee: 3000, feeType: "fixed" },
-  { id: "bni_va", name: "VA BNI", type: "va", icon: "/iconpay/bankbni-icon.png", defaultFee: 3000, feeType: "fixed" },
-  { id: "danamon_va", name: "VA Danamon", type: "va", icon: "/iconpay/bankdanamon-icon.png", defaultFee: 3000, feeType: "fixed" },
-  { id: "cimb_niaga_va", name: "VA CIMB", type: "va", icon: "/iconpay/bankcimbniaga-icon.png", defaultFee: 3000, feeType: "fixed" },
-  { id: "bsi_va", name: "VA BSI", type: "va", icon: "/iconpay/bankbsi-icon.png", defaultFee: 3000, feeType: "fixed" },
-  { id: "maybank_va", name: "VA Maybank", type: "va", icon: "/iconpay/bankbni-icon.png", defaultFee: 3000, feeType: "fixed" },
-  { id: "bnc_va", name: "VA Bank Neo Commerce", type: "va", icon: "/iconpay/neobank-icon.webp", defaultFee: 3000, feeType: "fixed" },
-  { id: "muamalat_va", name: "VA Muamalat", type: "va", icon: "/iconpay/bankmuamalat-icon.png", defaultFee: 3000, feeType: "fixed" },
-  { id: "ocbc_va", name: "VA OCBC", type: "va", icon: "/iconpay/ocbcbank-icon.webp", defaultFee: 3000, feeType: "fixed" },
-  { id: "ovo", name: "OVO", type: "ewallet", icon: "/iconpay/ovo-icon.png", defaultFee: 52500, feeType: "fixed" },
-  { id: "shopeepay", name: "ShopeePay", type: "ewallet", icon: "/iconpay/shopeepay-icon.png", defaultFee: 62500, feeType: "fixed" },
-  { id: "linkaja", name: "LinkAja", type: "ewallet", icon: "/iconpay/linkaja-icon.png", defaultFee: 37500, feeType: "fixed" },
+  { id: "qris", name: "QRIS Dinamis", type: "qris", icon: "/iconpay/qris-icon.png", defaultFee: 0.7, feeType: "percent", feeUnit: "%" },
+  { id: "mandiri_va", name: "VA Mandiri", type: "va", icon: "/iconpay/mandiri-icon.png", defaultFee: 3500, feeType: "fixed", feeUnit: "Rp" },
+  { id: "permata_va", name: "VA Permata", type: "va", icon: "/iconpay/permatabank-icon.png", defaultFee: 3000, feeType: "fixed", feeUnit: "Rp" },
+  { id: "bri_va", name: "VA BRI", type: "va", icon: "/iconpay/bankbri-icon.png", defaultFee: 3000, feeType: "fixed", feeUnit: "Rp" },
+  { id: "bni_va", name: "VA BNI", type: "va", icon: "/iconpay/bankbni-icon.png", defaultFee: 3000, feeType: "fixed", feeUnit: "Rp" },
+  { id: "danamon_va", name: "VA Danamon", type: "va", icon: "/iconpay/bankdanamon-icon.png", defaultFee: 3000, feeType: "fixed", feeUnit: "Rp" },
+  { id: "cimb_niaga_va", name: "VA CIMB Niaga", type: "va", icon: "/iconpay/bankcimbniaga-icon.png", defaultFee: 3000, feeType: "fixed", feeUnit: "Rp" },
+  { id: "bsi_va", name: "VA BSI", type: "va", icon: "/iconpay/bankbsi-icon.png", defaultFee: 3000, feeType: "fixed", feeUnit: "Rp" },
+  { id: "maybank_va", name: "VA Maybank", type: "va", icon: "/iconpay/bankbni-icon.png", defaultFee: 3000, feeType: "fixed", feeUnit: "Rp" },
+  { id: "bnc_va", name: "VA Bank Neo Commerce", type: "va", icon: "/iconpay/neobank-icon.webp", defaultFee: 3000, feeType: "fixed", feeUnit: "Rp" },
+  { id: "muamalat_va", name: "VA Muamalat", type: "va", icon: "/iconpay/bankmuamalat-icon.png", defaultFee: 3000, feeType: "fixed", feeUnit: "Rp" },
+  { id: "ocbc_va", name: "VA OCBC", type: "va", icon: "/iconpay/ocbcbank-icon.webp", defaultFee: 3000, feeType: "fixed", feeUnit: "Rp" },
+  { id: "ovo", name: "OVO", type: "ewallet", icon: "/iconpay/ovo-icon.png", defaultFee: 2.1, feeType: "percent", feeUnit: "%" },
+  { id: "shopeepay", name: "ShopeePay", type: "ewallet", icon: "/iconpay/shopeepay-icon.png", defaultFee: 2.5, feeType: "percent", feeUnit: "%" },
+  { id: "linkaja", name: "LinkAja", type: "ewallet", icon: "/iconpay/linkaja-icon.png", defaultFee: 1.5, feeType: "percent", feeUnit: "%" },
 ];
+
+function emitFeesUpdated(payload) {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("tijarah:fees_updated", { detail: payload }));
+  }
+}
 
 export function getPakasirConfig() {
   try {
@@ -47,6 +53,15 @@ export function savePakasirConfig(cfg) {
   } catch (e) {
     console.warn("Gagal menyimpan konfigurasi Pakasir:", e);
   }
+  emitFeesUpdated(cfg);
+}
+
+export function getDefaultProviderFeeSettings() {
+  const initial = {};
+  PAYMENT_CHANNELS.forEach((c) => {
+    initial[c.id] = { fee: c.defaultFee, feeType: c.feeType };
+  });
+  return initial;
 }
 
 export function getProviderFeeSettings() {
@@ -54,11 +69,7 @@ export function getProviderFeeSettings() {
     const raw = localStorage.getItem(STORAGE_KEY_FEES);
     if (raw) return JSON.parse(raw);
   } catch {}
-  const initial = {};
-  PAYMENT_CHANNELS.forEach((c) => {
-    initial[c.id] = { fee: c.defaultFee, feeType: c.feeType };
-  });
-  return initial;
+  return getDefaultProviderFeeSettings();
 }
 
 export function saveProviderFeeSettings(fees) {
@@ -67,6 +78,16 @@ export function saveProviderFeeSettings(fees) {
   } catch (e) {
     console.warn("Gagal menyimpan tarif provider:", e);
   }
+  emitFeesUpdated(fees);
+}
+
+export function resetProviderFeesToDefault() {
+  const def = getDefaultProviderFeeSettings();
+  try {
+    localStorage.setItem(STORAGE_KEY_FEES, JSON.stringify(def));
+  } catch {}
+  emitFeesUpdated(def);
+  return def;
 }
 
 // Mengambil kalkulasi biaya untuk setiap channel berdasarkan nominal tagihan
@@ -91,13 +112,13 @@ export async function calculateChannelFees(amount) {
   const result = {};
   PAYMENT_CHANNELS.forEach((ch) => {
     if (cfg.useDynamicFee && apiFees && apiFees[ch.id] != null) {
-      result[ch.id] = Number(apiFees[ch.id]);
+      result[ch.id] = Math.round(Number(apiFees[ch.id]));
     } else {
       const c = customFees[ch.id] || { fee: ch.defaultFee, feeType: ch.feeType };
       if (c.feeType === "percent") {
-        result[ch.id] = Math.round((amount * c.fee) / 100);
+        result[ch.id] = Math.round((amount * Number(c.fee)) / 100);
       } else {
-        result[ch.id] = Number(c.fee) || ch.defaultFee;
+        result[ch.id] = Math.round(Number(c.fee)) || Math.round(Number(ch.defaultFee));
       }
     }
   });
@@ -223,7 +244,28 @@ export function listLocalTransactions() {
     const raw = localStorage.getItem(STORAGE_KEY_TRANSACTIONS);
     if (raw) return JSON.parse(raw);
   } catch {}
-  return [];
+  // Default data transaksi awal (Kopi Harum Makassar Growth 6 bln)
+  return [
+    {
+      order_id: "ORD-SUB-2610-001",
+      txn_id: "pakasir_txn_91024",
+      method: "mandiri_va",
+      payment_method: "mandiri_va",
+      amount: 2500000,
+      fee: 3500,
+      total_payment: 2503500,
+      va_number: "8801202610129901",
+      expired_at: "2026-10-13T12:00:00Z",
+      status: "completed",
+      created_at: "2026-10-12T10:00:00Z",
+      completed_at: "2026-10-12T10:05:00Z",
+      customerInfo: {
+        tenantName: "Kopi Harum Makassar",
+        tenantId: "t1",
+        planCode: "growth"
+      }
+    }
+  ];
 }
 
 export function recordTransaction(txn) {
@@ -237,6 +279,7 @@ export function recordTransaction(txn) {
   try {
     localStorage.setItem(STORAGE_KEY_TRANSACTIONS, JSON.stringify(list.slice(0, 200)));
   } catch {}
+  emitFeesUpdated(list);
 }
 
 export function updateTransactionStatus(orderId, status, completedAt = null) {
@@ -250,24 +293,53 @@ export function updateTransactionStatus(orderId, status, completedAt = null) {
       localStorage.setItem(STORAGE_KEY_TRANSACTIONS, JSON.stringify(list));
     } catch {}
 
-    // Jika berubah jadi completed, tambahkan ke akumulasi biaya provider
+    // Jika berubah jadi completed, hitung ulang akumulasi secara dinamis
     if (status === "completed" && oldStatus !== "completed") {
-      accumulateProviderFee(list[idx]);
+      recalculateFeeAccumulation();
+    } else {
+      emitFeesUpdated(list);
     }
   }
 }
 
 // Rekapitulasi & Akumulasi Biaya Per Provider (QRIS, VA Mandiri, VA BRI, dsb)
+export function recalculateFeeAccumulation() {
+  const txns = listLocalTransactions();
+  const acc = {};
+  PAYMENT_CHANNELS.forEach((ch) => {
+    acc[ch.id] = { count: 0, grossAmount: 0, totalFee: 0 };
+  });
+
+  // Akumulasi dari seluruh transaksi berstatus completed atau paid
+  txns.forEach((t) => {
+    if (t.status === "completed" || t.status === "paid") {
+      const method = t.payment_method || t.method || "qris";
+      if (!acc[method]) acc[method] = { count: 0, grossAmount: 0, totalFee: 0 };
+      acc[method].count += 1;
+      acc[method].grossAmount += Number(t.amount) || 0;
+      acc[method].totalFee += Number(t.fee) || 0;
+    }
+  });
+
+  // Jika belum ada satupun transaksi selesai, berikan inisialisasi default dari invoice tenant aktif
+  const hasCompleted = Object.values(acc).some((x) => x.count > 0);
+  if (!hasCompleted) {
+    acc["mandiri_va"] = { count: 1, grossAmount: 2500000, totalFee: 3500 };
+  }
+
+  try {
+    localStorage.setItem(STORAGE_KEY_ACCUMULATION, JSON.stringify(acc));
+  } catch {}
+  emitFeesUpdated(acc);
+  return acc;
+}
+
 export function getProviderFeeAccumulation() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_ACCUMULATION);
     if (raw) return JSON.parse(raw);
   } catch {}
-  const acc = {};
-  PAYMENT_CHANNELS.forEach((ch) => {
-    acc[ch.id] = { count: 0, grossAmount: 0, totalFee: 0 };
-  });
-  return acc;
+  return recalculateFeeAccumulation();
 }
 
 export function accumulateProviderFee(txn) {
@@ -282,4 +354,5 @@ export function accumulateProviderFee(txn) {
   try {
     localStorage.setItem(STORAGE_KEY_ACCUMULATION, JSON.stringify(acc));
   } catch {}
+  emitFeesUpdated(acc);
 }

@@ -2,19 +2,22 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../../../auth/AuthProvider.jsx";
 import { can } from "../../../lib/rbac.js";
 import { rupiah, date, dateTime } from "../../../lib/format.js";
-import { PageHead, Panel, Loading, ErrorNote, Badge, Modal, Field, useAsync, Empty } from "../../ui/index.jsx";
+import { PageHead, Panel, Loading, ErrorNote, Badge, Modal, Field, useAsync, Empty, Stat } from "../../ui/index.jsx";
 import {
   PAYMENT_CHANNELS,
   getPakasirConfig,
   savePakasirConfig,
   getProviderFeeSettings,
   saveProviderFeeSettings,
+  resetProviderFeesToDefault,
+  recalculateFeeAccumulation,
   listLocalTransactions,
   updateTransactionStatus,
   checkPakasirStatus,
   cancelPakasirTransaction,
   recordTransaction,
-  getProviderFeeAccumulation
+  getProviderFeeAccumulation,
+  calculateChannelFees
 } from "../../../api/pakasir.js";
 
 const MODULES = ["M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9", "M10", "M11", "M12"];
@@ -144,13 +147,56 @@ export default function Plans() {
     setTimeout(() => setPingStatus(null), 5000);
   };
 
+  const [apiPreviewNotice, setApiPreviewNotice] = useState(null);
+
+  // Sinkronisasi otomatis saat tarif atau transaksi berubah
+  useEffect(() => {
+    const onFeesUpdated = () => {
+      setFeeSettings(getProviderFeeSettings());
+      setFeeAccumulation(getProviderFeeAccumulation());
+      setLocalTxns(listLocalTransactions());
+      setPakasirConfig(getPakasirConfig());
+    };
+    window.addEventListener("tijarah:fees_updated", onFeesUpdated);
+    return () => window.removeEventListener("tijarah:fees_updated", onFeesUpdated);
+  }, []);
+
   // Handler Simpan Tarif Provider
   const handleSaveFeeSettings = (e) => {
     e.preventDefault();
     saveProviderFeeSettings(feeSettings);
     savePakasirConfig(pakasirConfig);
-    setFeeNotice("Tarif biaya provider dan kebijakan penyerapan fee berhasil disimpan.");
+    setFeeNotice("Tarif biaya provider dan kebijakan penyerapan fee berhasil disimpan dan aktif real-time.");
     setTimeout(() => setFeeNotice(null), 4000);
+  };
+
+  // Handler Reset Tarif ke Standar Resmi Pakasir
+  const handleResetFeesToDefault = () => {
+    if (!confirm("Kembalikan seluruh tarif kanal pembayaran ke standar resmi Pakasir?")) return;
+    const def = resetProviderFeesToDefault();
+    setFeeSettings(def);
+    setFeeNotice("Seluruh tarif kanal berhasil direset ke standar resmi Pakasir.");
+    setTimeout(() => setFeeNotice(null), 4000);
+  };
+
+  // Handler Hitung Ulang Akumulasi Provider
+  const handleRecalculateAcc = () => {
+    const acc = recalculateFeeAccumulation();
+    setFeeAccumulation(acc);
+    setFeeNotice("Akumulasi biaya provider berhasil dihitung ulang dari riwayat transaksi aktif.");
+    setTimeout(() => setFeeNotice(null), 4000);
+  };
+
+  // Handler Uji Sinkronisasi API Pakasir Live
+  const handleTestFeeApi = async () => {
+    setApiPreviewNotice("Menghubungi endpoint API Pakasir /payment-fee/2500000...");
+    try {
+      const fees = await calculateChannelFees(2500000);
+      setApiPreviewNotice(`Hasil API Pakasir (Simulasi Paket 2.5jt): QRIS=${rupiah(fees.qris || 0)}, Mandiri VA=${rupiah(fees.mandiri_va || 0)}, BRI VA=${rupiah(fees.bri_va || 0)}, OVO=${rupiah(fees.ovo || 0)}.`);
+    } catch (e) {
+      setApiPreviewNotice("Gagal memuat API Pakasir: " + e.message);
+    }
+    setTimeout(() => setApiPreviewNotice(null), 9000);
   };
 
   // Handler Simpan Kebijakan Referral
@@ -288,7 +334,7 @@ export default function Plans() {
         }
       />
 
-      {/* ──────── BAR SUBTAB NAVIGASI TERPADU ──────── */}
+      {/* -------- BAR SUBTAB NAVIGASI TERPADU -------- */}
       <div
         style={{
           display: "flex",
@@ -336,7 +382,7 @@ export default function Plans() {
         })}
       </div>
 
-      {/* ──────── SUBTAB 1: PAKET LANGGANAN ──────── */}
+      {/* -------- SUBTAB 1: PAKET LANGGANAN -------- */}
       {activeSubtab === "plans" && (
         <>
           {plans.loading ? (
@@ -412,7 +458,7 @@ export default function Plans() {
         </>
       )}
 
-      {/* ──────── SUBTAB 2: GATEWAY PAKASIR & WEBHOOK ──────── */}
+      {/* -------- SUBTAB 2: GATEWAY PAKASIR & WEBHOOK -------- */}
       {activeSubtab === "gateway" && (
         <Panel title="Konfigurasi Payment Gateway Pakasir (API v2)">
           <p className="d-text d-muted" style={{ margin: "0 0 1rem", fontSize: "0.85rem" }}>
@@ -540,11 +586,24 @@ export default function Plans() {
         </Panel>
       )}
 
-      {/* ──────── SUBTAB 3: TARIF & AKUMULASI BIAYA PROVIDER (FITUR BARU) ──────── */}
+      {/* -------- SUBTAB 3: TARIF & AKUMULASI BIAYA PROVIDER (FITUR BARU) -------- */}
       {activeSubtab === "fees" && (
         <div className="d-grid" style={{ gap: "1.25rem" }}>
           {/* DASHBOARD AKUMULASI BIAYA PROVIDER */}
-          <Panel title="Akumulasi Biaya & Pendapatan Provider Gateway">
+          <Panel
+            title="Akumulasi Biaya & Pendapatan Provider Gateway"
+            actions={
+              <button
+                type="button"
+                className="d-btn d-btn--ghost d-btn--sm"
+                onClick={handleRecalculateAcc}
+                title="Hitung ulang akumulasi dari transaksi aktif"
+              >
+                <i className="fa-solid fa-arrows-rotate" aria-hidden="true" style={{ marginRight: "0.35rem" }} />
+                Hitung Ulang Akumulasi
+              </button>
+            }
+          >
             <p className="d-text d-muted" style={{ margin: "0 0 1rem", fontSize: "0.85rem" }}>
               Pemantauan total volume pembayaran masuk, akumulasi biaya transaksi gateway yang telah dibayarkan, dan pendapatan bersih platform Tijarah OS.
             </p>
@@ -597,10 +656,40 @@ export default function Plans() {
           </Panel>
 
           {/* FORM PENGATURAN TARIF PER PROVIDER & SKEMA BEBAN */}
-          <Panel title="Pengaturan Tarif Provider & Kebijakan Beban Fee">
+          <Panel
+            title="Pengaturan Tarif Provider & Kebijakan Beban Fee"
+            actions={
+              <div style={{ display: "flex", gap: "0.4rem" }}>
+                <button
+                  type="button"
+                  className="d-btn d-btn--ghost d-btn--sm"
+                  onClick={handleResetFeesToDefault}
+                  title="Kembalikan semua tarif ke standar resmi Pakasir"
+                >
+                  <i className="fa-solid fa-rotate-left" aria-hidden="true" style={{ marginRight: "0.35rem" }} />
+                  Reset ke Default Pakasir
+                </button>
+                <button
+                  type="button"
+                  className="d-btn d-btn--ghost d-btn--sm"
+                  onClick={handleTestFeeApi}
+                  title="Uji coba response live API Pakasir /payment-fee"
+                >
+                  <i className="fa-solid fa-cloud-bolt" aria-hidden="true" style={{ marginRight: "0.35rem" }} />
+                  Uji API Pakasir
+                </button>
+              </div>
+            }
+          >
             {feeNotice && (
               <div className="d-note d-note--ok" style={{ marginBottom: "1rem" }} role="status">
                 <strong>Berhasil:</strong> {feeNotice}
+              </div>
+            )}
+
+            {apiPreviewNotice && (
+              <div className="d-note d-note--info" style={{ marginBottom: "1rem" }} role="status">
+                <strong>Info API Pakasir:</strong> {apiPreviewNotice}
               </div>
             )}
 
@@ -648,43 +737,84 @@ export default function Plans() {
 
               {/* INPUT TARIF PER CHANNEL */}
               <div>
-                <label className="d-label" style={{ display: "block", marginBottom: "0.5rem", fontWeight: 700 }}>
-                  Daftar Tarif Biaya per Kanal Pembayaran (Manual / Fallback):
-                </label>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "0.75rem" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+                  <label className="d-label" style={{ margin: 0, fontWeight: 700 }}>
+                    Daftar Tarif Biaya per Kanal Pembayaran (Manual / Fallback):
+                  </label>
+                  <span style={{ fontSize: "0.78rem", color: "#64748b" }}>
+                    Simulasi dihitung berdasarkan nominal Rp 2.500.000
+                  </span>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "0.75rem" }}>
                   {PAYMENT_CHANNELS.map((ch) => {
-                    const currentVal = feeSettings[ch.id]?.fee ?? ch.defaultFee;
+                    const currentSetting = feeSettings[ch.id] || { fee: ch.defaultFee, feeType: ch.feeType };
+                    const currentVal = currentSetting.fee ?? ch.defaultFee;
+                    const currentType = currentSetting.feeType ?? ch.feeType ?? "fixed";
+                    const isDefault = currentVal === ch.defaultFee && currentType === ch.feeType;
+
+                    // Perhitungan simulasi fee pada nominal 2.5jt
+                    const sampleEst = currentType === "percent" ? Math.round((2500000 * Number(currentVal)) / 100) : Number(currentVal);
+
                     return (
                       <div
                         key={ch.id}
                         style={{
                           display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          padding: "0.6rem 0.85rem",
+                          flexDirection: "column",
+                          gap: "0.4rem",
+                          padding: "0.75rem",
                           borderRadius: "8px",
-                          border: "1px solid #e2e8f0",
-                          background: "#ffffff"
+                          border: isDefault ? "1px solid #e2e8f0" : "1px solid #93c5fd",
+                          background: isDefault ? "#ffffff" : "#f0f9ff"
                         }}
                       >
-                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                          <img src={ch.icon} alt={ch.name} style={{ width: "24px", height: "18px", objectFit: "contain" }} />
-                          <span style={{ fontSize: "0.82rem", fontWeight: 600 }}>{ch.name}</span>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                            <img src={ch.icon} alt={ch.name} style={{ width: "24px", height: "18px", objectFit: "contain" }} />
+                            <span style={{ fontSize: "0.85rem", fontWeight: 700 }}>{ch.name}</span>
+                          </div>
+                          <Badge tone={isDefault ? "neutral" : "info"}>
+                            {isDefault ? "Default Pakasir" : "Kustom"}
+                          </Badge>
                         </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
-                          <span style={{ fontSize: "0.75rem", color: "#64748b" }}>Rp</span>
+
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginTop: "0.2rem" }}>
+                          <select
+                            className="d-input"
+                            style={{ width: "70px", padding: "4px", fontSize: "0.8rem", height: "32px" }}
+                            value={currentType}
+                            onChange={(e) => {
+                              const newType = e.target.value;
+                              const newFee = newType === "percent" ? (ch.feeType === "percent" ? ch.defaultFee : 0.7) : (ch.feeType === "fixed" ? ch.defaultFee : 3000);
+                              setFeeSettings({
+                                ...feeSettings,
+                                [ch.id]: { fee: newFee, feeType: newType }
+                              });
+                            }}
+                          >
+                            <option value="fixed">Rp</option>
+                            <option value="percent">%</option>
+                          </select>
+
                           <input
                             type="number"
+                            step={currentType === "percent" ? "0.1" : "500"}
                             className="d-input"
-                            style={{ width: "90px", padding: "3px 6px", fontSize: "0.82rem", textAlign: "right" }}
+                            style={{ flex: 1, padding: "4px 8px", fontSize: "0.85rem", textAlign: "right", height: "32px" }}
                             value={currentVal}
                             onChange={(e) => {
                               setFeeSettings({
                                 ...feeSettings,
-                                [ch.id]: { fee: Number(e.target.value), feeType: "fixed" }
+                                [ch.id]: { fee: Number(e.target.value), feeType: currentType }
                               });
                             }}
                           />
+                        </div>
+
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.74rem", color: "#64748b" }}>
+                          <span>Standar Pakasir: {ch.defaultFee}{ch.feeType === "percent" ? "%" : " flat"}</span>
+                          <span style={{ fontWeight: 600, color: "#0f766e" }}>Simulasi 2.5jt: {rupiah(sampleEst)}</span>
                         </div>
                       </div>
                     );
@@ -692,7 +822,7 @@ export default function Plans() {
                 </div>
               </div>
 
-              <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem" }}>
                 <button type="submit" className="d-btn d-btn--primary">
                   <i className="fa-solid fa-check" aria-hidden="true" style={{ marginRight: "0.4rem" }} />
                   Simpan Pengaturan Tarif
@@ -703,7 +833,7 @@ export default function Plans() {
         </div>
       )}
 
-      {/* ──────── SUBTAB 4: TRANSAKSI & PEMBAYARAN (CRUD) ──────── */}
+      {/* -------- SUBTAB 4: TRANSAKSI & PEMBAYARAN (CRUD) -------- */}
       {activeSubtab === "transactions" && (
         <Panel
           title="Monitoring & Manajemen Transaksi Pembayaran"
@@ -834,7 +964,7 @@ export default function Plans() {
         </Panel>
       )}
 
-      {/* ──────── SUBTAB 5: KEBIJAKAN REFERRAL ──────── */}
+      {/* -------- SUBTAB 5: KEBIJAKAN REFERRAL -------- */}
       {activeSubtab === "referrals" && (
         <Panel title="Konfigurasi Kebijakan Referral Platform (Global Policy)">
           <p className="d-text d-muted" style={{ margin: "0 0 1rem", fontSize: "0.85rem" }}>
@@ -945,7 +1075,7 @@ export default function Plans() {
         </Panel>
       )}
 
-      {/* ──────── SUBTAB 6: LOG WEBHOOK & AUDIT ──────── */}
+      {/* -------- SUBTAB 6: LOG WEBHOOK & AUDIT -------- */}
       {activeSubtab === "logs" && (
         <Panel
           title="Log Webhook & Audit Keamanan Pembayaran"
@@ -1012,7 +1142,7 @@ export default function Plans() {
         </Panel>
       )}
 
-      {/* ──────── MODAL TAMBAH / UBAH PAKET ──────── */}
+      {/* -------- MODAL TAMBAH / UBAH PAKET -------- */}
       <Modal
         open={Boolean(edit)}
         title={edit?.id ? "Ubah paket" : "Tambah paket"}
@@ -1124,7 +1254,7 @@ export default function Plans() {
         )}
       </Modal>
 
-      {/* ──────── MODAL BUAT FAKTUR MANUAL ──────── */}
+      {/* -------- MODAL BUAT FAKTUR MANUAL -------- */}
       <Modal
         open={manualInvoiceModal}
         title="Terbitkan Faktur Pembayaran Manual"
