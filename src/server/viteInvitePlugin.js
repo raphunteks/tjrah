@@ -39,7 +39,7 @@ export function inviteSmtpPlugin() {
         const url = req.url?.split("?")[0];
 
         // Preflight CORS
-        if (req.method === "OPTIONS" && (url === "/api/invite-account" || url === "/api/test-smtp" || url === "/api/hermes-dispatch" || url === "/api/send-test-email")) {
+        if (req.method === "OPTIONS" && (url === "/api/invite-account" || url === "/api/test-smtp" || url === "/api/hermes-dispatch" || url === "/api/send-test-email" || url === "/api/send-email")) {
           res.statusCode = 204;
           res.setHeader("Access-Control-Allow-Origin", "*");
           res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
@@ -58,25 +58,72 @@ export function inviteSmtpPlugin() {
           }
         }
 
-        // Endpoint: Kirim Email Uji Coba Resmi via SMTP Gmail
-        if (url === "/api/send-test-email" && req.method === "POST") {
+        // Endpoint: Kirim Email Transaksional / OTP / Notifikasi Resmi via SMTP Gmail
+        if ((url === "/api/send-test-email" || url === "/api/send-email") && req.method === "POST") {
           try {
             const body = await parseJsonBody(req);
             const transporter = getMailTransporter();
             const adminEmail = (process.env.ADMIN_EMAIL || "").replace(/^['"](.*)['"]$/, "$1");
             const senderName = (process.env.ADMIN_EMAIL_SENDER_NAME || "Tijarah System").replace(/^['"](.*)['"]$/, "$1");
             const recipient = (body.recipient || body.email || adminEmail).trim();
-            const roleLabel = body.role || "Owner Merchant";
+            const roleLabel = body.role || body.roleLabel || "Owner Merchant";
+            const otpCode = body.otpCode || body.otp;
+            const isOtp = body.kind === "pin_reset_otp" || Boolean(otpCode);
 
             if (!adminEmail || !recipient) {
               return sendJson(res, 400, { ok: false, error: "ADMIN_EMAIL belum dikonfigurasi di variabel lingkungan (.env.local)" });
             }
 
-            const mailOptions = {
-              from: `"${senderName}" <${adminEmail}>`,
-              to: recipient,
-              subject: `[Tijarah OS] Uji Notifikasi Email Resmi - ${roleLabel}`,
-              html: `
+            let subject = body.customSubject || body.subject;
+            let html = body.customHtml || body.html;
+
+            // Template Khusus: Kode OTP Reset PIN S-Wallet
+            if (isOtp && otpCode) {
+              if (!subject) {
+                subject = `[Tijarah S-Wallet] Kode OTP Reset PIN Transaksi: ${otpCode}`;
+              }
+              html = `
+                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 540px; margin: 0 auto; padding: 32px 28px; border: 1px solid #e2e8f0; border-radius: 16px; background: #ffffff; box-shadow: 0 4px 16px rgba(0,0,0,0.04);">
+                  <div style="border-bottom: 2px solid #f1f5f9; padding-bottom: 16px; margin-bottom: 24px;">
+                    <h2 style="color: #0B5D4B; margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.5px;">Tijarah Cloud OS</h2>
+                    <p style="color: #64748b; margin: 4px 0 0; font-size: 12px; font-weight: 500;">S-Wallet Digital · Keamanan Finansial</p>
+                  </div>
+
+                  <h3 style="color: #0f172a; margin: 0 0 12px; font-size: 18px; font-weight: 700;">Otorisasi Reset PIN Transaksi</h3>
+                  <p style="color: #334155; font-size: 14px; line-height: 1.6; margin: 0 0 16px;">
+                    Halo <strong>${body.userName || "Pemilik Akun"}</strong>,
+                  </p>
+                  <p style="color: #475569; font-size: 14px; line-height: 1.6; margin: 0 0 20px;">
+                    Kami menerima permintaan untuk mengatur ulang (reset) <strong>PIN Transaksi 6-Digit</strong> S-Wallet pada akun Anda. Masukkan kode One-Time Password (OTP) rahasia berikut pada antarmuka aplikasi untuk menyelesaikan pembaruan:
+                  </p>
+
+                  <div style="background: #f0fdf4; border: 2px dashed #059669; border-radius: 12px; padding: 20px; text-align: center; margin: 24px 0;">
+                    <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #047857; font-weight: 700; margin-bottom: 8px;">KODE VERIFIKASI RAHASIA</div>
+                    <div style="font-family: 'SF Mono', Monaco, Consolas, monospace; font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #065f46;">
+                      ${otpCode}
+                    </div>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 8px;">
+                      Masa berlaku: <strong>5 Menit</strong>
+                    </div>
+                  </div>
+
+                  <div style="background: #fff1f2; border-left: 4px solid #f43f5e; padding: 12px 16px; border-radius: 6px; margin: 20px 0;">
+                    <p style="margin: 0; color: #9f1239; font-size: 12px; line-height: 1.5;">
+                      <strong>PERINGATAN KEAMANAN:</strong> Jangan pernah memberikan kode OTP ini kepada siapa pun, termasuk staf yang mengatasnamakan Tijarah. Jika Anda tidak merasa melakukan permintaan ini, segera abaikan email ini dan perbarui kata sandi akun Anda.
+                    </p>
+                  </div>
+
+                  <hr style="border: none; border-top: 1px solid #f1f5f9; margin: 28px 0 16px;" />
+                  <p style="color: #94a3b8; font-size: 11px; margin: 0; text-align: center;">
+                    &copy; 2026 Tijarah Cloud OS · Pesan otomatis dari Sistem Keamanan S-Wallet
+                  </p>
+                </div>
+              `;
+            } else if (!html) {
+              if (!subject) {
+                subject = `[Tijarah OS] Uji Notifikasi Email Resmi - ${roleLabel}`;
+              }
+              html = `
                 <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 28px; border: 1px solid #e2e8f0; border-radius: 14px; background: #ffffff;">
                   <div style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #f1f5f9;">
                     <h2 style="color: #0B5D4B; margin: 0; font-size: 22px; font-weight: 700;">Tijarah Cloud OS</h2>
@@ -98,14 +145,21 @@ export function inviteSmtpPlugin() {
                   <hr style="border: none; border-top: 1px solid #f1f5f9; margin: 24px 0;" />
                   <p style="color: #94a3b8; font-size: 12px; margin: 0; text-align: center;">&copy; 2026 Tijarah Cloud OS · Seluruh hak cipta dilindungi undang-undang.</p>
                 </div>
-              `
+              `;
+            }
+
+            const mailOptions = {
+              from: `"${senderName}" <${adminEmail}>`,
+              to: recipient,
+              subject: subject,
+              html: html
             };
 
             const info = await transporter.sendMail(mailOptions);
             return sendJson(res, 200, { ok: true, messageId: info.messageId, recipient });
           } catch (err) {
             console.error("[viteInvitePlugin] Error /api/send-test-email:", err);
-            return sendJson(res, 500, { ok: false, error: err.message || "Gagal mengirim email uji coba" });
+            return sendJson(res, 500, { ok: false, error: err.message || "Gagal mengirim email" });
           }
         }
 

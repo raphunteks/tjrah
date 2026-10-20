@@ -198,20 +198,11 @@ export async function sendPinResetOtp({ channel, target, otpCode, userName = "Pe
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           recipient: target,
+          userName: userName,
+          otpCode: otpCode,
+          kind: "pin_reset_otp",
           roleLabel: "Otorisasi Reset PIN S-Wallet",
-          customSubject: `[Tijarah S-Wallet] Kode OTP Reset PIN Transaksi: ${otpCode}`,
-          customHtml: `
-            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
-              <h2 style="color: #0B5D4B; margin: 0 0 8px 0;">Tijarah S-Wallet Digital</h2>
-              <p style="color: #64748b; margin: 0 0 20px 0; font-size: 13px;">Otorisasi Reset PIN Transaksi 6-Digit</p>
-              <p style="color: #1e293b; font-size: 14px;">Halo <strong>${userName}</strong>,</p>
-              <p style="color: #475569; font-size: 14px; line-height: 1.5;">Anda meminta pengaturan ulang (reset) PIN Transaksi S-Wallet. Gunakan kode verifikasi OTP alfanumerik berikut:</p>
-              <div style="background: #f8fafc; border: 2px dashed #0B5D4B; border-radius: 8px; padding: 14px 20px; text-align: center; margin: 20px 0;">
-                <span style="font-family: monospace; font-size: 24px; font-weight: 700; letter-spacing: 4px; color: #0B5D4B;">${otpCode}</span>
-              </div>
-              <p style="color: #ef4444; font-size: 12px; margin: 0;">* Kode ini berlaku selama 5 menit. Jangan berikan kode OTP ini kepada siapa pun.</p>
-            </div>
-          `
+          customSubject: `[Tijarah S-Wallet] Kode OTP Reset PIN Transaksi: ${otpCode}`
         })
       }).catch(() => null);
 
