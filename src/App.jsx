@@ -4,6 +4,9 @@ import { useRouter } from "./lib/router.jsx";
 
 const Landing = lazy(() => import("./landing/Landing.jsx"));
 const Login = lazy(() => import("./auth/Login.jsx"));
+const Register = lazy(() => import("./auth/Register.jsx"));
+const ForgotPassword = lazy(() => import("./auth/ForgotPassword.jsx"));
+const ResetPassword = lazy(() => import("./auth/ResetPassword.jsx"));
 const AppShell = lazy(() => import("./app/AppShell.jsx"));
 const MemberShell = lazy(() => import("./member/MemberShell.jsx"));
 const MemberAuth = lazy(() => import("./member/MemberAuth.jsx"));
@@ -66,6 +69,10 @@ export default function App() {
   const inApp = cleanPath.startsWith("/app");
   const inMember = cleanPath === "/m" || cleanPath.startsWith("/m/");
   const isMasuk = cleanPath === "/masuk" || cleanPath === "/login";
+  const isRegistrasi = cleanPath === "/registrasi" || cleanPath === "/register";
+  const isLupaSandi = cleanPath === "/lupa-kata-sandi" || cleanPath === "/forgot-password";
+  const isResetSandi = cleanPath === "/reset-password" || cleanPath === "/atur-ulang-kata-sandi";
+  const isAuthPage = isMasuk || isRegistrasi || isLupaSandi || isResetSandi;
   const isMember = profile?.role === "member";
 
   useEffect(() => {
@@ -92,12 +99,15 @@ export default function App() {
     if (!seg || MEMBER_SECTIONS.has(seg)) return <main className="setup"><h1>Buka tautan Member dari tempat usaha Anda</h1><p>Tautan Member berbentuk <code>/m/nama-usaha</code>. Karyawan masuk lewat <a href="/masuk">halaman masuk</a>.</p></main>;
     return <Suspense fallback={<TopProgress />}><MemberAuth slug={seg} /></Suspense>;
   }
-  if (cleanPath === "/" || (!inApp && !isMasuk)) {
+  if (cleanPath === "/" || (!inApp && !isAuthPage)) {
     return <Suspense fallback={<TopProgress />}><Landing /></Suspense>;
   }
   if (!ready && !profile) return <TopProgress />;
   if (api === null) return <Setup />;
   if (isMasuk) return <Suspense fallback={<TopProgress />}><Login /></Suspense>;
+  if (isRegistrasi) return <Suspense fallback={<TopProgress />}><Register /></Suspense>;
+  if (isLupaSandi) return <Suspense fallback={<TopProgress />}><ForgotPassword /></Suspense>;
+  if (isResetSandi) return <Suspense fallback={<TopProgress />}><ResetPassword /></Suspense>;
   if (!profile || !api) return <TopProgress />;
   return <Suspense fallback={<TopProgress />}><AppShell /></Suspense>;
 }

@@ -210,3 +210,103 @@ export function renderInviteEmailHtml({
 </body>
 </html>`;
 }
+
+/**
+ * Template Email Atur Ulang Kata Sandi (Masa Berlaku 2 Menit)
+ */
+export function renderPasswordResetEmailHtml({
+  fullName = "Pengguna",
+  email = "",
+  resetUrl = "http://localhost:5173/reset-password",
+  expiresInMinutes = 2,
+  senderName = (typeof process !== "undefined" && process.env?.ADMIN_EMAIL_SENDER_NAME) || "Tijarah System"
+}) {
+  return `<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Atur Ulang Kata Sandi Tijarah</title>
+  <style type="text/css">
+    body, p, h1, h2, h3, table, td { margin: 0; padding: 0; }
+    body { width: 100% !important; margin: 0; padding: 0; background-color: #070B09; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #E2E8F0; }
+    a { color: #10B981; text-decoration: none; }
+    .email-container { max-width: 600px; margin: 0 auto; width: 100%; }
+    @media only screen and (max-width: 620px) {
+      .mobile-card { padding: 24px 18px !important; }
+      .mobile-btn { width: 100% !important; display: block !important; text-align: center !important; }
+    }
+  </style>
+</head>
+<body style="background-color: #070B09; margin: 0; padding: 30px 10px; -webkit-font-smoothing: antialiased;">
+  <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="#070B09">
+    <tr>
+      <td align="center">
+        <table role="presentation" class="email-container" border="0" cellpadding="0" cellspacing="0" style="max-width: 600px; width: 100%; margin: 0 auto;">
+          <tr>
+            <td align="center" style="padding-bottom: 24px;">
+              <span style="font-size: 24px; font-weight: 800; color: #10B981; letter-spacing: -0.02em;">Tijarah</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="mobile-card" bgcolor="#0F1713" style="background-color: #0F1713; border: 1px solid #1E2E25; border-radius: 14px; padding: 36px 32px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);">
+              <h1 style="font-size: 22px; font-weight: 700; color: #FFFFFF; line-height: 28px; margin-bottom: 12px;">
+                Permintaan Atur Ulang Kata Sandi
+              </h1>
+              <p style="font-size: 14px; color: #94A3B8; line-height: 22px; margin-bottom: 20px;">
+                Halo <strong>${fullName || email}</strong>, kami menerima permintaan untuk mengatur ulang kata sandi akun Tijarah Anda (${email}).
+              </p>
+
+              <!-- Kotak Peringatan Batas Waktu 2 Menit -->
+              <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="background-color: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 8px; margin-bottom: 24px;">
+                <tr>
+                  <td style="padding: 14px 16px;">
+                    <p style="font-size: 13px; font-weight: 700; color: #F59E0B; margin-bottom: 4px;">
+                      PENTING: Tautan Hanya Berlaku ${expiresInMinutes} Menit
+                    </p>
+                    <p style="font-size: 12px; color: #CBD5E1; line-height: 18px;">
+                      Demi keamanan brankas akun Anda, tautan ini akan otomatis kedaluwarsa setelah 2 menit sejak email ini dikirim.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Tombol Utama -->
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto 24px auto;">
+                <tr>
+                  <td align="center" bgcolor="#10B981" style="border-radius: 8px;">
+                    <a href="${resetUrl}" target="_blank" class="mobile-btn" style="font-size: 14px; font-weight: 700; color: #042F1E; text-decoration: none; padding: 14px 32px; display: inline-block; border-radius: 8px;">
+                      Atur Ulang Kata Sandi Saya
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="font-size: 12px; color: #64748B; line-height: 18px; margin-bottom: 16px; word-break: break-all;">
+                Atau salin tautan berikut ke peramban Anda:<br>
+                <a href="${resetUrl}" style="color: #10B981;">${resetUrl}</a>
+              </p>
+
+              <hr style="border: 0; border-top: 1px solid #1E2E25; margin: 20px 0;" />
+
+              <p style="font-size: 12px; color: #94A3B8; line-height: 18px;">
+                Jika Anda tidak meminta pengaturan ulang kata sandi ini, silakan abaikan email ini. Kata sandi akun Anda tetap aman dan tidak berubah.
+              </p>
+            </td>
+          </tr>
+
+          <tr>
+            <td align="center" style="padding-top: 24px; padding-bottom: 30px;">
+              <p style="font-size: 11px; color: #475569;">
+                &copy; 2026 Tijarah &bull; Smart Trade, Better Business &bull; Seluruh hak cipta dilindungi.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+

@@ -1,7 +1,8 @@
 // Backend Service: Provisioning Supabase Auth Admin + Pengiriman Email Kredensial via SMTP Gmail
 import nodemailer from "nodemailer";
+import crypto from "node:crypto";
 import { createRequire } from "node:module";
-import { renderInviteEmailHtml } from "./emailTemplate.js";
+import { renderInviteEmailHtml, renderPasswordResetEmailHtml } from "./emailTemplate.js";
 
 const require = createRequire(import.meta.url);
 const { createClient } = require("@supabase/supabase-js");
@@ -241,3 +242,242 @@ export async function provisionAndSendInvite({
       : `Akun ${cleanName} (${roleLabel}) berhasil diaktifkan dengan kata sandi sementara, namun pengiriman email mengalami kendala (${emailError}). Silakan bagikan kata sandi secara langsung.`
   };
 }
+
+// -------------------------------------------------------------
+// Fitur Atur Ulang Kata Sandi (Masa Berlaku Ketat 2 Menit / 120 Detik)
+// -------------------------------------------------------------
+
+// Penyimpanan token reset dalam memori (TTL 2 menit)
+export const resetTokens = new Map();
+export const RESET_TOKEN_TTL_MS = 2 * 60 * 1000; // 2 menit
+
+export function cleanPhone(phone = "") {
+  let p = String(phone || "").replace(/[^0-9]/g, "");
+  if (p.startsWith("0")) p = "62" + p.slice(1);
+  if (!p.startsWith("62") && p.length > 0) p = "62" + p;
+  return p;
+}
+
+export function isStrongPassword(password = "") {
+  const pwd = String(password || "");
+  return (
+    pwd.length >= 8 &&
+    /[A-Z]/.test(pwd) &&
+    /[a-z]/.test(pwd) &&
+    /[0-9]/.test(pwd) &&
+    /[~!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pwd)
+  );
+}
+
+/**
+ * Permintaan Tautan Reset Kata Sandi via Email SMTP Gmail (2 Menit)
+ */
+export async function requestPasswordResetToken({ email, origin = "http://localhost:5173" }) {
+  const cleanEmail = String(email || "").trim().toLowerCase();
+  if (!cleanEmail || !cleanEmail.includes("@")) {
+    return { ok: false, error: "Alamat email tidak valid." };
+  }
+
+  const supabaseAdmin = getSupabaseAdmin();
+  const { data, error } = await supabaseAdmin.auth.admin.listUsers();
+  if (error) {
+    console.error("[inviteService] Gagal memeriksa user di Supabase:", error);
+    return { ok: false, error: "Gagal memeriksa database: " + error.message };
+  }
+
+  const targetUser = (data?.users || []).find(
+    (u) => (u.email || "").toLowerCase() === cleanEmail
+  );
+
+  if (!targetUser) {
+    return {
+      ok: false,
+      error: "Alamat email tidak terdaftar dalam database sistem Tijarah."
+    };
+  }
+
+  // Buat token kriptografis acak aman
+  const token = crypto.randomBytes(24).toString("hex");
+  const expiresAt = Date.now() + RESET_TOKEN_TTL_MS;
+
+  resetTokens.set(token, {
+    token,
+    userId: targetUser.id,
+    email: cleanEmail,
+    fullName: targetUser.user_metadata?.full_name || "",
+    expiresAt,
+    used: false
+  });
+
+  const cleanOrigin = origin.replace(/\/+$/, "");
+  const resetUrl = `${cleanOrigin}/reset-password?token=${token}&email=${encodeURIComponent(cleanEmail)}`;
+
+  const transporter = getMailTransporter();
+  const adminEmail = getEnv("ADMIN_EMAIL");
+  const senderDisplayName = getEnv("ADMIN_EMAIL_SENDER_NAME", "Tijarah System");
+
+  const htmlContent = renderPasswordResetEmailHtml({
+    fullName: targetUser.user_metadata?.full_name || cleanEmail,
+    email: cleanEmail,
+    resetUrl,
+    expiresInMinutes: 2,
+    senderName: senderDisplayName
+  });
+
+  const mailOptions = {
+    from: `"${senderDisplayName}" <${adminEmail}>`,
+    to: cleanEmail,
+    subject: `[Tijarah OS] Permintaan Atur Ulang Kata Sandi Akun (${cleanEmail})`,
+    html: htmlContent
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`[inviteService] Email reset kata sandi terkirim ke ${cleanEmail}: ${info.messageId}`);
+    return {
+      ok: true,
+      message: "Tautan atur ulang kata sandi berhasil dikirim ke email Anda. Tautan hanya berlaku selama 2 menit.",
+      expiresInSeconds: 120
+    };
+  } catch (err) {
+    console.error("[inviteService] Gagal mengirim email reset via SMTP:", err);
+    return {
+      ok: false,
+      error: "Gagal mengirimkan email via server SMTP: " + err.message
+    };
+  }
+}
+
+/**
+ * Validasi Masa Berlaku Token Reset Kata Sandi (2 Menit)
+ */
+export function verifyPasswordResetToken({ token, email }) {
+  if (!token) {
+    return { ok: false, error: "Token atur ulang kata sandi tidak ditemukan." };
+  }
+
+  const record = resetTokens.get(token);
+  if (!record || record.used) {
+    return { ok: false, error: "Tautan atur ulang kata sandi tidak valid atau telah digunakan sebelumnya." };
+  }
+
+  if (email && record.email.toLowerCase() !== String(email).trim().toLowerCase()) {
+    return { ok: false, error: "Identitas email tidak sesuai dengan token." };
+  }
+
+  if (Date.now() > record.expiresAt) {
+    resetTokens.delete(token);
+    return {
+      ok: false,
+      expired: true,
+      error: "Tautan atur ulang kata sandi telah kedaluwarsa (batas waktu 2 menit telah habis). Silakan ajukan permohonan baru."
+    };
+  }
+
+  const remainingSeconds = Math.max(0, Math.round((record.expiresAt - Date.now()) / 1000));
+  return {
+    ok: true,
+    email: record.email,
+    remainingSeconds
+  };
+}
+
+/**
+ * Eksekusi Pembaruan Kata Sandi di Database Supabase
+ */
+export async function executePasswordReset({ token, email, newPassword }) {
+  if (!isStrongPassword(newPassword)) {
+    return {
+      ok: false,
+      error: "Kata sandi belum memenuhi seluruh 5 kriteria keamanan (minimal 8 karakter, huruf besar, huruf kecil, angka, dan simbol)."
+    };
+  }
+
+  const verification = verifyPasswordResetToken({ token, email });
+  if (!verification.ok) {
+    return verification;
+  }
+
+  const record = resetTokens.get(token);
+  const supabaseAdmin = getSupabaseAdmin();
+
+  const { data, error } = await supabaseAdmin.auth.admin.updateUserById(record.userId, {
+    password: newPassword
+  });
+
+  if (error) {
+    console.error("[inviteService] Gagal memperbarui kata sandi di Supabase:", error);
+    return { ok: false, error: "Gagal memperbarui kata sandi di database: " + error.message };
+  }
+
+  // Tandai token hangus
+  record.used = true;
+  resetTokens.delete(token);
+
+  return {
+    ok: true,
+    message: "Kata sandi akun Anda berhasil diperbarui di database. Silakan masuk menggunakan kata sandi baru."
+  };
+}
+
+/**
+ * Registrasi Akun Baru
+ */
+export async function registerNewAccount({ fullName, phone, email, password, referralCode = "" }) {
+  const cleanName = String(fullName || "").trim();
+  const cleanEmail = String(email || "").trim().toLowerCase();
+  const sanitizedPhone = cleanPhone(phone);
+
+  if (!cleanName) return { ok: false, error: "Nama lengkap wajib diisi." };
+  if (!sanitizedPhone || sanitizedPhone.length < 10) return { ok: false, error: "Nomor WhatsApp/Telepon tidak valid (minimal 10 digit, diawali 62)." };
+  if (!cleanEmail || !cleanEmail.includes("@")) return { ok: false, error: "Alamat email tidak valid." };
+  if (!isStrongPassword(password)) {
+    return {
+      ok: false,
+      error: "Kata sandi belum memenuhi seluruh 5 kriteria keamanan (minimal 8 karakter, huruf besar, huruf kecil, angka, dan simbol)."
+    };
+  }
+
+  const supabaseAdmin = getSupabaseAdmin();
+
+  const { data: existingUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+  if (!listError && existingUsers?.users?.some(u => (u.email || "").toLowerCase() === cleanEmail)) {
+    return { ok: false, error: "Email sudah terdaftar. Silakan gunakan menu Masuk atau Lupa Kata Sandi." };
+  }
+
+  const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+    email: cleanEmail,
+    password: password,
+    email_confirm: true,
+    user_metadata: {
+      full_name: cleanName,
+      phone: sanitizedPhone,
+      referral_code: referralCode ? String(referralCode).trim() : null
+    }
+  });
+
+  if (createError) {
+    console.error("[inviteService] Gagal mendaftarkan user di Supabase Auth:", createError);
+    return { ok: false, error: createError.message };
+  }
+
+  try {
+    await supabaseAdmin.from("profiles").upsert({
+      id: newUser.user.id,
+      full_name: cleanName,
+      phone: sanitizedPhone,
+      role: "owner"
+    });
+  } catch (err) {
+    console.warn("[inviteService] Notice: profiles upsert:", err.message);
+  }
+
+  return {
+    ok: true,
+    userId: newUser.user.id,
+    email: cleanEmail,
+    fullName: cleanName,
+    message: "Akun Anda berhasil didaftarkan. Silakan masuk menggunakan email dan kata sandi baru Anda."
+  };
+}
+

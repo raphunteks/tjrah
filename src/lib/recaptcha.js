@@ -37,8 +37,9 @@ export function loadRecaptchaScript() {
 
     const script = document.createElement("script");
     script.id = RECAPTCHA_SCRIPT_ID;
-    // Gunakan render=explicit agar widget Checkbox v2 dapat dirender langsung ke form login
-    script.src = "https://www.google.com/recaptcha/api.js?render=explicit";
+    // Parameter render=RECAPTCHA_V3_SITE_KEY memunculkan floating badge resmi reCAPTCHA di pojok kanan bawah
+    const renderParam = RECAPTCHA_V3_SITE_KEY ? `render=${encodeURIComponent(RECAPTCHA_V3_SITE_KEY)}` : "render=explicit";
+    script.src = `https://www.google.com/recaptcha/api.js?${renderParam}`;
     script.async = true;
     script.defer = true;
     script.onload = () => {

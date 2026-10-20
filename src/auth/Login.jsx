@@ -175,7 +175,6 @@ export default function Login() {
           <img src="/tijarah-header.svg" alt="Tijarah - Smart Trade, Better Business" width="200" height="60" style={{ height: "46px", width: "auto" }} />
         </Link>
         <h1 id="login-title">Masuk ke Dashboard Tijarah</h1>
-        <p className="d-head__desc">Satu akun, satu peran. Menu yang muncul mengikuti hak akses peran Anda.</p>
 
         {hashNotice && (
           <div
@@ -273,20 +272,32 @@ export default function Login() {
           <div className="d-field">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <label htmlFor="l-pass">Kata sandi</label>
-              <button
-                type="button"
-                onClick={() => setShowPass(!showPass)}
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  cursor: "pointer",
-                  fontSize: "0.75rem",
-                  color: "var(--color-accent, #10B981)",
-                  padding: "0 2px"
-                }}
-              >
-                {showPass ? "Sembunyikan" : "Tampilkan"}
-              </button>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                <Link
+                  to="/lupa-kata-sandi"
+                  style={{
+                    fontSize: "0.78rem",
+                    color: "var(--color-ink-muted, #64748b)",
+                    textDecoration: "underline"
+                  }}
+                >
+                  Lupa kata sandi?
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setShowPass(!showPass)}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                    fontSize: "0.75rem",
+                    color: "var(--color-accent, #10B981)",
+                    padding: "0 2px"
+                  }}
+                >
+                  {showPass ? "Sembunyikan" : "Tampilkan"}
+                </button>
+              </div>
             </div>
             <input
               id="l-pass"
@@ -309,13 +320,18 @@ export default function Login() {
               <strong>Akses ditolak.</strong> {blocked} Hubungi pemilik bisnis Anda atau dukungan Tijarah.
             </p>
           )}
-          {/* Widget Checkbox Resmi Google reCAPTCHA v2 */}
+
+          <button type="submit" className="d-btn d-btn--primary d-btn--block" disabled={busy || !api}>
+            {busy ? "Memeriksa…" : "Masuk"}
+          </button>
+
+          {/* Widget Checkbox Resmi Google reCAPTCHA v2 (Di Bawah Tombol Masuk) */}
           {Boolean(RECAPTCHA_V2_SITE_KEY) && (
             <div
               style={{
                 display: "flex",
                 justifyContent: "center",
-                margin: "1.25rem 0 1rem",
+                margin: "1rem 0 0.5rem",
                 minHeight: "78px"
               }}
             >
@@ -323,9 +339,21 @@ export default function Login() {
             </div>
           )}
 
-          <button type="submit" className="d-btn d-btn--primary d-btn--block" disabled={busy || !api}>
-            {busy ? "Memeriksa…" : "Masuk"}
-          </button>
+          {/* Tautan Pendaftaran Akun Baru */}
+          <div style={{ marginTop: "0.75rem", textAlign: "center", fontSize: "0.85rem", color: "var(--color-ink, #0f172a)" }}>
+            <span style={{ color: "var(--color-ink-muted, #64748b)" }}>Belum memiliki akun? </span>
+            <Link
+              to="/registrasi"
+              style={{
+                color: "var(--color-accent, #059669)",
+                fontWeight: 600,
+                textDecoration: "underline"
+              }}
+            >
+              Daftar
+            </Link>
+          </div>
+
           <div style={{ marginTop: "1rem", textAlign: "center", fontSize: "0.72rem", color: "var(--color-ink-muted, #94a3b8)", lineHeight: "1.4" }}>
             <span>Situs ini dilindungi oleh Google reCAPTCHA. </span>
             <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" style={{ color: "var(--color-ink-muted, #94a3b8)", textDecoration: "underline" }}>Privasi</a>

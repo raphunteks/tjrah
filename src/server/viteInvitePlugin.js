@@ -1,5 +1,12 @@
 // Vite plugin untuk menangani endpoint API provisioning akun & kirim email SMTP di localhost
-import { provisionAndSendInvite, getMailTransporter } from "./inviteService.js";
+import {
+  provisionAndSendInvite,
+  getMailTransporter,
+  requestPasswordResetToken,
+  verifyPasswordResetToken,
+  executePasswordReset,
+  registerNewAccount
+} from "./inviteService.js";
 
 function parseJsonBody(req) {
   return new Promise((resolve, reject) => {
@@ -269,6 +276,55 @@ export function inviteSmtpPlugin() {
           } catch (err) {
             console.error("[viteInvitePlugin] Error /api/invite-account:", err);
             return sendJson(res, 500, { ok: false, error: err.message || "Gagal memproses undangan" });
+          }
+        }
+
+        // Endpoint: Permintaan Atur Ulang Kata Sandi (Email SMTP Gmail, Expired 2 Menit)
+        if (url === "/api/request-password-reset" && req.method === "POST") {
+          try {
+            const body = await parseJsonBody(req);
+            const origin = req.headers.origin || "http://localhost:5173";
+            const result = await requestPasswordResetToken({ email: body.email, origin });
+            return sendJson(res, result.ok ? 200 : 400, result);
+          } catch (err) {
+            console.error("[viteInvitePlugin] Error /api/request-password-reset:", err);
+            return sendJson(res, 500, { ok: false, error: err.message || "Gagal memproses permohonan atur ulang kata sandi" });
+          }
+        }
+
+        // Endpoint: Validasi Token Reset Kata Sandi
+        if (url === "/api/verify-reset-token" && req.method === "POST") {
+          try {
+            const body = await parseJsonBody(req);
+            const result = verifyPasswordResetToken(body);
+            return sendJson(res, result.ok ? 200 : 400, result);
+          } catch (err) {
+            console.error("[viteInvitePlugin] Error /api/verify-reset-token:", err);
+            return sendJson(res, 500, { ok: false, error: err.message || "Gagal memverifikasi token reset" });
+          }
+        }
+
+        // Endpoint: Eksekusi Update Kata Sandi di Database Supabase
+        if (url === "/api/reset-password" && req.method === "POST") {
+          try {
+            const body = await parseJsonBody(req);
+            const result = await executePasswordReset(body);
+            return sendJson(res, result.ok ? 200 : 400, result);
+          } catch (err) {
+            console.error("[viteInvitePlugin] Error /api/reset-password:", err);
+            return sendJson(res, 500, { ok: false, error: err.message || "Gagal memperbarui kata sandi" });
+          }
+        }
+
+        // Endpoint: Registrasi Akun Baru
+        if (url === "/api/register" && req.method === "POST") {
+          try {
+            const body = await parseJsonBody(req);
+            const result = await registerNewAccount(body);
+            return sendJson(res, result.ok ? 200 : 400, result);
+          } catch (err) {
+            console.error("[viteInvitePlugin] Error /api/register:", err);
+            return sendJson(res, 500, { ok: false, error: err.message || "Gagal mendaftarkan akun baru" });
           }
         }
 
