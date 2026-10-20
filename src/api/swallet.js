@@ -93,20 +93,13 @@ export async function verifyTotpChallenge(token, secretKey = "", backupPin = "")
  * @returns {boolean}
  */
 export function isUserTwoFactorActive(user) {
-  if (!user) {
-    try {
-      return localStorage.getItem("tijarah:2fa:owner") === "true";
-    } catch {
-      return false;
-    }
-  }
+  if (!user || (!user.id && !user.email)) return false;
   if (user?.two_factor_enabled === true) return true;
   try {
-    const isTarget = user?.email === "ksanihtest@gmail.com" || user?.id === "fe2bfa01-8956-4df0-acbd-da7fc3a8f15f";
-    if (isTarget) return true;
-    const byId = user?.id && localStorage.getItem(`tijarah:2fa:${user.id}`);
-    const byEmail = user?.email && localStorage.getItem(`tijarah:2fa:${user.email}`);
-    const byOwner = localStorage.getItem("tijarah:2fa:owner");
+    const byId = user?.id ? localStorage.getItem(`tijarah:2fa:${user.id}`) : null;
+    const byEmail = user?.email ? localStorage.getItem(`tijarah:2fa:${user.email}`) : null;
+    const isOwnerTarget = user?.role === "owner" || user?.email === "ksanihtest@gmail.com";
+    const byOwner = isOwnerTarget ? localStorage.getItem("tijarah:2fa:owner") : null;
     return byId === "true" || byEmail === "true" || byOwner === "true";
   } catch {
     return false;
@@ -117,15 +110,19 @@ export function isUserTwoFactorActive(user) {
  * Ambil PIN Transaksi pengguna yang tersimpan
  * @param {string} userId
  * @param {string} [email]
+ * @param {string} [role]
  * @returns {string}
  */
-export function getStoredUserPin(userId, email = "") {
+export function getStoredUserPin(userId, email = "", role = "") {
   try {
     const byId = userId ? localStorage.getItem(`tijarah:pin:${userId}`) : "";
     if (byId) return byId;
     const byEmail = email ? localStorage.getItem(`tijarah:pin:${email}`) : "";
     if (byEmail) return byEmail;
-    return localStorage.getItem("tijarah:pin:owner") || "";
+    if (role === "owner" || email === "ksanihtest@gmail.com") {
+      return localStorage.getItem("tijarah:pin:owner") || "";
+    }
+    return "";
   } catch {
     return "";
   }

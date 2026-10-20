@@ -95,9 +95,16 @@ export default function Security() {
   // Sinkronisasi otomatis saat profil pengguna dari database termuat
   useEffect(() => {
     if (!profile) return;
-    const isTarget = profile?.email === "ksanihtest@gmail.com" || profile?.id === "fe2bfa01-8956-4df0-acbd-da7fc3a8f15f";
-    const isActive = isTarget || profile?.two_factor_enabled === true || localStorage.getItem(`tijarah:2fa:${profile.id}`) === "true" || localStorage.getItem(`tijarah:2fa:${profile.email}`) === "true";
-    const secret = profile?.two_factor_secret || localStorage.getItem(`tijarah:2fa_secret:${profile.id}`) || localStorage.getItem(`tijarah:2fa_secret:${profile.email}`) || "JBSWY3DPEHPK3PXP";
+    const isOwnerTarget = profile?.email === "ksanihtest@gmail.com" || profile?.id === "fe2bfa01-8956-4df0-acbd-da7fc3a8f15f";
+    const isActive = isOwnerTarget
+      ? true
+      : (profile?.two_factor_enabled === true ||
+         localStorage.getItem(`tijarah:2fa:${profile.id}`) === "true" ||
+         Boolean(profile?.email && localStorage.getItem(`tijarah:2fa:${profile.email}`) === "true"));
+    const secret = profile?.two_factor_secret ||
+      localStorage.getItem(`tijarah:2fa_secret:${profile.id}`) ||
+      (profile?.email && localStorage.getItem(`tijarah:2fa_secret:${profile.email}`)) ||
+      "JBSWY3DPEHPK3PXP";
 
     setTwoFactorActive(Boolean(isActive));
     setSecretKey(secret);
@@ -106,11 +113,15 @@ export default function Security() {
       if (isActive) {
         if (profile.id) localStorage.setItem(`tijarah:2fa:${profile.id}`, "true");
         if (profile.email) localStorage.setItem(`tijarah:2fa:${profile.email}`, "true");
-        localStorage.setItem("tijarah:2fa:owner", "true");
+        if (profile.role === "owner" || isOwnerTarget) {
+          localStorage.setItem("tijarah:2fa:owner", "true");
+        }
       }
       if (profile.id) localStorage.setItem(`tijarah:2fa_secret:${profile.id}`, secret);
       if (profile.email) localStorage.setItem(`tijarah:2fa_secret:${profile.email}`, secret);
-      localStorage.setItem("tijarah:2fa_secret:owner", secret);
+      if (profile.role === "owner" || isOwnerTarget) {
+        localStorage.setItem("tijarah:2fa_secret:owner", secret);
+      }
     } catch {}
   }, [profile]);
 
@@ -176,10 +187,10 @@ export default function Security() {
       try {
         if (profile?.id) localStorage.setItem(`tijarah:2fa:${profile.id}`, "true");
         if (profile?.email) localStorage.setItem(`tijarah:2fa:${profile.email}`, "true");
-        localStorage.setItem("tijarah:2fa:owner", "true");
+        if (profile?.role === "owner") localStorage.setItem("tijarah:2fa:owner", "true");
         if (profile?.id) localStorage.setItem(`tijarah:2fa_secret:${profile.id}`, secretKey);
         if (profile?.email) localStorage.setItem(`tijarah:2fa_secret:${profile.email}`, secretKey);
-        localStorage.setItem("tijarah:2fa_secret:owner", secretKey);
+        if (profile?.role === "owner") localStorage.setItem("tijarah:2fa_secret:owner", secretKey);
 
         if (api?.update && profile?.id) {
           api.update("profiles", profile.id, {
@@ -205,7 +216,7 @@ export default function Security() {
       try {
         if (profile?.id) localStorage.removeItem(`tijarah:2fa:${profile.id}`);
         if (profile?.email) localStorage.removeItem(`tijarah:2fa:${profile.email}`);
-        localStorage.removeItem("tijarah:2fa:owner");
+        if (profile?.role === "owner") localStorage.removeItem("tijarah:2fa:owner");
         if (api?.update && profile?.id) {
           api.update("profiles", profile.id, { two_factor_enabled: false }).catch(() => {});
         }
