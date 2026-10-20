@@ -9,12 +9,15 @@ import {
   updateTransactionStatus,
   getPakasirConfig
 } from "../../../api/pakasir.js";
+import { getWalletProfile, paySubscriptionWithWallet } from "../../../api/swallet.js";
 import "../../../styles/dashboard.css";
 
 export default function PaymentModal({ isOpen, onClose, plan, onSuccess, tenant, tenantId }) {
   if (!isOpen || !plan) return null;
 
-  const [selectedMethod, setSelectedMethod] = useState("qris");
+  const [selectedMethod, setSelectedMethod] = useState("swallet");
+  const [swallet, setSwallet] = useState(null);
+  const [swalletPin, setSwalletPin] = useState("");
   const [fees, setFees] = useState({});
   const [loadingFees, setLoadingFees] = useState(true);
   const [referralCode, setReferralCode] = useState("");
@@ -120,13 +123,27 @@ export default function PaymentModal({ isOpen, onClose, plan, onSuccess, tenant,
     };
   }, [stage, txData, onSuccess]);
 
+  // Load S-Wallet saldo merchant
+  useEffect(() => {
+    let active = true;
+    getWalletProfile(null, tenantId || "owner-demo").then((w) => {
+      if (active) setSwallet(w);
+    });
+    return () => {
+      active = false;
+    };
+  }, [tenantId]);
+
   const activeChannel = useMemo(() => {
+    if (selectedMethod === "swallet") {
+      return { id: "swallet", name: "S-Wallet Saldo Merchant", defaultFee: 0 };
+    }
     return PAYMENT_CHANNELS.find((c) => c.id === selectedMethod) || PAYMENT_CHANNELS[0];
   }, [selectedMethod]);
 
-  const gatewayFee = fees[selectedMethod] != null ? fees[selectedMethod] : activeChannel.defaultFee;
+  const gatewayFee = selectedMethod === "swallet" ? 0 : (fees[selectedMethod] != null ? fees[selectedMethod] : activeChannel.defaultFee);
   const feePaidByCustomer =
-    cfg.feePayer === "merchant"
+    selectedMethod === "swallet" || cfg.feePayer === "merchant"
       ? 0
       : cfg.feePayer === "split"
       ? Math.round(gatewayFee / 2)
@@ -154,6 +171,38 @@ export default function PaymentModal({ isOpen, onClose, plan, onSuccess, tenant,
     setBusy(true);
     setErrorMsg(null);
     try {
+      if (selectedMethod === "swallet") {
+        const bal = swallet?.balance ?? 0;
+        if (bal < totalAmount) {
+          throw new Error(`Saldo S-Wallet Anda (${rupiah(bal)}) tidak mencukupi untuk pembayaran sebesar ${rupiah(totalAmount)}. Silakan top-up terlebih dahulu di menu Akun > S-Wallet.`);
+        }
+        if (!swalletPin || swalletPin.length < 6) {
+          throw new Error("Silakan masukkan 6 digit PIN S-Wallet untuk memproses pembayaran.");
+        }
+        const payRes = await paySubscriptionWithWallet({
+          userId: tenantId || "owner-demo",
+          amount: totalAmount,
+          planName: plan.name,
+          planCode: plan.code,
+          pin: swalletPin
+        });
+        if (!payRes.ok) {
+          throw new Error(payRes.error || "Gagal memproses pembayaran via S-Wallet.");
+        }
+        const completedTx = {
+          order_id: payRes.ref_no,
+          txn_id: payRes.ref_no,
+          method: "swallet",
+          amount: totalAmount,
+          status: "completed",
+          created_at: new Date().toISOString()
+        };
+        setTxData(completedTx);
+        setStage("success");
+        if (onSuccess) onSuccess(completedTx);
+        return;
+      }
+
       const orderId = `INV-${Date.now().toString().slice(-8)}-${(tenantId || "T1").slice(-2)}`;
       const customerInfo = {
         tenantName: tenant?.name || "Kopi Harum Makassar",
@@ -222,51 +271,15 @@ export default function PaymentModal({ isOpen, onClose, plan, onSuccess, tenant,
   };
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 9999,
-        background: "rgba(15, 23, 42, 0.65)",
-        backdropFilter: "blur(6px)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "1rem",
-        overflowY: "auto"
-      }}
-      role="dialog"
-      aria-modal="true"
-    >
-      <div
-        style={{
-          background: "#FFFFFF",
-          borderRadius: "var(--radius-xl, 16px)",
-          maxWidth: "540px",
-          width: "100%",
-          boxShadow: "0 20px 40px -10px rgba(0, 0, 0, 0.25)",
-          overflow: "hidden",
-          maxHeight: "92vh",
-          display: "flex",
-          flexDirection: "column",
-          color: "var(--color-ink, #0f172a)"
-        }}
-      >
+    <div className="tjr-modal-backdrop" role="dialog" aria-modal="true">
+      <div className="tjr-modal-dialog">
         {/* HEADER MODAL */}
-        <div
-          style={{
-            padding: "1.25rem 1.5rem 0.75rem",
-            display: "flex",
-            alignItems: "flex-start",
-            justifyContent: "space-between",
-            borderBottom: "1px solid var(--color-rule, #e2e8f0)"
-          }}
-        >
+        <div className="tjr-modal-header">
           <div>
-            <h2 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, color: "var(--color-ink, #0f172a)" }}>
+            <h2 className="tjr-modal-title">
               {stage === "success" ? "Pembayaran Dikonfirmasi" : modalTitle}
             </h2>
-            <p style={{ margin: "4px 0 0", fontSize: "0.82rem", color: "var(--color-muted, #64748b)" }}>
+            <p className="tjr-modal-subtitle">
               {stage === "success"
                 ? "Paket langganan toko Anda telah resmi diperpanjang"
                 : `${planDurationLabel} · sekali bayar`}
@@ -275,15 +288,7 @@ export default function PaymentModal({ isOpen, onClose, plan, onSuccess, tenant,
           <button
             type="button"
             onClick={onClose}
-            style={{
-              background: "transparent",
-              border: "none",
-              color: "#94a3b8",
-              cursor: "pointer",
-              fontSize: "1.25rem",
-              padding: "4px 8px",
-              lineHeight: 1
-            }}
+            className="tjr-modal-close"
             aria-label="Tutup modal"
           >
             <i className="fa-solid fa-xmark" aria-hidden="true" />
@@ -291,16 +296,16 @@ export default function PaymentModal({ isOpen, onClose, plan, onSuccess, tenant,
         </div>
 
         {/* KONTEN BODY MODAL */}
-        <div style={{ padding: "1.25rem 1.5rem", overflowY: "auto", flex: 1 }}>
+        <div className="tjr-modal-body">
           {errorMsg && (
             <div
               style={{
                 background: "#fef2f2",
                 border: "1px solid #fecaca",
                 color: "#b91c1c",
-                borderRadius: "8px",
-                padding: "0.65rem 0.85rem",
-                fontSize: "0.82rem",
+                borderRadius: "var(--radius-md)",
+                padding: "0.75rem 1rem",
+                fontSize: "0.85rem",
                 marginBottom: "1rem"
               }}
             >
@@ -311,144 +316,163 @@ export default function PaymentModal({ isOpen, onClose, plan, onSuccess, tenant,
           {/* TAHAP 1: PILIH METODE PEMBAYARAN */}
           {stage === "select" && (
             <>
-              <div
-                style={{
-                  fontSize: "0.75rem",
-                  fontWeight: 700,
-                  letterSpacing: "0.05em",
-                  color: "var(--color-muted, #64748b)",
-                  textTransform: "uppercase",
-                  marginBottom: "0.75rem"
-                }}
-              >
+              <div className="tjr-pay-section-label">
                 Metode Pembayaran
               </div>
 
-              {/* LIST CHANNEL PEMBAYARAN RESMI GATEWAY DIGITAL (DIKELOMPOKKAN SECARA ELEGAN) */}
+              {/* LIST CHANNEL PEMBAYARAN RESMI GATEWAY DIGITAL */}
               <div style={{ maxHeight: "320px", overflowY: "auto", paddingRight: "4px" }}>
+                {/* KELOMPOK 0: S-WALLET MERCHANT (REKOMENDASI INSTAN) */}
+                <div className="tjr-pay-section-label">
+                  Dompet Digital S-Wallet (Instan &amp; Bebas Biaya)
+                </div>
+                <div className="tjr-pay-channel-list">
+                  <div
+                    className={`tjr-pay-channel-row ${selectedMethod === "swallet" ? "tjr-pay-channel-row--active" : ""}`}
+                    onClick={() => setSelectedMethod("swallet")}
+                    role="radio"
+                    aria-checked={selectedMethod === "swallet"}
+                    tabIndex={0}
+                  >
+                    <div className="tjr-pay-channel-left">
+                      <div className="tjr-pay-channel-logo-wrap" style={{ background: "var(--brand-emerald-surface)", color: "var(--brand-emerald)" }}>
+                        <i className="fa-solid fa-wallet" style={{ fontSize: "1.15rem" }} aria-hidden="true" />
+                      </div>
+                      <div className="tjr-pay-channel-info">
+                        <span className="tjr-pay-channel-name">S-Wallet Saldo Merchant</span>
+                        <span className="tjr-pay-channel-fee" style={{ color: "var(--brand-emerald)", fontWeight: 600 }}>
+                          Saldo: {rupiah(swallet?.balance ?? 0)} · Bebas Biaya Admin
+                        </span>
+                      </div>
+                    </div>
+                    <div className="tjr-pay-radio-dot">
+                      {selectedMethod === "swallet" && <div className="tjr-pay-radio-inner" />}
+                    </div>
+                  </div>
+                </div>
+
+                {selectedMethod === "swallet" && (
+                  <div style={{ background: "var(--color-paper-2)", border: "1px solid var(--color-rule)", borderRadius: "var(--radius-md)", padding: "0.85rem", marginTop: "0.5rem", marginBottom: "1rem" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+                      <span style={{ fontSize: "0.8125rem", color: "var(--color-muted)", fontWeight: 600 }}>Status Saldo:</span>
+                      {(swallet?.balance ?? 0) >= totalAmount ? (
+                        <span style={{ fontSize: "0.75rem", background: "var(--brand-emerald-surface)", color: "var(--brand-emerald)", padding: "2px 8px", borderRadius: "4px", fontWeight: 700 }}>
+                          Saldo Mencukupi
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: "0.75rem", background: "#fef2f2", color: "#b91c1c", padding: "2px 8px", borderRadius: "4px", fontWeight: 700 }}>
+                          Saldo Kurang
+                        </span>
+                      )}
+                    </div>
+                    <label style={{ display: "block", fontSize: "0.8125rem", fontWeight: 600, color: "var(--color-ink)", marginBottom: "0.35rem" }}>
+                      Otorisasi PIN Transaksi S-Wallet (6 Digit)
+                    </label>
+                    <input
+                      type="password"
+                      inputMode="numeric"
+                      maxLength={6}
+                      placeholder="Masukkan 6 Digit PIN"
+                      value={swalletPin}
+                      onChange={(e) => setSwalletPin(e.target.value.replace(/\D/g, ""))}
+                      className="swallet-code-input"
+                      style={{ width: "100%", height: "40px", fontSize: "1.1rem", letterSpacing: "0.2em", textAlign: "center" }}
+                    />
+                  </div>
+                )}
+
                 {/* KELOMPOK 1: INSTAN & DIGITAL */}
-                <div
-                  style={{
-                    fontSize: "0.72rem",
-                    fontWeight: 700,
-                    color: "#64748b",
-                    margin: "4px 0 6px",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.04em"
-                  }}
-                >
+                <div className="tjr-pay-section-label" style={{ marginTop: "1rem" }}>
                   Instan &amp; Digital
                 </div>
-                {PAYMENT_CHANNELS.filter((ch) => ch.type === "qris" || ch.type === "link").map((ch) => {
-                  const isSel = selectedMethod === ch.id;
-                  const channelFee = fees[ch.id] != null ? fees[ch.id] : ch.defaultFee;
-                  return (
-                    <div
-                      key={ch.id}
-                      className={`tjr-pay-channel-card ${isSel ? "tjr-pay-channel-card--active" : ""}`}
-                      onClick={() => setSelectedMethod(ch.id)}
-                      role="radio"
-                      aria-checked={isSel}
-                      tabIndex={0}
-                    >
-                      <div className="tjr-pay-channel-left">
-                        <div className="tjr-pay-channel-logo-wrap">
-                          <img src={ch.icon} alt={ch.name} className="tjr-pay-channel-logo" />
+                <div className="tjr-pay-channel-list">
+                  {PAYMENT_CHANNELS.filter((ch) => ch.type === "qris" || ch.type === "link").map((ch) => {
+                    const isSel = selectedMethod === ch.id;
+                    const channelFee = fees[ch.id] != null ? fees[ch.id] : ch.defaultFee;
+                    return (
+                      <div
+                        key={ch.id}
+                        className={`tjr-pay-channel-row ${isSel ? "tjr-pay-channel-row--active" : ""}`}
+                        onClick={() => setSelectedMethod(ch.id)}
+                        role="radio"
+                        aria-checked={isSel}
+                        tabIndex={0}
+                      >
+                        <div className="tjr-pay-channel-left">
+                          <div className="tjr-pay-channel-logo-wrap">
+                            <img src={ch.icon} alt={ch.name} className="tjr-pay-channel-logo" />
+                          </div>
+                          <div className="tjr-pay-channel-info">
+                            <span className="tjr-pay-channel-name">{ch.name}</span>
+                            <span className="tjr-pay-channel-fee">
+                              {cfg.feePayer === "merchant"
+                                ? "Gratis (Biaya Ditanggung)"
+                                : cfg.feePayer === "split"
+                                ? `Biaya ${rupiah(Math.round(channelFee / 2))} (Subsidi 50%)`
+                                : `Biaya ${rupiah(channelFee)}`}
+                            </span>
+                          </div>
                         </div>
-                        <div className="tjr-pay-channel-info">
-                          <span className="tjr-pay-channel-name">{ch.name}</span>
-                          <span className="tjr-pay-channel-fee">
-                            {cfg.feePayer === "merchant"
-                              ? "Gratis (Biaya Ditanggung)"
-                              : cfg.feePayer === "split"
-                              ? `Biaya ${rupiah(Math.round(channelFee / 2))} (Subsidi 50%)`
-                              : `Biaya ${rupiah(channelFee)}`}
-                          </span>
+                        <div className="tjr-pay-radio-dot">
+                          {isSel && <div className="tjr-pay-radio-inner" />}
                         </div>
                       </div>
-                      <div className="tjr-pay-radio-dot">
-                        {isSel && <div className="tjr-pay-radio-inner" />}
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
 
                 {/* KELOMPOK 2: VIRTUAL ACCOUNT BANK */}
-                <div
-                  style={{
-                    fontSize: "0.72rem",
-                    fontWeight: 700,
-                    color: "#64748b",
-                    margin: "12px 0 6px",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.04em"
-                  }}
-                >
+                <div className="tjr-pay-section-label" style={{ marginTop: "1rem" }}>
                   Virtual Account Bank Otomatis
                 </div>
-                {PAYMENT_CHANNELS.filter((ch) => ch.type === "va").map((ch) => {
-                  const isSel = selectedMethod === ch.id;
-                  const channelFee = fees[ch.id] != null ? fees[ch.id] : ch.defaultFee;
-                  return (
-                    <div
-                      key={ch.id}
-                      className={`tjr-pay-channel-card ${isSel ? "tjr-pay-channel-card--active" : ""}`}
-                      onClick={() => setSelectedMethod(ch.id)}
-                      role="radio"
-                      aria-checked={isSel}
-                      tabIndex={0}
-                    >
-                      <div className="tjr-pay-channel-left">
-                        <div className="tjr-pay-channel-logo-wrap">
-                          <img src={ch.icon} alt={ch.name} className="tjr-pay-channel-logo" />
+                <div className="tjr-pay-channel-list">
+                  {PAYMENT_CHANNELS.filter((ch) => ch.type === "va").map((ch) => {
+                    const isSel = selectedMethod === ch.id;
+                    const channelFee = fees[ch.id] != null ? fees[ch.id] : ch.defaultFee;
+                    return (
+                      <div
+                        key={ch.id}
+                        className={`tjr-pay-channel-row ${isSel ? "tjr-pay-channel-row--active" : ""}`}
+                        onClick={() => setSelectedMethod(ch.id)}
+                        role="radio"
+                        aria-checked={isSel}
+                        tabIndex={0}
+                      >
+                        <div className="tjr-pay-channel-left">
+                          <div className="tjr-pay-channel-logo-wrap">
+                            <img src={ch.icon} alt={ch.name} className="tjr-pay-channel-logo" />
+                          </div>
+                          <div className="tjr-pay-channel-info">
+                            <span className="tjr-pay-channel-name">{ch.name}</span>
+                            <span className="tjr-pay-channel-fee">
+                              {cfg.feePayer === "merchant"
+                                ? "Gratis (Biaya Ditanggung)"
+                                : cfg.feePayer === "split"
+                                ? `Biaya ${rupiah(Math.round(channelFee / 2))} (Subsidi 50%)`
+                                : `Biaya ${rupiah(channelFee)}`}
+                            </span>
+                          </div>
                         </div>
-                        <div className="tjr-pay-channel-info">
-                          <span className="tjr-pay-channel-name">{ch.name}</span>
-                          <span className="tjr-pay-channel-fee">
-                            {cfg.feePayer === "merchant"
-                              ? "Gratis (Biaya Ditanggung)"
-                              : cfg.feePayer === "split"
-                              ? `Biaya ${rupiah(Math.round(channelFee / 2))} (Subsidi 50%)`
-                              : `Biaya ${rupiah(channelFee)}`}
-                          </span>
+                        <div className="tjr-pay-radio-dot">
+                          {isSel && <div className="tjr-pay-radio-inner" />}
                         </div>
                       </div>
-                      <div className="tjr-pay-radio-dot">
-                        {isSel && <div className="tjr-pay-radio-inner" />}
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
 
-              {/* BAGIAN KODE REFERRAL (SESUAI GAMBAR 2) */}
-              <div style={{ marginTop: "1.25rem", paddingTop: "1rem", borderTop: "1px solid var(--color-rule, #e2e8f0)" }}>
-                <div
-                  style={{
-                    fontSize: "0.75rem",
-                    fontWeight: 700,
-                    letterSpacing: "0.05em",
-                    color: "var(--color-muted, #64748b)",
-                    textTransform: "uppercase",
-                    marginBottom: "0.5rem"
-                  }}
-                >
+              {/* BAGIAN KODE REFERRAL */}
+              <div className="tjr-referral-wrap">
+                <div className="tjr-pay-section-label">
                   Kode Referral
                 </div>
 
-                <div style={{ display: "flex", gap: "0.5rem" }}>
-                  <div style={{ position: "relative", flex: 1 }}>
+                <div className="tjr-referral-input-group">
+                  <div className="tjr-referral-input-wrap">
                     <i
-                      className="fa-solid fa-ticket"
+                      className="fa-solid fa-ticket tjr-referral-input-icon"
                       aria-hidden="true"
-                      style={{
-                        position: "absolute",
-                        left: "12px",
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        color: "#94a3b8",
-                        fontSize: "0.85rem"
-                      }}
                     />
                     <input
                       type="text"
@@ -456,30 +480,14 @@ export default function PaymentModal({ isOpen, onClose, plan, onSuccess, tenant,
                       value={referralCode}
                       onChange={(e) => setReferralCode(e.target.value)}
                       disabled={referralApplied}
-                      style={{
-                        width: "100%",
-                        padding: "0.55rem 0.75rem 0.55rem 34px",
-                        borderRadius: "var(--radius-full, 9999px)",
-                        border: "1px solid var(--color-rule, #cbd5e1)",
-                        fontSize: "0.82rem",
-                        letterSpacing: "0.03em"
-                      }}
+                      className="tjr-referral-input"
                     />
                   </div>
                   <button
                     type="button"
                     onClick={handleApplyReferral}
                     disabled={referralApplied}
-                    style={{
-                      background: "#FFFFFF",
-                      border: "1px solid var(--color-rule, #cbd5e1)",
-                      borderRadius: "var(--radius-full, 9999px)",
-                      padding: "0.55rem 1.25rem",
-                      fontWeight: 600,
-                      fontSize: "0.82rem",
-                      cursor: referralApplied ? "not-allowed" : "pointer",
-                      color: "var(--color-ink, #0f172a)"
-                    }}
+                    className="tjr-referral-btn"
                   >
                     {referralApplied ? "Diterapkan" : "Terapkan"}
                   </button>
@@ -489,71 +497,51 @@ export default function PaymentModal({ isOpen, onClose, plan, onSuccess, tenant,
                   <p
                     style={{
                       margin: "0.4rem 0 0",
-                      fontSize: "0.75rem",
-                      color: referralNotice.tone === "ok" ? "#0b5d4b" : "#b91c1c",
-                      fontWeight: 500
+                      fontSize: "0.78rem",
+                      color: referralNotice.tone === "ok" ? "var(--brand-emerald)" : "var(--color-danger)",
+                      fontWeight: 600
                     }}
                   >
                     {referralNotice.text}
                   </p>
                 )}
 
-                <p style={{ margin: "0.4rem 0 0", fontSize: "0.75rem", color: "var(--color-muted, #64748b)" }}>
+                <p className="tjr-referral-hint">
                   Jika kode referral kamu memenuhi syarat, diskon dipotong otomatis dari tagihan.
                 </p>
               </div>
 
-              {/* RINCIAN TAGIHAN (SESUAI GAMBAR 2) */}
-              <div
-                style={{
-                  marginTop: "1.25rem",
-                  paddingTop: "1rem",
-                  borderTop: "1px solid var(--color-rule, #e2e8f0)",
-                  fontSize: "0.85rem",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "0.4rem"
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", color: "var(--color-muted, #64748b)" }}>
+              {/* RINCIAN TAGIHAN */}
+              <div className="tjr-billing-summary">
+                <div className="tjr-billing-row">
                   <span>{plan.name} · {planDurationLabel}</span>
-                  <span style={{ fontWeight: 600, color: "var(--color-ink, #0f172a)" }}>{rupiah(basePrice)}</span>
+                  <strong>{rupiah(basePrice)}</strong>
                 </div>
 
                 {referralDiscount > 0 && (
-                  <div style={{ display: "flex", justifyContent: "space-between", color: "#0b5d4b" }}>
+                  <div className="tjr-billing-row tjr-billing-row--discount">
                     <span>Diskon Referral (10%)</span>
-                    <span style={{ fontWeight: 600 }}>- {rupiah(referralDiscount)}</span>
+                    <span>- {rupiah(referralDiscount)}</span>
                   </div>
                 )}
 
-                <div style={{ display: "flex", justifyContent: "space-between", color: "var(--color-muted, #64748b)" }}>
+                <div className="tjr-billing-row">
                   <span>
                     Biaya {activeChannel.name}
                     {cfg.feePayer === "merchant" ? " (Ditanggung)" : cfg.feePayer === "split" ? " (Subsidi 50%)" : ""}
                   </span>
-                  <span
+                  <strong
                     style={{
-                      fontWeight: 600,
-                      color: feePaidByCustomer === 0 ? "#16a34a" : "var(--color-ink, #0f172a)"
+                      color: feePaidByCustomer === 0 ? "var(--brand-emerald)" : "var(--color-ink)"
                     }}
                   >
                     {feePaidByCustomer === 0 ? "Gratis" : rupiah(feePaidByCustomer)}
-                  </span>
+                  </strong>
                 </div>
 
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "baseline",
-                    marginTop: "0.6rem",
-                    paddingTop: "0.75rem",
-                    borderTop: "1px solid var(--color-rule, #e2e8f0)"
-                  }}
-                >
+                <div className="tjr-billing-row--total">
                   <span style={{ fontWeight: 700, fontSize: "0.95rem" }}>Total dibayar hari ini</span>
-                  <span style={{ fontWeight: 800, fontSize: "1.35rem", color: "var(--color-ink, #0f172a)" }}>
+                  <span className="tjr-billing-total-val">
                     {rupiah(totalAmount)}
                   </span>
                 </div>
@@ -564,20 +552,7 @@ export default function PaymentModal({ isOpen, onClose, plan, onSuccess, tenant,
           {/* TAHAP 2: INSTRUKSI PEMBAYARAN */}
           {stage === "instruction" && txData && (
             <div style={{ display: "flex", flexDirection: "column", gap: "1rem", alignItems: "center", textAlign: "center" }}>
-              <div
-                style={{
-                  background: "#fffaf0",
-                  border: "1px solid #fed7aa",
-                  color: "#c2410c",
-                  borderRadius: "var(--radius-full, 9999px)",
-                  padding: "4px 14px",
-                  fontSize: "0.78rem",
-                  fontWeight: 700,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "0.4rem"
-                }}
-              >
+              <div className="tjr-pay-countdown-pill">
                 <i className="fa-solid fa-clock" aria-hidden="true" />
                 Sisa Waktu Pembayaran: {formatCountdown(countdownSec)}
               </div>
@@ -585,40 +560,31 @@ export default function PaymentModal({ isOpen, onClose, plan, onSuccess, tenant,
               {/* JIKA METODE QRIS */}
               {selectedMethod === "qris" ? (
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem" }}>
-                  <div
-                    style={{
-                      background: "#FFFFFF",
-                      padding: "12px",
-                      borderRadius: "12px",
-                      border: "2px solid #e2e8f0",
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.06)"
-                    }}
-                  >
-                    {/* Render QR image menggunakan online generator untuk string qris resmi */}
+                  <div className="tjr-pay-qr-card">
                     <img
                       src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(txData.qr_string || "00020101021226")}`}
                       alt="QRIS Tijarah"
                       style={{ width: "200px", height: "200px", display: "block" }}
                     />
                   </div>
-                  <p style={{ margin: 0, fontSize: "0.82rem", color: "var(--color-muted, #64748b)" }}>
+                  <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--color-muted)", lineHeight: 1.5 }}>
                     Pindai QRIS di atas melalui BCA Mobile, GoPay, OVO, ShopeePay, DANA, atau Livin' Mandiri.
                   </p>
                 </div>
               ) : selectedMethod === "payment_link" ? (
                 /* JIKA METODE PAYMENT LINK */
-                <div style={{ width: "100%", textAlign: "left", background: "#f8fafc", borderRadius: "12px", padding: "1.25rem", border: "1px solid #e2e8f0" }}>
+                <div style={{ width: "100%", textAlign: "left", background: "var(--color-paper-3)", borderRadius: "var(--radius-lg)", padding: "1.25rem", border: "1px solid var(--color-rule)" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.75rem" }}>
                     <div className="tjr-pay-channel-logo-wrap" style={{ width: "42px", height: "42px" }}>
                       <img src={activeChannel.icon} alt={activeChannel.name} className="tjr-pay-channel-logo" />
                     </div>
                     <div>
                       <div style={{ fontWeight: 700, fontSize: "0.95rem" }}>{activeChannel.name}</div>
-                      <div style={{ fontSize: "0.75rem", color: "#64748b" }}>Tautan Pembayaran Digital Resmi</div>
+                      <div style={{ fontSize: "0.75rem", color: "var(--color-muted)" }}>Tautan Pembayaran Digital Resmi</div>
                     </div>
                   </div>
 
-                  <p style={{ margin: "0 0 0.85rem", fontSize: "0.82rem", color: "#475569", lineHeight: 1.5 }}>
+                  <p style={{ margin: "0 0 0.85rem", fontSize: "0.85rem", color: "var(--color-ink-2)", lineHeight: 1.5 }}>
                     Silakan buka tautan pembayaran resmi di bawah ini untuk menyelesaikan tagihan secara instan:
                   </p>
 
@@ -629,10 +595,10 @@ export default function PaymentModal({ isOpen, onClose, plan, onSuccess, tenant,
                       style={{
                         flex: 1,
                         padding: "0.5rem 0.75rem",
-                        borderRadius: "8px",
-                        border: "1px solid #cbd5e1",
-                        fontSize: "0.8rem",
-                        fontFamily: "monospace",
+                        borderRadius: "var(--radius-md)",
+                        border: "1px solid var(--color-rule-2)",
+                        fontSize: "0.82rem",
+                        fontFamily: "var(--font-mono)",
                         background: "#ffffff"
                       }}
                     />
@@ -644,7 +610,7 @@ export default function PaymentModal({ isOpen, onClose, plan, onSuccess, tenant,
                         setCopiedVa(true);
                         setTimeout(() => setCopiedVa(false), 2000);
                       }}
-                      className="d-btn d-btn--ghost d-btn--sm"
+                      className="tjr-pay-copy-btn"
                     >
                       {copiedVa ? "Tersalin!" : "Salin"}
                     </button>
@@ -654,32 +620,32 @@ export default function PaymentModal({ isOpen, onClose, plan, onSuccess, tenant,
                     href={txData.payment_url || `https://app.pakasir.com/pay/${cfg.slug || "harumin"}/${txData.order_id}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="d-btn d-btn--primary"
+                    className="tjr-pay-btn-primary"
                     style={{ display: "inline-flex", width: "100%", justifyContent: "center", textDecoration: "none" }}
                   >
-                    <i className="fa-solid fa-arrow-up-right-from-square" aria-hidden="true" style={{ marginRight: "0.4rem" }} />
+                    <i className="fa-solid fa-arrow-up-right-from-square" aria-hidden="true" style={{ marginRight: "0.5rem" }} />
                     Buka Halaman Pembayaran
                   </a>
                 </div>
               ) : (
                 /* JIKA METODE VIRTUAL ACCOUNT */
-                <div style={{ width: "100%", textAlign: "left", background: "#f8fafc", borderRadius: "12px", padding: "1rem", border: "1px solid #e2e8f0" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.75rem" }}>
+                <div style={{ width: "100%", textAlign: "left", background: "var(--color-paper-3)", borderRadius: "var(--radius-lg)", padding: "1.25rem", border: "1px solid var(--color-rule)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.85rem" }}>
                     <div className="tjr-pay-channel-logo-wrap" style={{ width: "42px", height: "32px" }}>
                       <img src={activeChannel.icon} alt={activeChannel.name} className="tjr-pay-channel-logo" />
                     </div>
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: "0.9rem" }}>{activeChannel.name}</div>
-                      <div style={{ fontSize: "0.75rem", color: "#64748b" }}>Virtual Account Otomatis</div>
+                      <div style={{ fontWeight: 700, fontSize: "0.95rem" }}>{activeChannel.name}</div>
+                      <div style={{ fontSize: "0.75rem", color: "var(--color-muted)" }}>Virtual Account Otomatis</div>
                     </div>
                   </div>
 
-                  <div style={{ marginBottom: "0.75rem" }}>
-                    <div style={{ fontSize: "0.75rem", color: "#64748b", textTransform: "uppercase", fontWeight: 600 }}>
+                  <div style={{ marginBottom: "0.85rem" }}>
+                    <div style={{ fontSize: "0.75rem", color: "var(--color-muted)", textTransform: "uppercase", fontWeight: 600 }}>
                       Nomor Virtual Account
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "2px" }}>
-                      <span style={{ font: "800 1.25rem var(--font-mono, monospace)", color: "#0f172a" }}>
+                    <div className="tjr-pay-va-box" style={{ marginTop: "4px" }}>
+                      <span className="tjr-pay-va-num">
                         {txData.va_number || "88091234567890"}
                       </span>
                       <button
@@ -689,8 +655,7 @@ export default function PaymentModal({ isOpen, onClose, plan, onSuccess, tenant,
                           setCopiedVa(true);
                           setTimeout(() => setCopiedVa(false), 2000);
                         }}
-                        className="d-btn d-btn--ghost d-btn--sm"
-                        style={{ fontSize: "0.75rem", padding: "3px 8px" }}
+                        className="tjr-pay-copy-btn"
                       >
                         {copiedVa ? "Tersalin!" : "Salin"}
                       </button>
@@ -698,11 +663,11 @@ export default function PaymentModal({ isOpen, onClose, plan, onSuccess, tenant,
                   </div>
 
                   <div>
-                    <div style={{ fontSize: "0.75rem", color: "#64748b", textTransform: "uppercase", fontWeight: 600 }}>
+                    <div style={{ fontSize: "0.75rem", color: "var(--color-muted)", textTransform: "uppercase", fontWeight: 600 }}>
                       Total Pembayaran Pas
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "2px" }}>
-                      <span style={{ font: "800 1.15rem var(--font-mono, monospace)", color: "#f97316" }}>
+                    <div className="tjr-pay-va-box" style={{ marginTop: "4px" }}>
+                      <span className="tjr-pay-va-num" style={{ color: "var(--brand-emerald)" }}>
                         {rupiah(txData.total_payment || totalAmount)}
                       </span>
                       <button
@@ -712,8 +677,7 @@ export default function PaymentModal({ isOpen, onClose, plan, onSuccess, tenant,
                           setCopiedAmount(true);
                           setTimeout(() => setCopiedAmount(false), 2000);
                         }}
-                        className="d-btn d-btn--ghost d-btn--sm"
-                        style={{ fontSize: "0.75rem", padding: "3px 8px" }}
+                        className="tjr-pay-copy-btn"
                       >
                         {copiedAmount ? "Tersalin!" : "Salin"}
                       </button>
@@ -722,7 +686,7 @@ export default function PaymentModal({ isOpen, onClose, plan, onSuccess, tenant,
                 </div>
               )}
 
-              <div style={{ fontSize: "0.8rem", color: "#64748b", background: "#f1f5f9", padding: "0.6rem 0.85rem", borderRadius: "8px", width: "100%" }}>
+              <div style={{ fontSize: "0.82rem", color: "var(--color-muted)", background: "var(--color-paper-3)", padding: "0.65rem 1rem", borderRadius: "var(--radius-md)", width: "100%" }}>
                 No. Order: <strong>{txData.order_id}</strong> &bull; Gateway: Pembayaran Digital Terverifikasi
               </div>
 
@@ -732,17 +696,8 @@ export default function PaymentModal({ isOpen, onClose, plan, onSuccess, tenant,
                   type="button"
                   onClick={handleCheckStatus}
                   disabled={busy}
-                  style={{
-                    flex: 1,
-                    background: "#0f172a",
-                    color: "#FFFFFF",
-                    border: "none",
-                    borderRadius: "var(--radius-full, 9999px)",
-                    padding: "0.65rem 1rem",
-                    fontWeight: 700,
-                    fontSize: "0.85rem",
-                    cursor: "pointer"
-                  }}
+                  className="tjr-pay-btn-secondary"
+                  style={{ flex: 1 }}
                 >
                   <i className="fa-solid fa-arrows-rotate" aria-hidden="true" style={{ marginRight: "0.4rem" }} />
                   {busy ? "Memeriksa..." : "Cek Status Pembayaran"}
@@ -751,17 +706,8 @@ export default function PaymentModal({ isOpen, onClose, plan, onSuccess, tenant,
                   type="button"
                   onClick={handleSimulatePaid}
                   title="Simulasi Lunas Instan untuk lingkungan pengujian dev"
-                  style={{
-                    background: "#10b981",
-                    color: "#FFFFFF",
-                    border: "none",
-                    borderRadius: "var(--radius-full, 9999px)",
-                    padding: "0.65rem 0.85rem",
-                    fontWeight: 700,
-                    fontSize: "0.85rem",
-                    cursor: "pointer",
-                    whiteSpace: "nowrap"
-                  }}
+                  className="tjr-pay-btn-primary"
+                  style={{ whiteSpace: "nowrap" }}
                 >
                   Simulasi Bayar Lunas
                 </button>
@@ -777,36 +723,28 @@ export default function PaymentModal({ isOpen, onClose, plan, onSuccess, tenant,
                   width: "64px",
                   height: "64px",
                   borderRadius: "50%",
-                  background: "#ecfdf5",
-                  color: "#059669",
+                  background: "var(--brand-emerald-surface)",
+                  color: "var(--brand-emerald)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   fontSize: "1.75rem",
-                  margin: "0 auto 1rem"
+                  margin: "0 auto 1rem",
+                  border: "1px solid var(--brand-emerald-border)"
                 }}
               >
                 <i className="fa-solid fa-check" aria-hidden="true" />
               </div>
-              <h3 style={{ margin: "0 0 0.5rem", fontSize: "1.25rem", fontWeight: 800, color: "#0f172a" }}>
+              <h3 style={{ margin: "0 0 0.5rem", fontSize: "1.25rem", fontWeight: 700, color: "var(--color-ink)" }}>
                 Pembayaran Berhasil!
               </h3>
-              <p style={{ margin: "0 0 1.25rem", fontSize: "0.85rem", color: "#64748b", lineHeight: 1.5 }}>
+              <p style={{ margin: "0 0 1.25rem", fontSize: "0.875rem", color: "var(--color-muted)", lineHeight: 1.6, maxWidth: "45ch", marginLeft: "auto", marginRight: "auto" }}>
                 Terima kasih! Langganan <strong>{plan.name}</strong> untuk toko Anda telah aktif dan kuota AI langsung ditambahkan ke akun. Faktur kuitansi resmi telah dicatat ke riwayat tagihan.
               </p>
               <button
                 type="button"
                 onClick={onClose}
-                style={{
-                  background: "var(--color-accent, #0b5d4b)",
-                  color: "#FFFFFF",
-                  border: "none",
-                  borderRadius: "var(--radius-full, 9999px)",
-                  padding: "0.65rem 2rem",
-                  fontWeight: 700,
-                  fontSize: "0.88rem",
-                  cursor: "pointer"
-                }}
+                className="tjr-pay-btn-primary"
               >
                 Tutup &amp; Perbarui Dashboard
               </button>
@@ -816,49 +754,21 @@ export default function PaymentModal({ isOpen, onClose, plan, onSuccess, tenant,
 
         {/* FOOTER ACTIONS MODAL (TAHAP 1) */}
         {stage === "select" && (
-          <div
-            style={{
-              padding: "0.85rem 1.5rem 1.25rem",
-              display: "flex",
-              justifyContent: "flex-end",
-              gap: "0.75rem",
-              background: "#FFFFFF",
-              borderTop: "1px solid var(--color-rule, #e2e8f0)"
-            }}
-          >
+          <div className="tjr-modal-footer">
             <button
               type="button"
               onClick={handleCancelPayment}
-              style={{
-                background: "#FFFFFF",
-                border: "1px solid var(--color-rule, #cbd5e1)",
-                borderRadius: "var(--radius-full, 9999px)",
-                padding: "0.65rem 1.5rem",
-                fontWeight: 600,
-                fontSize: "0.88rem",
-                color: "var(--color-ink, #0f172a)",
-                cursor: "pointer"
-              }}
+              className="tjr-pay-btn-secondary"
             >
               Batalkan
             </button>
             <button
               type="button"
               onClick={handleProceedPayment}
-              disabled={busy || loadingFees}
-              style={{
-                background: "#f97316",
-                border: "none",
-                borderRadius: "var(--radius-full, 9999px)",
-                padding: "0.65rem 1.75rem",
-                fontWeight: 700,
-                fontSize: "0.88rem",
-                color: "#FFFFFF",
-                boxShadow: "0 4px 12px rgba(249, 115, 22, 0.28)",
-                cursor: busy || loadingFees ? "not-allowed" : "pointer"
-              }}
+              disabled={busy || (selectedMethod !== "swallet" && loadingFees)}
+              className="tjr-pay-btn-primary"
             >
-              {busy ? "Menghubungkan..." : `Bayar ${rupiah(totalAmount)}`}
+              {busy ? "Memproses..." : selectedMethod === "swallet" ? `Bayar Instan S-Wallet (${rupiah(totalAmount)})` : `Bayar ${rupiah(totalAmount)}`}
             </button>
           </div>
         )}

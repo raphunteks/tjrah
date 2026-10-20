@@ -23,6 +23,10 @@ function Invoice({ o, lines, rx, rxItems, canPay, shiftOpen, onPay, now }) {
         </div>
         <p className="bill__total d-num">{rupiah(o.subtotal)}</p>
       </header>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "var(--color-paper-2)", padding: "4px 8px", borderRadius: "4px", fontSize: "0.75rem", margin: "4px 0 8px" }}>
+        <span style={{ color: "var(--color-muted)" }}>Bagi Hasil Jasa Medis:</span>
+        <span style={{ fontWeight: 600, color: "var(--brand-emerald)" }}>70% Klinik · 30% S-Wallet Dokter</span>
+      </div>
       <ul className="pos-lines">
         {lines.map((l) => <li key={l.id}><span>{Number(l.qty)}× {l.name}</span><span /><span className="d-num">{rupiah(l.qty * l.price)}</span></li>)}
       </ul>
@@ -128,6 +132,7 @@ export default function Billing() {
                   <li key={o.id}>
                     <div><p className="d-list__title">{o.customer_name ?? o.code}</p><p className="d-list__meta">{dateTime(o.paid_at)} · <span className="d-mono">{o.code}</span></p></div>
                     <div className="d-row-actions">
+                      <Badge tone="accent">Split 30% Dokter Cair</Badge>
                       {rx?.status === "dispensed" && <Badge tone="ok">Obat diserahkan</Badge>}
                       <span className="d-num">{rupiah(o.total)}</span>
                     </div>

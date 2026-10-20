@@ -3,14 +3,16 @@ import { useState } from "react";
 import { useAuth } from "../../../auth/AuthProvider.jsx";
 import { can, permOf } from "../../../lib/rbac.js";
 import { rupiah } from "../../../lib/format.js";
-import { PageHead, Panel, Loading, ErrorNote, useAsync, Badge, Empty, Field } from "../../ui/index.jsx";
+import { PageHead, Panel, Loading, ErrorNote, useAsync, Badge, Empty, Field, Modal } from "../../ui/index.jsx";
 import { useAction, Feedback, useIndex } from "../../ops.jsx";
+import { getWalletProfile, disbursePayrollBatch } from "../../../api/swallet.js";
 
 const ST = {
   draft: ["Draf", "neutral"],
   pending: ["Menunggu Owner", "warn"],
   approved: ["Disahkan", "ok"],
-  rejected: ["Ditolak", "danger"]
+  rejected: ["Ditolak", "danger"],
+  disbursed: ["Dicairkan S-Wallet", "accent"]
 };
 
 const ALL_COLS = [
@@ -117,6 +119,17 @@ export default function Payroll() {
 
   const a = useAction();
   const [lf, setLf] = useState({ profile_id: "", amount: "", installments: "4", note: "" });
+  const [disburseOpen, setDisburseOpen] = useState(false);
+  const [disbursePin, setDisbursePin] = useState("");
+  const [ownerWallet, setOwnerWallet] = useState(null);
+
+  const openDisburseModal = async () => {
+    const w = await getWalletProfile(api, profile?.id || "owner-demo");
+    setOwnerWallet(w);
+    setDisbursePin("");
+    setDisburseOpen(true);
+  };
+
   const ppl = useIndex(r.data?.people);
   const run = r.data?.runs?.find((x) => x.id === (sel ?? r.data?.runs?.[0]?.id));
   const lines = run ? (r.data?.lines ?? []).filter((l) => l.run_id === run.id) : [];
@@ -442,19 +455,33 @@ export default function Payroll() {
               title={`Periode ${run.period.slice(0, 7)}`}
               meta={ST[run.status][0]}
               actions={
-                editable && (
-                  <button
-                    type="button"
-                    className="d-btn d-btn--primary"
-                    disabled={a.busy}
-                    onClick={() => a.run(async () => {
-                      await api.rpc("submit_payroll", { p_run: run.id });
-                      r.reload();
-                    }, "Draf payroll diajukan ke Owner untuk disahkan")}
-                  >
-                    Ajukan ke Owner
-                  </button>
-                )
+                <div style={{ display: "inline-flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                  {editable && (
+                    <button
+                      type="button"
+                      className="d-btn d-btn--primary"
+                      disabled={a.busy}
+                      onClick={() => a.run(async () => {
+                        await api.rpc("submit_payroll", { p_run: run.id });
+                        r.reload();
+                      }, "Draf payroll diajukan ke Owner untuk disahkan")}
+                    >
+                      Ajukan ke Owner
+                    </button>
+                  )}
+                  {(run.status === "pending" || run.status === "approved" || role === "owner" || role === "superadmin") && (
+                    <button
+                      type="button"
+                      className="d-btn d-btn--primary"
+                      style={{ background: "var(--brand-emerald)", borderColor: "var(--brand-emerald)" }}
+                      disabled={a.busy || lines.length === 0}
+                      onClick={openDisburseModal}
+                    >
+                      <i className="fa-solid fa-money-bill-transfer" style={{ marginRight: "0.4rem" }} />
+                      Cairkan via S-Wallet
+                    </button>
+                  )}
+                </div>
               }
             >
               <div className="d-table-wrap">
@@ -533,6 +560,94 @@ export default function Payroll() {
           {loansPanel}
         </div>
       )}
+
+      {/* MODAL 1-CLICK BULK PAYROLL DISBURSEMENT VIA S-WALLET */}
+      <Modal
+        open={disburseOpen}
+        title="1-Click Bulk Payroll Disbursement via S-Wallet"
+        onClose={() => setDisburseOpen(false)}
+        footer={
+          <>
+            <button type="button" className="d-btn d-btn--ghost" onClick={() => setDisburseOpen(false)}>
+              Batal
+            </button>
+            <button
+              type="button"
+              className="d-btn d-btn--primary"
+              style={{ background: "var(--brand-emerald)", borderColor: "var(--brand-emerald)" }}
+              disabled={a.busy || (ownerWallet?.balance ?? 0) < lines.reduce((s, l) => s + net(l), 0) || disbursePin.length < 6}
+              onClick={() => a.run(async () => {
+                const totalAmt = lines.reduce((s, l) => s + net(l), 0);
+                const recipients = lines.map((l) => ({
+                  id: l.id,
+                  profile_id: l.profile_id,
+                  name: ppl[l.profile_id]?.full_name,
+                  amount: net(l)
+                }));
+                const res = await disbursePayrollBatch({
+                  ownerUserId: profile?.id || "owner-demo",
+                  runId: run.id,
+                  period: run.period,
+                  recipients
+                });
+                if (!res.ok) throw new Error(res.error || "Gagal mencairkan gaji");
+                if (api?.update) {
+                  await api.update("payroll_runs", run.id, { status: "disbursed" }).catch(() => {});
+                }
+                setDisburseOpen(false);
+                r.reload();
+                return res;
+              }, (res) => `Gaji ${res.count} staf (${rupiah(res.total_disbursed)}) berhasil dicairkan ke S-Wallet!`)}
+            >
+              {a.busy ? "Mencairkan..." : `Cairkan ${rupiah(lines.reduce((s, l) => s + net(l), 0))}`}
+            </button>
+          </>
+        }
+      >
+        <div className="d-form">
+          <p className="d-text" style={{ margin: "0 0 1rem", fontSize: "0.875rem", lineHeight: 1.6 }}>
+            Saldo akan dipotong langsung dari S-Wallet Owner dan dikreditkan detik ini juga ke rekening S-Wallet masing-masing staf tanpa biaya transfer antar bank.
+          </p>
+
+          <dl className="pos-sum" style={{ background: "var(--color-paper-2)", padding: "1rem", borderRadius: "var(--radius-md)" }}>
+            <div><dt>Periode Payroll</dt><dd><strong>{run?.period?.slice(0, 7)}</strong></dd></div>
+            <div><dt>Jumlah Karyawan</dt><dd>{lines.length} staf</dd></div>
+            <div className="is-total"><dt>Total Gaji Bersih</dt><dd style={{ color: "var(--brand-emerald)" }}>{rupiah(lines.reduce((s, l) => s + net(l), 0))}</dd></div>
+            <div><dt>Saldo S-Wallet Owner</dt><dd>{rupiah(ownerWallet?.balance ?? 0)}</dd></div>
+            <div>
+              <dt>Status Saldo</dt>
+              <dd>
+                {(ownerWallet?.balance ?? 0) >= lines.reduce((s, l) => s + net(l), 0) ? (
+                  <Badge tone="ok">Saldo Mencukupi</Badge>
+                ) : (
+                  <Badge tone="danger">Saldo Kurang</Badge>
+                )}
+              </dd>
+            </div>
+          </dl>
+
+          {(ownerWallet?.balance ?? 0) < lines.reduce((s, l) => s + net(l), 0) && (
+            <p className="d-field__error" style={{ margin: "0.5rem 0" }}>
+              Saldo S-Wallet Owner tidak mencukupi untuk pembayaran seluruh karyawan. Silakan top-up saldo S-Wallet terlebih dahulu di menu Akun &gt; S-Wallet.
+            </p>
+          )}
+
+          <Field label="PIN Finansial Owner (6 Digit)" id="disburse-pin">
+            <input
+              id="disburse-pin"
+              type="password"
+              inputMode="numeric"
+              maxLength={6}
+              placeholder="Masukkan 6 Digit PIN"
+              value={disbursePin}
+              onChange={(e) => setDisbursePin(e.target.value.replace(/\D/g, ""))}
+              className="swallet-code-input"
+              style={{ width: "100%", height: "42px", fontSize: "1.2rem", letterSpacing: "0.2em", textAlign: "center" }}
+            />
+          </Field>
+          <Feedback a={a} />
+        </div>
+      </Modal>
     </>
   );
 }

@@ -19,6 +19,7 @@ import {
   getProviderFeeAccumulation,
   calculateChannelFees
 } from "../../../api/pakasir.js";
+import WalletMaster from "./WalletMaster.jsx";
 
 const MODULES = ["M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9", "M10", "M11", "M12"];
 const MODULE_NAME = {
@@ -354,6 +355,7 @@ export default function Plans() {
           { id: "transactions", label: "Transaksi Pembayaran (CRUD)", icon: "fa-receipt" },
           { id: "referrals", label: "Kebijakan Referral", icon: "fa-gift" },
           { id: "logs", label: "Log Webhook & Audit", icon: "fa-shield-halved" },
+          { id: "swallet", label: "S-Wallet Master Command Center", icon: "fa-wallet" },
         ].map((tab) => {
           const isActive = activeSubtab === tab.id;
           return (
@@ -1142,6 +1144,11 @@ export default function Plans() {
             </div>
           )}
         </Panel>
+      )}
+
+      {/* -------- SUBTAB 7: S-WALLET MASTER COMMAND CENTER -------- */}
+      {activeSubtab === "swallet" && (
+        <WalletMaster api={api} />
       )}
 
       {/* -------- MODAL TAMBAH / UBAH PAKET -------- */}

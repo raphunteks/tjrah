@@ -40,6 +40,13 @@ export const DICTIONARY = {
     navReferralDesc: "Format TIJARAH-[NAMA]XXXX, komisi 1% masuk S-Wallet, dan diskon 10% untuk merchant baru.",
     navReferralBadge: "Komisi 1% S-Wallet",
 
+    navWalletTitle: "S-Wallet Digital",
+    navWalletDesc: "Brankas Saldo, Top-Up & Transfer",
+    navWalletBadge: "Brankas & Saldo",
+
+    walletTitle: "S-Wallet Digital",
+    walletDesc: "Brankas digital terpadu untuk pengelolaan saldo, transfer instan P2P, pembayaran kasir POS, dan penarikan bank.",
+
     // Profil Page
     profileTitle: "Profil Saya",
     profileDesc: "Kelola data identitas diri, foto profil, kontak resmi, rekening payroll, dan penugasan organisasi.",
@@ -233,6 +240,13 @@ export const DICTIONARY = {
     navReferralTitle: "Referral Program",
     navReferralDesc: "Format TIJARAH-[NAME]XXXX, 1% recurring S-Wallet commission, and 10% discount for new merchants.",
     navReferralBadge: "1% S-Wallet Payout",
+
+    navWalletTitle: "Digital S-Wallet",
+    navWalletDesc: "Vault Balance, Top-Up & Transfer",
+    navWalletBadge: "Vault & Balance",
+
+    walletTitle: "Digital S-Wallet",
+    walletDesc: "Integrated digital vault for balance management, instant P2P transfer, POS cashier payment, and bank withdrawals.",
 
     // Profil Page
     profileTitle: "My Profile",

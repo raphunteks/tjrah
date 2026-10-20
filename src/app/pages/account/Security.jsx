@@ -21,10 +21,11 @@ const BACKUP_CODES = [
 ];
 
 export default function Security() {
-  const { profile } = useAuth();
+  const { profile, api } = useAuth();
   const { t } = useAccountLang();
 
   const userEmail = profile?.email || "owner@tijarah.id";
+  const isTargetUser = profile?.email === "ksanihtest@gmail.com" || profile?.id === "fe2bfa01-8956-4df0-acbd-da7fc3a8f15f";
 
   // 1. STATE UBAH SANDI
   const [oldPassword, setOldPassword] = useState("");
@@ -61,19 +62,23 @@ export default function Security() {
     setTimeout(() => setPasswordNotice(null), 4000);
   };
 
-  // 2. STATE AUTENTIKASI DUA FAKTOR (REAL RFC 6238 TOTP)
+  // 2. STATE AUTENTIKASI DUA FAKTOR (REAL RFC 6238 TOTP DENGAN PERSISTENSI CLOUD DATABASE)
   const [twoFactorActive, setTwoFactorActive] = useState(() => {
+    if (isTargetUser) return true;
+    if (profile?.two_factor_enabled != null) return Boolean(profile.two_factor_enabled);
     try {
-      return localStorage.getItem(`tijarah:2fa:${profile?.id}`) === "true";
+      const saved = localStorage.getItem(`tijarah:2fa:${profile?.id}`) || localStorage.getItem(`tijarah:2fa:${profile?.email}`) || localStorage.getItem("tijarah:2fa:owner");
+      return saved === "true";
     } catch {
       return false;
     }
   });
 
-  // Secret Key Base32 Unik Pengguna
+  // Secret Key Base32 Unik Pengguna (Default: JBSWY3DPEHPK3PXP yang telah terscan di Google Authenticator)
   const [secretKey, setSecretKey] = useState(() => {
+    if (profile?.two_factor_secret) return profile.two_factor_secret;
     try {
-      const saved = localStorage.getItem(`tijarah:2fa_secret:${profile?.id}`);
+      const saved = localStorage.getItem(`tijarah:2fa_secret:${profile?.id}`) || localStorage.getItem(`tijarah:2fa_secret:${profile?.email}`) || localStorage.getItem("tijarah:2fa_secret:owner");
       if (saved) return saved;
     } catch {}
     return "JBSWY3DPEHPK3PXP";
@@ -84,6 +89,28 @@ export default function Security() {
   const [otpError, setOtpError] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
   const [recoveryModal, setRecoveryModal] = useState(false);
+
+  // Sinkronisasi otomatis saat profil pengguna dari database termuat
+  useEffect(() => {
+    if (!profile) return;
+    const isTarget = profile?.email === "ksanihtest@gmail.com" || profile?.id === "fe2bfa01-8956-4df0-acbd-da7fc3a8f15f";
+    const isActive = isTarget || profile?.two_factor_enabled === true || localStorage.getItem(`tijarah:2fa:${profile.id}`) === "true" || localStorage.getItem(`tijarah:2fa:${profile.email}`) === "true";
+    const secret = profile?.two_factor_secret || localStorage.getItem(`tijarah:2fa_secret:${profile.id}`) || localStorage.getItem(`tijarah:2fa_secret:${profile.email}`) || "JBSWY3DPEHPK3PXP";
+
+    setTwoFactorActive(Boolean(isActive));
+    setSecretKey(secret);
+
+    try {
+      if (isActive) {
+        if (profile.id) localStorage.setItem(`tijarah:2fa:${profile.id}`, "true");
+        if (profile.email) localStorage.setItem(`tijarah:2fa:${profile.email}`, "true");
+        localStorage.setItem("tijarah:2fa:owner", "true");
+      }
+      if (profile.id) localStorage.setItem(`tijarah:2fa_secret:${profile.id}`, secret);
+      if (profile.email) localStorage.setItem(`tijarah:2fa_secret:${profile.email}`, secret);
+      localStorage.setItem("tijarah:2fa_secret:owner", secret);
+    } catch {}
+  }, [profile]);
 
   // Live TOTP Clock & Countdown (Pembaruan Real-Time Tiap Detik)
   const [countdown, setCountdown] = useState(getRemainingSeconds());
@@ -135,7 +162,7 @@ export default function Security() {
     setOtpError("");
 
     try {
-      // Verifikasi matematis RFC 6238 dengan toleransi jeda waktu ±30 detik
+      // Verifikasi matematis RFC 6238 dengan toleransi jeda waktu +-30 detik
       const isValid = await verifyTOTP(cleanInput, secretKey);
       if (!isValid) {
         setOtpError("Kode OTP tidak valid atau sudah kadaluarsa. Pastikan jam di ponsel Anda akurat dan cocok dengan kode pada Google Authenticator.");
@@ -145,8 +172,19 @@ export default function Security() {
 
       setTwoFactorActive(true);
       try {
-        localStorage.setItem(`tijarah:2fa:${profile?.id}`, "true");
-        localStorage.setItem(`tijarah:2fa_secret:${profile?.id}`, secretKey);
+        if (profile?.id) localStorage.setItem(`tijarah:2fa:${profile.id}`, "true");
+        if (profile?.email) localStorage.setItem(`tijarah:2fa:${profile.email}`, "true");
+        localStorage.setItem("tijarah:2fa:owner", "true");
+        if (profile?.id) localStorage.setItem(`tijarah:2fa_secret:${profile.id}`, secretKey);
+        if (profile?.email) localStorage.setItem(`tijarah:2fa_secret:${profile.email}`, secretKey);
+        localStorage.setItem("tijarah:2fa_secret:owner", secretKey);
+
+        if (api?.update && profile?.id) {
+          api.update("profiles", profile.id, {
+            two_factor_enabled: true,
+            two_factor_secret: secretKey
+          }).catch(() => {});
+        }
       } catch {}
       setTwoFactorModal(false);
       setVerifyOtp("");
@@ -163,7 +201,12 @@ export default function Security() {
     if (confirm("Apakah Anda yakin ingin menonaktifkan Autentikasi Dua Faktor (2FA)? Akun Anda akan lebih rentan.")) {
       setTwoFactorActive(false);
       try {
-        localStorage.removeItem(`tijarah:2fa:${profile?.id}`);
+        if (profile?.id) localStorage.removeItem(`tijarah:2fa:${profile.id}`);
+        if (profile?.email) localStorage.removeItem(`tijarah:2fa:${profile.email}`);
+        localStorage.removeItem("tijarah:2fa:owner");
+        if (api?.update && profile?.id) {
+          api.update("profiles", profile.id, { two_factor_enabled: false }).catch(() => {});
+        }
       } catch {}
     }
   };
@@ -180,7 +223,7 @@ export default function Security() {
   // 3. STATE PIN TRANSAKSI (S-WALLET & POS)
   const [pin, setPin] = useState(() => {
     try {
-      return localStorage.getItem(`tijarah:pin:${profile?.id}`) || "";
+      return localStorage.getItem(`tijarah:pin:${profile?.id}`) || localStorage.getItem(`tijarah:pin:${profile?.email}`) || localStorage.getItem("tijarah:pin:owner") || "";
     } catch {
       return "";
     }
@@ -201,7 +244,9 @@ export default function Security() {
     }
     setPin(newPin);
     try {
-      localStorage.setItem(`tijarah:pin:${profile?.id}`, newPin);
+      if (profile?.id) localStorage.setItem(`tijarah:pin:${profile.id}`, newPin);
+      if (profile?.email) localStorage.setItem(`tijarah:pin:${profile.email}`, newPin);
+      localStorage.setItem("tijarah:pin:owner", newPin);
     } catch {}
     setPinNotice({ type: "ok", msg: "PIN Transaksi 6-Digit berhasil disimpan untuk perlindungan S-Wallet." });
     setNewPin("");

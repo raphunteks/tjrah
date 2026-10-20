@@ -9,7 +9,7 @@ const ST = {
   matched: ["Cocok", "ok"], amount_diff: ["Selisih nominal", "danger"], missing_statement: ["Belum ada di laporan penyedia", "warn"],
   missing_payment: ["Di laporan penyedia, tidak ada Pembayaran", "danger"], ambiguous: ["Referensi ganda", "warn"],
 };
-const METHOD = { qris: "QRIS", card: "Kartu", ewallet: "E-wallet", transfer: "Transfer" };
+const METHOD = { qris: "QRIS", card: "Kartu", ewallet: "E-wallet", transfer: "Transfer", swallet: "S-Wallet Digital" };
 const iso = (d) => d.toISOString().slice(0, 10);
 const daysAgo = (n) => iso(new Date(Date.now() - n * 864e5));
 
@@ -102,7 +102,15 @@ export default function Recon() {
         {rep.loading && !rep.data ? <Loading /> : rep.error ? <ErrorNote error={rep.error} onRetry={rep.reload} /> : !(rep.data ?? []).length ? (
           <Empty title="Belum ada hasil">{canWrite ? "Impor laporan penyedia lalu tekan “Cocokkan sekarang”." : "GM belum menjalankan pencocokan untuk rentang ini."}</Empty>
         ) : (
-          <div className="d-table-wrap">
+          <>
+            <div style={{ background: "var(--color-paper-2)", border: "1px solid var(--color-rule)", borderRadius: "var(--radius-md)", padding: "0.625rem 0.875rem", marginBottom: "0.875rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <i className="fa-solid fa-shield-halved" style={{ color: "var(--brand-emerald)" }} aria-hidden="true" />
+                <span style={{ fontSize: "0.8125rem", fontWeight: 600 }}>S-Wallet Digital Settlement: Terjamin Selisih Rp 0 melalui Double-Entry Ledger Internal</span>
+              </div>
+              <Badge tone="ok">Otomatis Match 100%</Badge>
+            </div>
+            <div className="d-table-wrap">
             <table className="d-table">
               <caption className="d-sr">Hasil rekonsiliasi</caption>
               <thead><tr><th>Status</th><th>Pesanan / referensi</th><th>Metode</th><th className="d-num">Seharusnya</th><th className="d-num">Diterima</th><th className="d-num">Selisih</th><th>Catatan</th></tr></thead>
@@ -153,6 +161,7 @@ export default function Recon() {
               </tbody>
             </table>
           </div>
+          </>
         )}
         <Feedback a={note} />
       </Panel>

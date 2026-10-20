@@ -48,6 +48,7 @@
     "/app/akun/akses",
     "/app/langganan",
     "/app/akun/referral",
+    "/app/akun/wallet",
     "/app/platform-ops"
   ],
   "owner": [
@@ -101,7 +102,8 @@
     "/app/akun/notifikasi",
     "/app/akun/akses",
     "/app/langganan",
-    "/app/akun/referral"
+    "/app/akun/referral",
+    "/app/akun/wallet"
   ],
   "gm": [
     "/app",
@@ -148,7 +150,8 @@
     "/app/akun/tampilan",
     "/app/akun/notifikasi",
     "/app/akun/akses",
-    "/app/akun/referral"
+    "/app/akun/referral",
+    "/app/akun/wallet"
   ],
   "staff": [
     "/app",
@@ -174,7 +177,8 @@
     "/app/akun/tampilan",
     "/app/akun/notifikasi",
     "/app/akun/akses",
-    "/app/akun/referral"
+    "/app/akun/referral",
+    "/app/akun/wallet"
   ],
   "dokter": [
     "/app",
@@ -190,7 +194,8 @@
     "/app/akun/keamanan",
     "/app/akun/tampilan",
     "/app/akun/notifikasi",
-    "/app/akun/akses"
+    "/app/akun/akses",
+    "/app/akun/wallet"
   ],
   "member": []
 }

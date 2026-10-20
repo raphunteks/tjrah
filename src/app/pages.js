@@ -154,6 +154,7 @@ export const PAGES = [
     gate: (r) => isOwner(r) || isSuperadmin(r), Comp: lazy(() => import("./pages/growth/Subscription.jsx")) },
   { path: "/app/akun/referral", label: "Kode referral", group: "Akun", code: "Ref",
     gate: (r) => notDokter(r), Comp: lazy(() => import("./pages/account/Referral.jsx")) },
+  { path: "/app/akun/wallet", label: "S-Wallet digital", group: "Akun", code: "SW", gate: () => true, Comp: lazy(() => import("./pages/account/Wallet.jsx")) },
   { path: "/app/platform-ops", label: "Penagihan & flag", group: "Platform", code: "F1", platform: true,
     gate: (r) => isSuperadmin(r) && can(r, 1, "r"), Comp: lazy(() => import("./pages/growth/PlatformOps.jsx")) },
 ];

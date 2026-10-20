@@ -5,9 +5,26 @@ import { rupiah, date } from "../../../lib/format.js";
 import { PageHead, Panel, Loading, ErrorNote, Modal, Field, useAsync, Badge, Empty } from "../../ui/index.jsx";
 import { useAction, Feedback, useBranch, useLive } from "../../ops.jsx";
 
-const ACCOUNTS = [["1101", "Kas"], ["1102", "Bank, EDC & QRIS"], ["1301", "Persediaan Bahan Baku"], ["2101", "Utang Dagang"], ["2102", "Utang Pajak Penjualan"], ["2103", "Utang Gaji"],
-  ["3101", "Modal Pemilik"], ["4101", "Pendapatan Penjualan"], ["5101", "Harga Pokok Penjualan"], ["6101", "Beban Gaji"], ["6102", "Beban Sewa"], ["6103", "Beban Listrik & Internet"], ["6104", "Beban Waste & Susut"], ["6105", "Beban Kas Kecil Outlet"]];
-const SRC = { pos: "POS", void: "Void", waste: "Waste", purchase: "Pembelian", petty: "Kas kecil", payroll: "Payroll", opname: "Opname", expense: "Beban", manual: "Manual", financing: "Pendanaan", investment: "Investasi" };
+const ACCOUNTS = [
+  ["1101", "Kas"],
+  ["1102", "Bank, EDC & QRIS"],
+  ["1301", "Persediaan Bahan Baku"],
+  ["2101", "Utang Dagang"],
+  ["2102", "Utang Pajak Penjualan"],
+  ["2103", "Utang Gaji"],
+  ["2105", "Utang Saldo S-Wallet Pengguna"],
+  ["3101", "Modal Pemilik"],
+  ["4101", "Pendapatan Penjualan"],
+  ["4201", "Pendapatan Administrasi S-Wallet"],
+  ["5101", "Harga Pokok Penjualan"],
+  ["5102", "Beban Jasa Medis Dokter"],
+  ["6101", "Beban Gaji"],
+  ["6102", "Beban Sewa"],
+  ["6103", "Beban Listrik & Internet"],
+  ["6104", "Beban Waste & Susut"],
+  ["6105", "Beban Kas Kecil Outlet"]
+];
+const SRC = { pos: "POS", void: "Void", waste: "Waste", purchase: "Pembelian", petty: "Kas kecil", payroll: "Payroll", opname: "Opname", expense: "Beban", manual: "Manual", financing: "Pendanaan", investment: "Investasi", swallet: "S-Wallet" };
 
 export default function Journal() {
   const { api, role, tenantId } = useAuth();

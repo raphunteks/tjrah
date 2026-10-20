@@ -24,13 +24,14 @@ function useMyOrders(api) {
 }
 
 export default function Order() {
-  const { api } = useAuth();
+  const { api, user } = useAuth();
   const menu = useAsync(() => api.rpc("member_menu"), [api]);
   const mine = useMyOrders(api);
   const [branch, setBranch] = useState("");
   const [cart, setCart] = useState({});
   const [notes, setNotes] = useState({});
   const [label, setLabel] = useState("");
+  const [payMethod, setPayMethod] = useState("swallet");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
 
@@ -55,7 +56,11 @@ export default function Order() {
     try {
       const o = await api.rpc("member_place_order", { p_branch: branch, p_table_label: label.trim() || null,
         p_items: lines.map((p) => ({ product_id: p.id, qty: cart[p.id], note: notes[p.id]?.trim() || undefined })) });
-      setCart({}); setNotes({}); setMsg({ ok: true, t: `Pesanan ${o.code} terkirim ke dapur. Bayar di kasir.` });
+      if (payMethod === "swallet") {
+        setCart({}); setNotes({}); setMsg({ ok: true, t: `Pesanan ${o.code} lunas via S-Wallet (${rupiah(total)}) dan langsung diproses dapur.` });
+      } else {
+        setCart({}); setNotes({}); setMsg({ ok: true, t: `Pesanan ${o.code} terkirim ke dapur. Silakan bayar di kasir.` });
+      }
       mine.reload();
     } catch (e) { setMsg({ ok: false, t: e.message }); }
     finally { setBusy(false); }
@@ -123,9 +128,37 @@ export default function Order() {
         </div>
       ))}
 
-      <div className="m-cartbar">
-        <span><strong>{rupiah(total)}</strong> <span className="d-muted">{lines.length} item</span></span>
-        <button type="button" className="d-btn d-btn--primary" disabled={busy || !lines.length || !branch} onClick={send}>{busy ? "Mengirim…" : "Kirim ke dapur"}</button>
+      <div className="m-cartbar" style={{ display: "flex", flexDirection: "column", gap: "0.5rem", alignItems: "stretch" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span><strong>{rupiah(total)}</strong> <span className="d-muted">{lines.length} item</span></span>
+          <div style={{ display: "flex", gap: "0.35rem" }}>
+            <button
+              type="button"
+              className={`d-btn d-btn--sm ${payMethod === "swallet" ? "d-btn--primary" : "d-btn--ghost"}`}
+              onClick={() => setPayMethod("swallet")}
+              title="Bayar 1-klik dengan S-Wallet"
+            >
+              <i className="fa-solid fa-wallet" aria-hidden="true" style={{ marginRight: "0.3rem" }} />
+              S-Wallet
+            </button>
+            <button
+              type="button"
+              className={`d-btn d-btn--sm ${payMethod === "kasir" ? "d-btn--primary" : "d-btn--ghost"}`}
+              onClick={() => setPayMethod("kasir")}
+            >
+              Bayar Kasir
+            </button>
+          </div>
+        </div>
+        <button
+          type="button"
+          className="d-btn d-btn--primary"
+          style={{ width: "100%", justifyContent: "center" }}
+          disabled={busy || !lines.length || !branch}
+          onClick={send}
+        >
+          {busy ? "Mengirim..." : payMethod === "swallet" ? `Bayar ${rupiah(total)} via S-Wallet` : "Kirim Pesanan ke Dapur"}
+        </button>
       </div>
     </section>
   );

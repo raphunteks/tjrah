@@ -75,10 +75,10 @@
   --color-st-dirty: #64748B;
   --color-st-dirty-soft: rgba(100, 116, 139, 0.08);
 
-  /* — Type: DM Sans (Heading/Warm) + Outfit (Metrics) + Inter (Body) + JetBrains Mono (Finance) — */
+  /* — Type: DM Sans (Heading/Body/Warm) + Outfit (Metrics) + JetBrains Mono (Finance) — */
   --font-display: "DM Sans", "Outfit", system-ui, sans-serif;
   --font-brand: "Outfit", "DM Sans", system-ui, sans-serif;
-  --font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-body: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
   /* — Warm Soft-Modernism & Bento Colors (Inspired by Runut / Gambar 1 & 2) — */

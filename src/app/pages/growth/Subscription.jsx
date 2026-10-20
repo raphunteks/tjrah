@@ -369,39 +369,38 @@ export default function Subscription() {
       <div className="d-grid" style={{ gap: "1.25rem" }}>
         {/* PANEL 3 TIER RESMI TIJARAH */}
         <Panel title="Pilihan Tingkat Paket Langganan Tijarah OS">
-          <p className="d-text d-muted" style={{ margin: "0 0 1.25rem", fontSize: "0.85rem" }}>
+          <p className="d-plan-lead-desc">
             Struktur paket resmi disesuaikan dengan skala usaha toko Anda dengan pembagian kuota pertanyaan AI yang adil.
           </p>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1rem" }}>
+          <div className="d-tier-grid">
             {/* TIER 1: STARTER (1 BULAN) */}
-            <div style={{ background: "var(--color-paper-2)", borderRadius: "var(--radius-lg)", border: "1px solid var(--color-rule)", padding: "1.25rem", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+            <div className="d-tier-card">
               <div>
-                <span className="d-mono d-muted" style={{ fontSize: "0.8rem", textTransform: "uppercase" }}>Tingkat Pemula · 1 Bulan</span>
-                <h3 style={{ margin: "0.25rem 0", font: "700 1.25rem var(--font-display)" }}>Langganan 1 Bulan</h3>
-                <p className="d-text d-muted" style={{ margin: "0 0 0.5rem", fontSize: "0.85rem" }}>Starter (1 bulan)</p>
-                <div style={{ margin: "0.5rem 0 0.25rem", font: "800 1.6rem var(--font-mono)", color: "var(--color-ink)" }}>
+                <span className="d-tier-eyebrow">Tingkat Pemula · 1 Bulan</span>
+                <h3 className="d-tier-title">Langganan 1 Bulan</h3>
+                <p className="d-tier-subtitle">Starter (1 bulan)</p>
+                <div className="d-tier-price">
                   Rp 500.000
                 </div>
-                <div style={{ fontSize: "0.82rem", color: "var(--color-ink-muted)", marginBottom: "1rem" }}>
+                <div className="d-tier-rate-monthly">
                   Rp 500.000 / bulan
                 </div>
-                <ul style={{ listStyle: "none", padding: 0, margin: 0, fontSize: "0.85rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> 1 Gerai / Outlet Toko Utama</li>
-                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> 3 Akun Kasir POS &amp; Supervisor Toko</li>
-                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> Aplikasi Kasir POS Cepat, Struk &amp; Meja</li>
-                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> Pencatatan Arus Kas Kasir, Modal &amp; rwallet</li>
-                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> Manajemen Inventori Bahan &amp; Resep Dasar</li>
-                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> Laporan Penjualan Harian &amp; X-Report</li>
-                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> Bebas Biaya Aplikasi (0% Platform Fee)</li>
-                  <li><i className="fa-solid fa-xmark" style={{ color: "var(--color-danger)", marginRight: "0.5rem" }} /> <strong>0 Kuota Pertanyaan AI</strong></li>
+                <ul className="d-tier-features">
+                  <li className="d-tier-feature-item"><i className="fa-solid fa-check d-tier-feature-icon" /> <span>1 Gerai / Outlet Toko Utama</span></li>
+                  <li className="d-tier-feature-item"><i className="fa-solid fa-check d-tier-feature-icon" /> <span>3 Akun Kasir POS &amp; Supervisor Toko</span></li>
+                  <li className="d-tier-feature-item"><i className="fa-solid fa-check d-tier-feature-icon" /> <span>Aplikasi Kasir POS Cepat, Struk &amp; Meja</span></li>
+                  <li className="d-tier-feature-item"><i className="fa-solid fa-check d-tier-feature-icon" /> <span>Pencatatan Arus Kas Kasir, Modal &amp; rwallet</span></li>
+                  <li className="d-tier-feature-item"><i className="fa-solid fa-check d-tier-feature-icon" /> <span>Manajemen Inventori Bahan &amp; Resep Dasar</span></li>
+                  <li className="d-tier-feature-item"><i className="fa-solid fa-check d-tier-feature-icon" /> <span>Laporan Penjualan Harian &amp; X-Report</span></li>
+                  <li className="d-tier-feature-item"><i className="fa-solid fa-check d-tier-feature-icon" /> <span>Bebas Biaya Aplikasi (0% Platform Fee)</span></li>
+                  <li className="d-tier-feature-item"><i className="fa-solid fa-xmark d-tier-feature-icon--danger" /> <span><strong>0 Kuota Pertanyaan AI</strong></span></li>
                 </ul>
               </div>
-              <div style={{ marginTop: "1.25rem" }}>
+              <div className="d-tier-footer">
                 <button
                   type="button"
-                  className="d-btn d-btn--ghost d-btn--sm"
-                  style={{ width: "100%", fontWeight: 600 }}
+                  className="d-tier-btn"
                   onClick={() => setCheckoutPlan({ id: "p1", code: "STARTER", name: "Starter (1 Bulan)", price: 500000, durationMonths: 1, durationLabel: "1 bulan" })}
                 >
                   Berlangganan Starter
@@ -410,39 +409,38 @@ export default function Subscription() {
             </div>
 
             {/* TIER 2: GROWTH (6 BULAN - AKTIF SAAT INI) */}
-            <div style={{ background: "var(--color-paper-2)", borderRadius: "var(--radius-lg)", border: "2px solid var(--color-accent)", padding: "1.25rem", position: "relative", boxShadow: "0 6px 20px rgba(11, 93, 75, 0.12)", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-              <div style={{ position: "absolute", top: "-12px", right: "16px", background: "var(--color-accent)", color: "#FFFFFF", padding: "2px 10px", borderRadius: "var(--radius-full)", fontSize: "0.75rem", fontWeight: 700 }}>
+            <div className="d-tier-card d-tier-card--featured">
+              <div className="d-tier-badge">
                 Paket Aktif Toko Anda
               </div>
               <div>
-                <span className="d-mono d-muted" style={{ fontSize: "0.8rem", textTransform: "uppercase" }}>Paling Populer · 6 Bulan</span>
-                <h3 style={{ margin: "0.25rem 0", font: "700 1.25rem var(--font-display)" }}>Langganan 6 Bulan</h3>
-                <p className="d-text d-muted" style={{ margin: "0 0 0.5rem", fontSize: "0.85rem" }}>Growth (6 bulan)</p>
-                <div style={{ margin: "0.5rem 0 0.25rem", font: "800 1.6rem var(--font-mono)", color: "var(--color-accent)" }}>
+                <span className="d-tier-eyebrow">Paling Populer · 6 Bulan</span>
+                <h3 className="d-tier-title">Langganan 6 Bulan</h3>
+                <p className="d-tier-subtitle">Growth (6 bulan)</p>
+                <div className="d-tier-price d-tier-price--featured">
                   Rp 2.500.000
                 </div>
-                <div style={{ fontSize: "0.82rem", color: "#D97706", fontWeight: 700, marginBottom: "1rem" }}>
+                <div className="d-tier-rate-monthly">
                   Rp 416.666 / bulan
                 </div>
-                <ul style={{ listStyle: "none", padding: 0, margin: 0, fontSize: "0.85rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> Hingga 5 Cabang / Outlet Usaha</li>
-                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> 15 Akun Kasir POS &amp; Manajer Cabang</li>
-                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> Seluruh Fitur Paket Starter</li>
-                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> Otorisasi PIN Manajer &amp; Pemilik Toko</li>
-                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> Presensi Kamera GPS &amp; Roster Shift</li>
-                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> Penggajian Kasir &amp; Pengajuan Cuti</li>
-                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> Laporan Laba Rugi, HPP Riil &amp; SOP</li>
-                  <li><i className="fa-solid fa-brain" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> <strong style={{ color: "var(--color-accent)" }}>250 Pertanyaan AI / Bulan</strong></li>
+                <ul className="d-tier-features">
+                  <li className="d-tier-feature-item"><i className="fa-solid fa-check d-tier-feature-icon" /> <span>Hingga 5 Cabang / Outlet Usaha</span></li>
+                  <li className="d-tier-feature-item"><i className="fa-solid fa-check d-tier-feature-icon" /> <span>15 Akun Kasir POS &amp; Manajer Cabang</span></li>
+                  <li className="d-tier-feature-item"><i className="fa-solid fa-check d-tier-feature-icon" /> <span>Seluruh Fitur Paket Starter</span></li>
+                  <li className="d-tier-feature-item"><i className="fa-solid fa-check d-tier-feature-icon" /> <span>Otorisasi PIN Manajer &amp; Pemilik Toko</span></li>
+                  <li className="d-tier-feature-item"><i className="fa-solid fa-check d-tier-feature-icon" /> <span>Presensi Kamera GPS &amp; Roster Shift</span></li>
+                  <li className="d-tier-feature-item"><i className="fa-solid fa-check d-tier-feature-icon" /> <span>Penggajian Kasir &amp; Pengajuan Cuti</span></li>
+                  <li className="d-tier-feature-item"><i className="fa-solid fa-check d-tier-feature-icon" /> <span>Laporan Laba Rugi, HPP Riil &amp; SOP</span></li>
+                  <li className="d-tier-feature-item"><i className="fa-solid fa-brain d-tier-feature-icon" /> <span><strong>250 Pertanyaan AI / Bulan</strong></span></li>
                 </ul>
               </div>
-              <div style={{ marginTop: "1.25rem", display: "flex", flexDirection: "column", gap: "0.4rem" }}>
-                <Badge tone="ok" style={{ width: "100%", justifyContent: "center", padding: "0.4rem 0" }}>
+              <div className="d-tier-footer">
+                <Badge tone="ok" style={{ width: "100%", justifyContent: "center", minHeight: "36px" }}>
                   Sedang Digunakan
                 </Badge>
                 <button
                   type="button"
-                  className="d-btn d-btn--ghost d-btn--sm"
-                  style={{ width: "100%", fontWeight: 600, fontSize: "0.8rem" }}
+                  className="d-tier-btn d-tier-btn--featured"
                   onClick={() => setCheckoutPlan({ id: "p2", code: "GROWTH", name: "Growth (6 Bulan)", price: 2500000, durationMonths: 6, durationLabel: "6 bulan" })}
                 >
                   Perpanjang / Berlangganan Growth
@@ -451,33 +449,32 @@ export default function Subscription() {
             </div>
 
             {/* TIER 3: ENTERPRISE (1 TAHUN) */}
-            <div style={{ background: "var(--color-paper-2)", borderRadius: "var(--radius-lg)", border: "1px solid var(--color-rule)", padding: "1.25rem", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+            <div className="d-tier-card">
               <div>
-                <span className="d-mono d-muted" style={{ fontSize: "0.8rem", textTransform: "uppercase" }}>Skala Korporasi · 1 Tahun</span>
-                <h3 style={{ margin: "0.25rem 0", font: "700 1.25rem var(--font-display)" }}>Langganan 1 Tahun</h3>
-                <p className="d-text d-muted" style={{ margin: "0 0 0.5rem", fontSize: "0.85rem" }}>Enterprise (12 bulan)</p>
-                <div style={{ margin: "0.5rem 0 0.25rem", font: "800 1.6rem var(--font-mono)", color: "var(--color-ink)" }}>
+                <span className="d-tier-eyebrow">Skala Korporasi · 1 Tahun</span>
+                <h3 className="d-tier-title">Langganan 1 Tahun</h3>
+                <p className="d-tier-subtitle">Enterprise (12 bulan)</p>
+                <div className="d-tier-price">
                   Rp 3.500.000
                 </div>
-                <div style={{ fontSize: "0.82rem", color: "#D97706", fontWeight: 700, marginBottom: "1rem" }}>
+                <div className="d-tier-rate-monthly">
                   Rp 291.666 / bulan
                 </div>
-                <ul style={{ listStyle: "none", padding: 0, margin: 0, fontSize: "0.85rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> Multi-Outlet Tanpa Batas Cabang</li>
-                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> Akun Kasir POS &amp; Dokter Medis Tanpa Batas</li>
-                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> Seluruh Fitur Paket Growth</li>
-                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> Otorisasi Berjenjang &amp; Audit Trail Forensik</li>
-                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> Akses Referral Eksklusif &amp; Komisi Merchant</li>
-                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> Layanan B2B Tijarah Supplies Bahan Baku</li>
-                  <li><i className="fa-solid fa-check" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> Dedicated Account Manager &amp; SLA 99.9%</li>
-                  <li><i className="fa-solid fa-infinity" style={{ color: "var(--color-accent)", marginRight: "0.5rem" }} /> <strong>Unlimited Pertanyaan AI</strong></li>
+                <ul className="d-tier-features">
+                  <li className="d-tier-feature-item"><i className="fa-solid fa-check d-tier-feature-icon" /> <span>Multi-Outlet Tanpa Batas Cabang</span></li>
+                  <li className="d-tier-feature-item"><i className="fa-solid fa-check d-tier-feature-icon" /> <span>Akun Kasir POS &amp; Dokter Medis Tanpa Batas</span></li>
+                  <li className="d-tier-feature-item"><i className="fa-solid fa-check d-tier-feature-icon" /> <span>Seluruh Fitur Paket Growth</span></li>
+                  <li className="d-tier-feature-item"><i className="fa-solid fa-check d-tier-feature-icon" /> <span>Otorisasi Berjenjang &amp; Audit Trail Forensik</span></li>
+                  <li className="d-tier-feature-item"><i className="fa-solid fa-check d-tier-feature-icon" /> <span>Akses Referral Eksklusif &amp; Komisi Merchant</span></li>
+                  <li className="d-tier-feature-item"><i className="fa-solid fa-check d-tier-feature-icon" /> <span>Layanan B2B Tijarah Supplies Bahan Baku</span></li>
+                  <li className="d-tier-feature-item"><i className="fa-solid fa-check d-tier-feature-icon" /> <span>Dedicated Account Manager &amp; SLA 99.9%</span></li>
+                  <li className="d-tier-feature-item"><i className="fa-solid fa-infinity d-tier-feature-icon" /> <span><strong>Unlimited Pertanyaan AI</strong></span></li>
                 </ul>
               </div>
-              <div style={{ marginTop: "1.25rem" }}>
+              <div className="d-tier-footer">
                 <button
                   type="button"
-                  className="d-btn d-btn--ghost d-btn--sm"
-                  style={{ width: "100%", fontWeight: 600 }}
+                  className="d-tier-btn"
                   onClick={() => setCheckoutPlan({ id: "p3", code: "ENTERPRISE", name: "Enterprise (1 Tahun)", price: 3500000, durationMonths: 12, durationLabel: "12 bulan" })}
                 >
                   Berlangganan Enterprise

@@ -4,9 +4,10 @@ import { rupiah } from "../../../lib/format.js";
 import { Modal, Field, Badge, useAsync } from "../../ui/index.jsx";
 import { useAction, Feedback } from "../../ops.jsx";
 import { taxOf, taxLabel as taxLabelOf } from "../../../lib/tax.js";
+import { calculateAndCreditDoctorSplit } from "../../../api/swallet.js";
 import QrisPanel from "./QrisPanel.jsx";
 
-const METHODS = [["cash", "Tunai"], ["card", "Kartu"], ["qris", "QRIS"], ["ewallet", "E-wallet"]];
+const METHODS = [["cash", "Tunai"], ["card", "Kartu"], ["qris", "QRIS"], ["ewallet", "E-wallet"], ["swallet", "S-Wallet"]];
 export { taxOf };
 
 /* QR simulasi: pola deterministik dari kode invoice (bukan QRIS sungguhan). */
@@ -98,6 +99,14 @@ export function PaymentModal({ open, order, onClose, onPaid }) {
         p_discount: viaVoucher ? null : discAmt || null,
         p_pin: needPin ? pin : null,
       });
+      if (order.channel === "clinic") {
+        calculateAndCreditDoctorSplit({
+          doctorId: order.practitioner_id || "doctor-demo",
+          doctorName: order.practitioner_name || "Dokter",
+          serviceAmount: order.subtotal || order.total,
+          orderCode: order.code
+        });
+      }
       setReceipt({ ...r, change, rows });
       onPaid();
       return r;
@@ -149,7 +158,7 @@ export function PaymentModal({ open, order, onClose, onPaid }) {
             <div><dt>Dibayar</dt><dd>{rupiah(paid)}</dd></div>
             {receipt.change > 0 && <div><dt>Kembalian</dt><dd style={{ fontWeight: 700, color: "var(--brand-emerald)" }}>{rupiah(receipt.change)}</dd></div>}
           </dl>
-          <p className="d-text d-muted">{order.channel === "clinic" ? "Stok obat terpotong otomatis, e-resep berstatus diserahkan, jurnal tercatat." : "Stok bahan terpotong sesuai resep, jurnal penjualan tercatat otomatis."}{phone && " Poin CRM bertambah dan struk digital diantrekan ke WhatsApp pelanggan lewat Hermes."}</p>
+          <p className="d-text d-muted">{order.channel === "clinic" ? "Stok obat terpotong otomatis, e-resep berstatus diserahkan, auto-split 30% jasa medis langsung cair ke S-Wallet dokter, jurnal tercatat seimbang." : "Stok bahan terpotong sesuai resep, jurnal penjualan tercatat otomatis."}{phone && " Poin CRM bertambah dan struk digital diantrekan ke WhatsApp pelanggan lewat Hermes."}</p>
         </div>
       ) : (
         <div className="d-form">
@@ -254,6 +263,40 @@ export function PaymentModal({ open, order, onClose, onPaid }) {
                           Tandai dana masuk (simulasi webhook)
                         </button>
                       )}
+                    </div>
+                  </div>
+                )}
+                {r.method === "swallet" && (
+                  <div className="pos-swallet" style={{ background: "var(--color-paper-2)", padding: "0.75rem", borderRadius: "var(--radius-md)", border: "1px solid var(--color-rule)" }}>
+                    <div className="d-form">
+                      <p className="d-text d-muted" style={{ margin: "0 0 0.5rem", fontSize: "0.8rem" }}>
+                        Pelanggan membuka S-Wallet dan menyebutkan <strong>6-Digit Kode Bayar Dinamis</strong> (berlaku 60 detik).
+                      </p>
+                      <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                        <input
+                          className="pos-ref font-mono"
+                          placeholder="6 Digit Kode"
+                          maxLength={6}
+                          value={r.reference}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, "");
+                            set(i, { reference: val, confirmed: val.length === 6 });
+                          }}
+                          style={{ fontSize: "1.1rem", fontWeight: 700, letterSpacing: "0.15em", maxWidth: "160px" }}
+                        />
+                        {r.confirmed ? (
+                          <Badge tone="accent">Kode Terverifikasi</Badge>
+                        ) : (
+                          <button
+                            type="button"
+                            className="d-btn d-btn--primary d-btn--sm"
+                            disabled={!r.reference || r.reference.length < 6}
+                            onClick={() => set(i, { confirmed: true })}
+                          >
+                            Verifikasi &amp; Debet
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}

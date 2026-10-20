@@ -7,7 +7,7 @@ export default function AccountTabs() {
   const { role } = useAuth();
   const { t } = useAccountLang();
 
-  // Konfigurasi 7 Kartu Navigasi Bento sesuai RBAC & Gambar 2
+  // Konfigurasi 8 Kartu Navigasi Bento sesuai RBAC & Gambar 2
   const CARDS = [
     {
       path: "/app/akun/profil",
@@ -78,6 +78,16 @@ export default function AccountTabs() {
       color: "#0d9488",
       bg: "rgba(20, 184, 166, 0.12)",
       roles: ["owner", "gm", "superadmin", "staff"] // Semua kecuali dokter
+    },
+    {
+      path: "/app/akun/wallet",
+      title: t.navWalletTitle,
+      desc: t.navWalletDesc,
+      badge: t.navWalletBadge,
+      icon: "fa-wallet",
+      color: "#0d9488",
+      bg: "rgba(20, 184, 166, 0.12)",
+      roles: ["owner", "gm", "superadmin", "staff", "dokter"]
     }
   ];
 
@@ -92,7 +102,7 @@ export default function AccountTabs() {
         </span>
       </div>
 
-      {/* ──────── 7 KARTU BENTO NAVIGASI RINGKAS DOCK BAWAH PERSIS GBR 2 ──────── */}
+      {/* ──────── 8 KARTU BENTO NAVIGASI RINGKAS DOCK BAWAH PERSIS GBR 2 ──────── */}
       <div
         className="sdm-bento-nav-grid--compact"
         aria-label="Navigasi Bento Modul Akun"
@@ -120,7 +130,7 @@ export default function AccountTabs() {
                 />
               </div>
 
-              <h4 className="sdm-bento-nav-title">{c.title}</h4>
+              <h3 className="sdm-bento-nav-title">{c.title}</h3>
               <p className="sdm-bento-nav-desc">{c.desc}</p>
 
               <div className="sdm-bento-nav-footer">
@@ -128,7 +138,11 @@ export default function AccountTabs() {
                   <i className={`fa-solid ${c.icon}`} /> {c.badge}
                 </span>
                 <span style={{ fontWeight: isActive ? 700 : 500, color: isActive ? "var(--color-accent)" : undefined }}>
-                  {isActive ? `${t.currentTab} ✓` : `${t.openTab} →`}
+                  {isActive ? (
+                    <>{t.currentTab} <i className="fa-solid fa-check" aria-hidden="true" /></>
+                  ) : (
+                    <>{t.openTab} <i className="fa-solid fa-arrow-right" aria-hidden="true" /></>
+                  )}
                 </span>
               </div>
             </Link>
