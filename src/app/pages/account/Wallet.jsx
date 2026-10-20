@@ -312,7 +312,7 @@ export default function Wallet() {
 
             <h2 className="swallet-gate-title">Autentikasi 2FA Belum Aktif</h2>
             <p className="swallet-gate-desc">
-              Untuk melindungi saldo dan hak akses transaksi moneter, subtab <strong>S-Wallet Digital</strong> mewajibkan akun Anda mengaktifkan <strong>Autentikasi Dua Faktor (TOTP 2FA)</strong> terlebih dahulu pada subtab Keamanan &amp; Kredensial.
+              Untuk melindungi saldo dan hak akses transaksi moneter, subtab <strong>S-Wallet Digital</strong> mewajibkan akun Anda mengaktifkan <strong>Autentikasi Dua Faktor</strong> terlebih dahulu pada subtab Keamanan &amp; Kredensial.
             </p>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>

@@ -382,17 +382,16 @@ export default function Security() {
           </form>
         </Panel>
 
-        {/* SECTION 2: AUTENTIKASI DUA FAKTOR */}
+        {/* SECTION 2: AUTENTIKASI DUA FAKTOR (PERSIS GAMBAR 2) */}
         <Panel title={t.twoFactorTitle}>
-          {twoFactorActive ? (
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
-              <div style={{ maxWidth: "600px" }}>
-                <p className="d-text d-muted" style={{ margin: 0, fontSize: "0.85rem" }}>
-                  {t.twoFactorDesc}
-                </p>
-              </div>
+          <p className="d-text d-muted" style={{ margin: "0 0 1.25rem", fontSize: "0.85rem", lineHeight: 1.55 }}>
+            {t.twoFactorDesc}
+          </p>
 
-              <div className="sec-2fa-actions">
+          {twoFactorActive ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+              {/* Baris 1: Badge Status & Tombol Kode Cadangan */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
                 <Badge tone="ok">{t.twoFactorActiveBadge}</Badge>
                 <button
                   type="button"
@@ -402,35 +401,39 @@ export default function Security() {
                   <i className="fa-solid fa-file-shield" aria-hidden="true" style={{ marginRight: "0.4rem" }} />
                   {t.backupCodesBtn}
                 </button>
-                <button
-                  type="button"
-                  className="d-btn d-btn--ghost d-btn--sm"
-                  onClick={handleDisable2Fa}
-                  style={{ color: "var(--color-danger)" }}
-                >
-                  {t.disable2Fa}
-                </button>
               </div>
+
+              {/* Baris 2: Tombol Nonaktifkan 2FA Berbingkai Penuh dengan Teks Merah */}
+              <button
+                type="button"
+                className="d-btn d-btn--ghost d-btn--sm"
+                onClick={handleDisable2Fa}
+                style={{
+                  width: "100%",
+                  justifyContent: "center",
+                  color: "var(--color-danger)",
+                  border: "1px solid var(--color-rule)",
+                  padding: "0.6rem 1rem",
+                  fontWeight: 600
+                }}
+              >
+                {t.disable2Fa}
+              </button>
             </div>
           ) : (
-            <div className="sec-2fa-inactive-card">
-              <div className="sec-2fa-inactive-icon">
-                <i className="fa-solid fa-shield-halved" aria-hidden="true" />
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem" }}>
+                <Badge tone="warn">{t.twoFactorInactiveBadge}</Badge>
               </div>
-              <h3 className="sec-2fa-inactive-title">{t.twoFactorInactiveTitle || "Autentikasi 2FA Belum Aktif"}</h3>
-              <p className="sec-2fa-inactive-desc">
-                {t.twoFactorInactiveDesc || "Untuk melindungi saldo, keamanan akun, dan membuka hak akses transaksi moneter S-Wallet Digital, akun Anda wajib mengaktifkan Autentikasi Dua Faktor terlebih dahulu."}
-              </p>
-              <div className="sec-2fa-inactive-btn-row">
-                <button
-                  type="button"
-                  className="d-btn d-btn--primary"
-                  onClick={() => { setTwoFactorModal(true); setOtpError(""); }}
-                >
-                  <i className="fa-solid fa-shield-halved" aria-hidden="true" style={{ marginRight: "0.5rem" }} />
-                  {t.enable2Fa}
-                </button>
-              </div>
+              <button
+                type="button"
+                className="d-btn d-btn--primary d-btn--sm"
+                onClick={() => { setTwoFactorModal(true); setOtpError(""); }}
+                style={{ width: "100%", justifyContent: "center", padding: "0.6rem 1rem", fontWeight: 600 }}
+              >
+                <i className="fa-solid fa-shield-halved" aria-hidden="true" style={{ marginRight: "0.4rem" }} />
+                {t.enable2Fa}
+              </button>
             </div>
           )}
         </Panel>
