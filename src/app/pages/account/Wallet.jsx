@@ -1059,7 +1059,7 @@ export default function Wallet() {
             </div>
           )}
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginBottom: "1rem" }}>
+          <div className="sec-form-grid" style={{ marginBottom: "1rem" }}>
             <div>
               <label className="d-label" htmlFor="sw-wd-bank">Bank Tujuan</label>
               <select

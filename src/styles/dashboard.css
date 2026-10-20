@@ -4939,6 +4939,238 @@
   opacity: 0.8;
 }
 
+/* ──────── RESPONSIVE DESIGN & BENTO KPI SISTEM UNTUK TAB AKUN ──────── */
+
+/* 1. Form Grid Responsif (Kata Sandi & PIN Transaksi - Mencegah Clipped Input Gbr 2) */
+.sec-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 640px) {
+  .sec-form-grid {
+    grid-template-columns: 1fr;
+    gap: 0.85rem;
+  }
+}
+
+/* 2. Tombol Aksi 2FA Responsif (Mencegah Tombol Terpotong di Mobile Gbr 2) */
+.sec-2fa-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+@media (max-width: 480px) {
+  .sec-2fa-actions {
+    width: 100%;
+    margin-top: 0.75rem;
+  }
+  .sec-2fa-actions .d-btn {
+    flex: 1 1 auto;
+  }
+}
+
+/* 3. Kartu Status 2FA Belum Aktif (Persis Gambar 1 Onboarding Guard) */
+.sec-2fa-inactive-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 2.25rem 1.5rem;
+  background: var(--color-paper-2, #FFFFFF);
+  border: 1px solid var(--color-rule, #E2E8F0);
+  border-radius: var(--radius-lg, 12px);
+  margin: 0.5rem 0;
+  box-sizing: border-box;
+}
+
+.sec-2fa-inactive-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--color-danger, #EF4444);
+  display: grid;
+  place-items: center;
+  font-size: 1.5rem;
+  margin-bottom: 1.15rem;
+}
+
+.sec-2fa-inactive-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-ink, #0F172A);
+  margin: 0 0 0.5rem;
+  letter-spacing: -0.01em;
+}
+
+.sec-2fa-inactive-desc {
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--color-muted, #64748B);
+  max-width: 560px;
+  margin: 0 0 1.25rem;
+}
+
+.sec-2fa-inactive-btn-row {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.sec-2fa-inactive-btn-row .d-btn {
+  min-width: 240px;
+  justify-content: center;
+  padding: 0.65rem 1.5rem;
+  font-weight: 600;
+}
+
+@media (max-width: 480px) {
+  .sec-2fa-inactive-card {
+    padding: 1.5rem 1rem;
+  }
+  .sec-2fa-inactive-btn-row .d-btn {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+/* 4. Unified Bento KPI Dock Grid (Anti AI-Slop - Konsisten Gambar 2) */
+.account-bento-dock {
+  margin-top: 2.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--color-rule, #E2E8F0);
+}
+
+.account-bento-dock-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.account-bento-dock-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-muted, #64748B);
+}
+
+.account-bento-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border: 1px solid var(--color-rule, #E2E8F0);
+  border-radius: var(--radius-lg, 12px);
+  background: var(--color-paper-2, #FFFFFF);
+  overflow: hidden;
+  box-shadow: var(--shadow-subtle, 0 1px 3px rgba(0, 0, 0, 0.05));
+}
+
+.account-bento-cell {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1rem 1.15rem;
+  background: var(--color-paper-2, #FFFFFF);
+  text-decoration: none;
+  color: inherit;
+  border-right: 1px solid var(--color-rule, #E2E8F0);
+  border-bottom: 1px solid var(--color-rule, #E2E8F0);
+  transition: background var(--dur-micro, 0.15s) var(--ease-out, ease-out);
+  position: relative;
+  min-width: 0;
+}
+
+.account-bento-cell:hover {
+  background: var(--color-surface-hover, #F8FAFC);
+}
+
+.account-bento-cell.is-active {
+  background: var(--color-paper-3, #F1F5F9);
+  border-left: 3px solid var(--brand-emerald, #0B5D4B);
+}
+
+.account-bento-cell-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.account-bento-cell-kicker {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-muted, #64748B);
+}
+
+.account-bento-cell-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  font-size: 0.82rem;
+  flex-shrink: 0;
+}
+
+.account-bento-cell-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--color-ink, #0F172A);
+  margin: 0 0 0.25rem 0;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account-bento-cell-desc {
+  font-size: 0.74rem;
+  color: var(--color-muted, #64748B);
+  margin: 0 0 0.65rem 0;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account-bento-cell-status {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--brand-emerald, #0B5D4B);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* Responsivitas Breakpoints Tablet & Mobile */
+@media (max-width: 960px) {
+  .account-bento-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .account-bento-grid {
+    grid-template-columns: 1fr;
+  }
+  .account-bento-cell {
+    border-right: none;
+  }
+  .account-bento-cell:last-child {
+    border-bottom: none;
+  }
+}
+
+
 
 
 

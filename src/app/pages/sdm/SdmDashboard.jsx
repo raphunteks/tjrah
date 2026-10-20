@@ -1384,11 +1384,14 @@ function LeaveAllocationBreakdown({ leaves, summary }) {
             <div style={{ width: "100%", height: "8px", background: "var(--color-paper-2, #f1f5f9)", borderRadius: "4px", overflow: "hidden" }}>
               <div
                 style={{
-                  width: `${Math.max(5, pct)}%`,
+                  width: "100%",
                   height: "100%",
                   background: cat.color,
                   borderRadius: "4px",
-                  transition: "width 0.3s ease"
+                  transformOrigin: "left center",
+                  transform: `scaleX(${Math.max(0.05, pct / 100)})`,
+                  transition: "transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
+                  willChange: "transform"
                 }}
               />
             </div>

@@ -191,7 +191,7 @@ function Billing() {
     <Panel title="Tagihan langganan">
       {q.loading && !q.data ? <Loading /> : q.error ? <ErrorNote error={q.error} onRetry={q.reload} /> : (
         <>
-          <div className="d-stats d-stats--3" style={{ marginBottom: "1.25rem" }}>
+          <div className="d-stats d-stats--3 d-stats--inner" style={{ marginBottom: "1.25rem" }}>
             <Stat
               label="Status akun"
               value="Aktif (Akses Penuh)"
@@ -367,11 +367,16 @@ export default function Subscription() {
       </AccountKpiGrid>
 
       <div className="d-grid" style={{ gap: "1.25rem" }}>
-        {/* PANEL 3 TIER RESMI TIJARAH */}
-        <Panel title="Pilihan Tingkat Paket Langganan Tijarah OS">
-          <p className="d-plan-lead-desc">
-            Struktur paket resmi disesuaikan dengan skala usaha toko Anda dengan pembagian kuota pertanyaan AI yang adil.
-          </p>
+        {/* SECTION 3 TIER RESMI TIJARAH (MANDIRI - ELIMINASI NESTED CARDS) */}
+        <section aria-labelledby="pricing-tiers-heading" style={{ marginBottom: "0.5rem" }}>
+          <div style={{ marginBottom: "1rem" }}>
+            <h2 id="pricing-tiers-heading" style={{ fontSize: "1.2rem", fontWeight: 700, margin: "0 0 0.35rem", color: "var(--color-ink)" }}>
+              Pilihan Tingkat Paket Langganan Tijarah OS
+            </h2>
+            <p className="d-plan-lead-desc" style={{ margin: 0 }}>
+              Struktur paket resmi disesuaikan dengan skala usaha toko Anda dengan pembagian kuota pertanyaan AI yang adil.
+            </p>
+          </div>
 
           <div className="d-tier-grid">
             {/* TIER 1: STARTER (1 BULAN) */}
@@ -482,13 +487,13 @@ export default function Subscription() {
               </div>
             </div>
           </div>
-        </Panel>
+        </section>
 
         {/* KUOTA AI BULAN INI (1 TANYA = 1 KUOTA) */}
         <Panel title="Pemantauan Kuota Pertanyaan AI (1 Tanya = 1 Kuota)">
           {ai.loading && !ai.data ? <Loading /> : ai.error ? <ErrorNote error={ai.error} onRetry={ai.reload} /> : (
             <>
-              <div className="d-stats d-stats--3">
+              <div className="d-stats d-stats--3 d-stats--inner">
                 <Stat
                   label="Pertanyaan Diajukan"
                   value={`${usedCalls} Tanya`}
@@ -508,7 +513,7 @@ export default function Subscription() {
 
               <div style={{ marginTop: "1rem", padding: "0.75rem", background: "var(--color-paper-1)", borderRadius: "var(--radius-md)", border: "1px solid var(--color-rule)", fontSize: "0.8rem" }}>
                 <p style={{ margin: "0 0 0.25rem", fontWeight: 600 }}>Kebijakan Kuota AI Tijarah OS:</p>
-                <p className="d-text d-muted" style={{ margin: 0 }}>
+                <p className="d-text d-muted" style={{ margin: 0, maxWidth: "65ch", lineHeight: 1.6 }}>
                   Sistem menghitung 1 pertanyaan pengguna ke asisten AI sebagai 1 kuota pemakaian langsung (bukan token mentah model LLM). Jika kuota habis sebelum akhir periode, Anda dapat mengajukan kuota tambahan melalui Superadmin.
                 </p>
               </div>

@@ -276,8 +276,8 @@ export default function Security() {
           icon="fa-key"
         />
         <AccountKpiCard
-          label="Autentikasi 2FA TOTP"
-          value={twoFactorActive ? "2FA Aktif (RFC 6238)" : "2FA Belum Aktif"}
+          label="Autentikasi 2FA"
+          value={twoFactorActive ? "2FA Aktif Terlindungi" : "2FA Belum Aktif"}
           sub={twoFactorActive ? "Google/Microsoft Authenticator" : "Pindai Barcode QR di Bawah"}
           tone={twoFactorActive ? "emerald" : "rose"}
           icon="fa-shield-halved"
@@ -307,7 +307,7 @@ export default function Security() {
             </div>
           )}
 
-          <form onSubmit={handlePasswordSubmit} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "1rem" }}>
+          <form onSubmit={handlePasswordSubmit} className="sec-form-grid">
             <div>
               <label htmlFor="sec-old-pass" className="d-label" style={{ display: "block", marginBottom: "0.35rem", fontWeight: 500 }}>
                 {t.oldPasswordLabel}
@@ -382,54 +382,57 @@ export default function Security() {
           </form>
         </Panel>
 
-        {/* SECTION 2: AUTENTIKASI DUA FAKTOR (TOTP 2FA) */}
+        {/* SECTION 2: AUTENTIKASI DUA FAKTOR */}
         <Panel title={t.twoFactorTitle}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
-            <div style={{ maxWidth: "600px" }}>
-              <p className="d-text" style={{ margin: "0 0 0.35rem", fontWeight: 600 }}>
-                {t.twoFactorSub}
-              </p>
-              <p className="d-text d-muted" style={{ margin: 0, fontSize: "0.85rem" }}>
-                {t.twoFactorDesc}
-              </p>
-            </div>
+          {twoFactorActive ? (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
+              <div style={{ maxWidth: "600px" }}>
+                <p className="d-text d-muted" style={{ margin: 0, fontSize: "0.85rem" }}>
+                  {t.twoFactorDesc}
+                </p>
+              </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-              {twoFactorActive ? (
-                <>
-                  <Badge tone="ok">{t.twoFactorActiveBadge}</Badge>
-                  <button
-                    type="button"
-                    className="d-btn d-btn--ghost d-btn--sm"
-                    onClick={() => setRecoveryModal(true)}
-                  >
-                    <i className="fa-solid fa-file-shield" aria-hidden="true" style={{ marginRight: "0.4rem" }} />
-                    {t.backupCodesBtn}
-                  </button>
-                  <button
-                    type="button"
-                    className="d-btn d-btn--ghost d-btn--sm"
-                    onClick={handleDisable2Fa}
-                    style={{ color: "var(--color-danger)" }}
-                  >
-                    {t.disable2Fa}
-                  </button>
-                </>
-              ) : (
-                <>
-                  <Badge tone="warn">{t.twoFactorInactiveBadge}</Badge>
-                  <button
-                    type="button"
-                    className="d-btn d-btn--primary d-btn--sm"
-                    onClick={() => { setTwoFactorModal(true); setOtpError(""); }}
-                  >
-                    <i className="fa-solid fa-shield-halved" aria-hidden="true" style={{ marginRight: "0.4rem" }} />
-                    {t.enable2Fa}
-                  </button>
-                </>
-              )}
+              <div className="sec-2fa-actions">
+                <Badge tone="ok">{t.twoFactorActiveBadge}</Badge>
+                <button
+                  type="button"
+                  className="d-btn d-btn--ghost d-btn--sm"
+                  onClick={() => setRecoveryModal(true)}
+                >
+                  <i className="fa-solid fa-file-shield" aria-hidden="true" style={{ marginRight: "0.4rem" }} />
+                  {t.backupCodesBtn}
+                </button>
+                <button
+                  type="button"
+                  className="d-btn d-btn--ghost d-btn--sm"
+                  onClick={handleDisable2Fa}
+                  style={{ color: "var(--color-danger)" }}
+                >
+                  {t.disable2Fa}
+                </button>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="sec-2fa-inactive-card">
+              <div className="sec-2fa-inactive-icon">
+                <i className="fa-solid fa-shield-halved" aria-hidden="true" />
+              </div>
+              <h3 className="sec-2fa-inactive-title">{t.twoFactorInactiveTitle || "Autentikasi 2FA Belum Aktif"}</h3>
+              <p className="sec-2fa-inactive-desc">
+                {t.twoFactorInactiveDesc || "Untuk melindungi saldo, keamanan akun, dan membuka hak akses transaksi moneter S-Wallet Digital, akun Anda wajib mengaktifkan Autentikasi Dua Faktor terlebih dahulu."}
+              </p>
+              <div className="sec-2fa-inactive-btn-row">
+                <button
+                  type="button"
+                  className="d-btn d-btn--primary"
+                  onClick={() => { setTwoFactorModal(true); setOtpError(""); }}
+                >
+                  <i className="fa-solid fa-shield-halved" aria-hidden="true" style={{ marginRight: "0.5rem" }} />
+                  {t.enable2Fa}
+                </button>
+              </div>
+            </div>
+          )}
         </Panel>
 
         {/* SECTION 3: PIN TRANSAKSI (S-WALLET & OTORISASI POS) */}
@@ -453,7 +456,7 @@ export default function Security() {
             )}
           </div>
 
-          <form onSubmit={handlePinSubmit} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "1rem", maxWidth: "700px" }}>
+          <form onSubmit={handlePinSubmit} className="sec-form-grid" style={{ maxWidth: "700px" }}>
             <div>
               <label htmlFor="sec-pin-new" className="d-label" style={{ display: "block", marginBottom: "0.35rem", fontWeight: 500 }}>
                 {t.pinNew}
@@ -488,7 +491,7 @@ export default function Security() {
               />
             </div>
 
-            <div style={{ display: "flex", alignItems: "flex-end", gap: "0.5rem", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: "0.5rem", flexWrap: "wrap", gridColumn: "1 / -1" }}>
               <button type="submit" className="d-btn d-btn--primary">
                 <i className="fa-solid fa-lock" aria-hidden="true" style={{ marginRight: "0.4rem" }} />
                 {pin ? "Perbarui PIN" : t.savePin}
@@ -512,10 +515,10 @@ export default function Security() {
       {/* ──────── PUSAT NAVIGASI AKUN & TATA KELOLA SISTEM (DOCK BAWAH) ──────── */}
       <AccountTabs />
 
-      {/* MODAL 1: AKTIVASI 2FA TOTP */}
+      {/* MODAL 1: AKTIVASI 2FA */}
       <Modal
         open={twoFactorModal}
-        title="Aktifkan Autentikasi Dua Faktor (TOTP 2FA)"
+        title="Aktifkan Autentikasi Dua Faktor"
         onClose={() => setTwoFactorModal(false)}
         footer={
           <>
@@ -559,7 +562,7 @@ export default function Security() {
           <div style={{ background: "rgba(16, 185, 129, 0.08)", border: "1px solid rgba(16, 185, 129, 0.3)", borderRadius: "var(--radius-md)", padding: "0.6rem 0.85rem" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.25rem" }}>
               <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--color-accent)", display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
-                <i className="fa-solid fa-clock-rotate-left" /> Sinkronisasi Real-Time (RFC 6238)
+                <i className="fa-solid fa-clock-rotate-left" /> Sinkronisasi Kode Real-Time
               </span>
               <span style={{ fontSize: "0.72rem", fontWeight: 700, color: countdown <= 5 ? "var(--color-danger)" : "var(--color-accent)" }}>
                 Sisa Waktu: {countdown} dtk

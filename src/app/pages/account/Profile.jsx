@@ -357,7 +357,7 @@ export default function Profile() {
             </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1rem", marginTop: "1.25rem" }}>
+          <div className="sec-form-grid" style={{ marginTop: "1.25rem" }}>
             <div>
               <label htmlFor="p-name" className="d-label" style={{ display: "block", marginBottom: "0.35rem", fontWeight: 500 }}>
                 {t.fullNameLabel} <span style={{ color: "var(--color-danger)" }}>*</span>
@@ -450,7 +450,7 @@ export default function Profile() {
 
         {/* PANEL 2: KONTAK & INFORMASI PENUGASAN */}
         <Panel title="Kontak & Informasi Penugasan">
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1rem" }}>
+          <div className="sec-form-grid">
             <div>
               <label htmlFor="p-phone" className="d-label" style={{ display: "block", marginBottom: "0.35rem", fontWeight: 500 }}>
                 {t.phoneLabel}
@@ -512,7 +512,7 @@ export default function Profile() {
             {t.bankDesc}
           </p>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "1rem" }}>
+          <div className="sec-form-grid">
             <div>
               <label htmlFor="p-bank" className="d-label" style={{ display: "block", marginBottom: "0.35rem", fontWeight: 500 }}>
                 {t.bankNameLabel}

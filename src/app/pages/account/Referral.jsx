@@ -132,7 +132,7 @@ export default function Referral() {
       <div className="d-grid" style={{ gap: "1.25rem" }}>
         {/* PANEL 1: KODE & TAUTAN UNDANGAN */}
         <Panel title={t.referralCodeCardTitle}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "1.25rem" }}>
+          <div className="sec-form-grid" style={{ gap: "1.25rem" }}>
             <div style={{ background: "var(--color-paper-2)", padding: "1.25rem", borderRadius: "var(--radius-lg)", border: "1px solid var(--color-rule)" }}>
               <span style={{ fontSize: "0.8rem", color: "var(--color-muted)", fontWeight: 600, display: "block", marginBottom: "0.4rem" }}>
                 KODE KUPON REFERRAL RESMI:

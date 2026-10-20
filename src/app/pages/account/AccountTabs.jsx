@@ -94,17 +94,17 @@ export default function AccountTabs() {
   const allowedCards = CARDS.filter((c) => c.roles.includes(role));
 
   return (
-    <div className="sdm-bento-dock-wrap" aria-label="Pusat Navigasi Akun">
+    <div className="account-bento-dock" aria-label="Pusat Navigasi Akun">
       {/* HEADER DOCK TATA KELOLA AKUN */}
-      <div className="sdm-bento-dock-header">
-        <span className="sdm-bento-dock-title">
+      <div className="account-bento-dock-header">
+        <span className="account-bento-dock-title">
           Pusat Navigasi Akun &amp; Tata Kelola Sistem (RBAC)
         </span>
       </div>
 
-      {/* ──────── 8 KARTU BENTO NAVIGASI RINGKAS DOCK BAWAH PERSIS GBR 2 ──────── */}
+      {/* ──────── 8 KARTU UNIFIED BENTO KPI GRID (ANTI AI-SLOP) ──────── */}
       <div
-        className="sdm-bento-nav-grid--compact"
+        className="account-bento-grid"
         aria-label="Navigasi Bento Modul Akun"
       >
         {allowedCards.map((c) => {
@@ -113,37 +113,29 @@ export default function AccountTabs() {
             <Link
               key={c.path}
               to={c.path}
-              className={`sdm-bento-nav-card sdm-bento-nav-card--compact${isActive ? " is-active" : ""}`}
-              style={{
-                border: isActive ? "2px solid var(--color-accent)" : "1px solid var(--color-rule)",
-                background: isActive ? "var(--color-paper-2)" : "var(--color-paper)",
-                boxShadow: isActive ? "0 4px 12px rgba(11, 93, 75, 0.12)" : undefined
-              }}
+              className={`account-bento-cell${isActive ? " is-active" : ""}`}
             >
-              <div className="sdm-bento-nav-top">
-                <div className="sdm-bento-nav-icon" style={{ background: c.bg, color: c.color }}>
-                  <i className={`fa-solid ${c.icon}`} />
+              <div className="account-bento-cell-head">
+                <span className="account-bento-cell-kicker">{c.badge}</span>
+                <div className="account-bento-cell-icon" style={{ background: c.bg, color: c.color }}>
+                  <i className={`fa-solid ${c.icon}`} aria-hidden="true" />
                 </div>
-                <i
-                  className="fa-solid fa-arrow-up-right-from-square sdm-bento-nav-arrow"
-                  style={{ color: isActive ? "var(--color-accent)" : undefined }}
-                />
               </div>
 
-              <h3 className="sdm-bento-nav-title">{c.title}</h3>
-              <p className="sdm-bento-nav-desc">{c.desc}</p>
+              <h3 className="account-bento-cell-title">{c.title}</h3>
+              <p className="account-bento-cell-desc">{c.desc}</p>
 
-              <div className="sdm-bento-nav-footer">
-                <span className="sdm-bento-nav-badge" style={{ background: c.bg, color: c.color }}>
-                  <i className={`fa-solid ${c.icon}`} /> {c.badge}
-                </span>
-                <span style={{ fontWeight: isActive ? 700 : 500, color: isActive ? "var(--color-accent)" : undefined }}>
-                  {isActive ? (
-                    <>{t.currentTab} <i className="fa-solid fa-check" aria-hidden="true" /></>
-                  ) : (
-                    <>{t.openTab} <i className="fa-solid fa-arrow-right" aria-hidden="true" /></>
-                  )}
-                </span>
+              <div className="account-bento-cell-status">
+                {isActive ? (
+                  <>
+                    <i className="fa-solid fa-circle-check" aria-hidden="true" />
+                    <span>{t.currentTab || "Sedang Aktif"}</span>
+                  </>
+                ) : (
+                  <span style={{ color: "var(--color-muted)", fontWeight: 500 }}>
+                    {t.openTab || "Buka Modul"}
+                  </span>
+                )}
               </div>
             </Link>
           );

@@ -164,7 +164,7 @@ export default function Appearance() {
             {t.langSectionDesc}
           </p>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1rem" }}>
+          <div className="sec-form-grid">
             <label
               style={{
                 display: "flex",

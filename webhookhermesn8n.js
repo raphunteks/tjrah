@@ -47,14 +47,14 @@ const d = body.data || body;
 
 // 4. Struktur Template Notifikasi Berbasis Peran RBAC
 let title = "";
-let icon = "🔔";
+let icon = "[BELL]";
 let roleBadge = "TIJARAH OS";
 let content = "";
 let footer = "_Pesan otomatis resmi terverifikasi dari Tijarah Cloud OS._";
 
 // ── KELOMPOK 1: OWNER MERCHANT (FINANSIAL, AUDIT & OTORISASI BESAR) ──
 if (event === "z_report" || event === "owner_zrep") {
-  icon = "📊";
+  icon = "[REPORT]";
   roleBadge = "REKAP EKSEKUTIF · OWNER & GM";
   title = `DAILY Z-REPORT · ${tenant.toUpperCase()}`;
   const orders = d.orders || d.order_count || 0;
@@ -62,7 +62,7 @@ if (event === "z_report" || event === "owner_zrep") {
   const net = d.net_sales || d.omzet_netto || omzet;
   const voids = d.voids || d.void_count || 0;
   const cash = d.cash_actual || d.cash_in_drawer || 0;
-  content = `📍 *Cabang:* ${branch}\n` +
+  content = `• *Cabang:* ${branch}\n` +
     `• *Total Transaksi:* ${orders} nota berhasil\n` +
     `• *Omzet Bruto:* *${formatRp(omzet)}*\n` +
     `• *Omzet Bersih:* ${formatRp(net)}\n` +
@@ -71,7 +71,7 @@ if (event === "z_report" || event === "owner_zrep") {
     `\n_Shift kasir resmi ditutup & buku harian berhasil dikunci._`;
 
 } else if (event === "payout" || event === "owner_fin" || event === "settlement") {
-  icon = "💰";
+  icon = "[FINANCE]";
   roleBadge = "FINANSIAL & S-WALLET · OWNER";
   title = `PENCAIRAN SALDO S-WALLET · ${tenant.toUpperCase()}`;
   const status = d.status || "Berhasil Ditransfer";
@@ -85,10 +85,10 @@ if (event === "z_report" || event === "owner_zrep") {
     `• *Sisa Saldo S-Wallet:* ${formatRp(d.remaining_balance || 0)}`;
 
 } else if (event === "void_alert" || event === "owner_fraud") {
-  icon = "🚨";
+  icon = "[ALERT]";
   roleBadge = "SECURITY & ANTI-FRAUD · OWNER";
   title = `PERINGATAN PEMBATALAN NOTA (VOID)`;
-  content = `📍 *Cabang:* ${branch}\n` +
+  content = `• *Cabang:* ${branch}\n` +
     `• *No. Nota:* *${d.order_code || d.code || "TRX-VOID"}*\n` +
     `• *Nilai Transaksi:* *${formatRp(d.amount || d.total || 0)}*\n` +
     `• *Kasir / Pemohon:* ${d.cashier_name || "Kasir Bertugas"}\n` +
@@ -97,10 +97,10 @@ if (event === "z_report" || event === "owner_zrep") {
     `\n_Pemberitahuan otomatis saat pembatalan melampaui batas batas aman._`;
 
 } else if (event === "po_approval" || event === "owner_po") {
-  icon = "📑";
+  icon = "[PO]";
   roleBadge = "OTORISASI PENGELUARAN · OWNER";
   title = `PERMOHONAN PURCHASE ORDER (PO) BESAR`;
-  content = `📍 *Cabang:* ${branch}\n` +
+  content = `• *Cabang:* ${branch}\n` +
     `• *No. PO:* ${d.po_number || d.code || "PO-EXP"}\n` +
     `• *Nama Vendor:* ${d.vendor_name || d.supplier || "Supplier Bahan Baku"}\n` +
     `• *Total Tagihan:* *${formatRp(d.total_amount || d.total || 0)}*\n` +
@@ -108,7 +108,7 @@ if (event === "z_report" || event === "owner_zrep") {
     `\n_Silakan buka dashboard modul Pembelian (PO) untuk persetujuan._`;
 
 } else if (event === "subscription_billing" || event === "owner_sub") {
-  icon = "💳";
+  icon = "[BILLING]";
   roleBadge = "LANGGANAN & TAGIHAN · OWNER";
   title = `INFO PAKET & KUOTA AI TOKO`;
   content = `• *Merchant:* ${tenant}\n` +
@@ -118,7 +118,7 @@ if (event === "z_report" || event === "owner_zrep") {
     `• *Tagihan Perpanjangan:* ${formatRp(d.amount || 0)}`;
 
 } else if (event === "owner_sec" || event === "security_alert") {
-  icon = "🔐";
+  icon = "[SECURITY]";
   roleBadge = "KEAMANAN AKUN · OWNER";
   title = `AKTIVITAS KEAMANAN TERDETEKSI`;
   content = `Peringatan keamanan akun Owner Merchant *${tenant}*:\n` +
@@ -129,24 +129,24 @@ if (event === "z_report" || event === "owner_zrep") {
 
 // ── KELOMPOK 2: GENERAL MANAGER (OPERASIONAL CABANG & KONTROL TIM) ──
 } else if (event === "low_stock" || event === "gm_stock") {
-  icon = "⚠️";
+  icon = "[WARNING]";
   roleBadge = "LOGISTIK GUDANG · GENERAL MANAGER";
   title = `ALERT STOK MENIPIS (REORDER POINT)`;
   const item = d.item_name || d.name || "Bahan Baku";
   const current = d.current_stock || d.stock || 0;
   const min = d.min_stock || d.rop || 0;
   const unit = d.unit || "unit";
-  content = `📍 *Cabang:* ${branch}\n` +
+  content = `• *Cabang:* ${branch}\n` +
     `• *Nama Bahan:* *${item}*\n` +
     `• *Sisa Stok Aktual:* *${current} ${unit}*\n` +
     `• *Batas Aman (ROP):* ${min} ${unit}\n` +
     `\n_Harap segera terbitkan Purchase Order (PO) agar operasional dapur tidak terhenti._`;
 
 } else if (event === "geofence_alert" || event === "gm_shift") {
-  icon = "📍";
+  icon = "[LOCATION]";
   roleBadge = "DISIPLIN SDM & PRESENSI · GM";
   title = `PERINGATAN GEOFENCE PRESENSI STAF`;
-  content = `📍 *Cabang:* ${branch}\n` +
+  content = `• *Cabang:* ${branch}\n` +
     `• *Nama Staf:* *${d.staff_name || "Staf Toko"}*\n` +
     `• *Penyimpangan Jarak:* ${d.distance_meters || "> 200"} meter di luar radius toko\n` +
     `• *Waktu Check-in:* ${d.checkin_time || "Baru saja"}\n` +
@@ -154,20 +154,20 @@ if (event === "z_report" || event === "owner_zrep") {
     `\n_Memerlukan tinjauan manual General Manager untuk konfirmasi absensi._`;
 
 } else if (event === "discount_approval" || event === "gm_void") {
-  icon = "🏷️";
+  icon = "[DISCOUNT]";
   roleBadge = "OTORISASI KASIR POS · GM";
   title = `PERMOHONAN DISKON / OTORISASI MEJA`;
-  content = `📍 *Cabang:* ${branch}\n` +
+  content = `• *Cabang:* ${branch}\n` +
     `• *Kasir:* ${d.cashier_name || "Kasir Bertugas"}\n` +
     `• *Nomor Nota:* #${d.order_code || "TRX-POS"}\n` +
     `• *Diskon Diajukan:* ${d.discount_percent || 0}% (${formatRp(d.discount_amount || 0)})\n` +
     `• *Alasan:* _"${d.note || "Permohonan diskon relasi pelanggan"}"_`;
 
 } else if (event === "leave_request" || event === "swap_shift" || event === "gm_leave") {
-  icon = "🗓️";
+  icon = "[CALENDAR]";
   roleBadge = "PERSETUJUAN SDM · GENERAL MANAGER";
   title = event.includes("swap") ? `PERMOHONAN TUKAR SHIFT KERJA` : `PENGAJUAN IZIN / CUTI STAF`;
-  content = `📍 *Cabang:* ${branch}\n` +
+  content = `• *Cabang:* ${branch}\n` +
     `• *Nama Pemohon:* *${d.staff_name || "Staf"}*\n` +
     `• *Jenis Pengajuan:* ${d.leave_type || (event.includes("swap") ? "Tukar Jadwal Roster" : "Cuti Tahunan")}\n` +
     `• *Tanggal / Periode:* ${d.date_range || d.date || "Jadwal Kerja Mendatang"}\n` +
@@ -175,10 +175,10 @@ if (event === "z_report" || event === "owner_zrep") {
     `\n_Silakan buka modul Persetujuan (Approval) di dashboard untuk memproses._`;
 
 } else if (event === "shift_audit" || event === "gm_audit") {
-  icon = "📋";
+  icon = "[AUDIT]";
   roleBadge = "AUDIT KAS LACI KASIR · GM";
   title = `AUDIT PENUTUPAN SESI KASIR`;
-  content = `📍 *Cabang:* ${branch}\n` +
+  content = `• *Cabang:* ${branch}\n` +
     `• *Kasir:* ${d.cashier_name || "Kasir"}\n` +
     `• *Modal Awal Laci:* ${formatRp(d.initial_cash || 0)}\n` +
     `• *Total Kas Masuk:* ${formatRp(d.cash_sales || 0)}\n` +
@@ -187,7 +187,7 @@ if (event === "z_report" || event === "owner_zrep") {
 
 // ── KELOMPOK 3: STAF KASIR & BARISTA (OPERASIONAL GARIS DEPAN) ──
 } else if (event === "shift_roster" || event === "staff_shift") {
-  icon = "⏰";
+  icon = "[SCHEDULE]";
   roleBadge = "JADWAL KERJA · STAF & KASIR";
   title = `PEMBERITAHUAN JADWAL SHIFT KERJA`;
   content = `Halo *${d.staff_name || "Rekan Tim"}*,\n` +
@@ -198,7 +198,7 @@ if (event === "z_report" || event === "owner_zrep") {
     `\n_Harap hadir 15 menit sebelum shift dimulai untuk persiapan kasir._`;
 
 } else if (event === "attendance_confirmation" || event === "staff_att") {
-  icon = "✅";
+  icon = "[PRESENSI]";
   roleBadge = "VALIDASI PRESENSI · STAF";
   title = `PRESENSI HARIAN BERHASIL TERCATAT`;
   content = `Halo *${d.staff_name || "Staf"}*,\n` +
@@ -208,17 +208,17 @@ if (event === "z_report" || event === "owner_zrep") {
     `\n_Terima kasih atas dedikasi dan profesionalitas Anda!_`;
 
 } else if (event === "kds_order" || event === "staff_kds") {
-  icon = "🍳";
+  icon = "[KDS]";
   roleBadge = "PESANAN KDS · BAR & DAPUR";
   title = `PESANAN SIAP DISAJIKAN`;
-  content = `📍 *Tujuan:* *${d.table_no ? "Meja " + d.table_no : (d.queue_no ? "Antrean #" + d.queue_no : "Takeaway")}*\n` +
+  content = `• *Tujuan:* *${d.table_no ? "Meja " + d.table_no : (d.queue_no ? "Antrean #" + d.queue_no : "Takeaway")}*\n` +
     `• *No. Pesanan:* #${d.order_code || "ORDER"}\n` +
     `• *Menu Disiapkan:* \n${d.items_summary || "Pesanan Makanan & Minuman"}\n` +
     `• *Status:* Selesai dimasak & siap diantar ke meja pelanggan.`;
 
 } else if (event === "leave_status" || event === "staff_leave") {
   const isApproved = d.status === "approved" || d.is_approved === true;
-  icon = isApproved ? "✅" : "❌";
+  icon = isApproved ? "[DISETUJUI]" : "[DITOLAK]";
   roleBadge = "STATUS PERMOHONAN SDM · STAF";
   title = isApproved ? `PENGAJUAN ANDA DISETUJUI` : `PENGAJUAN TIDAK DISETUJUI`;
   content = `Halo *${d.staff_name || "Staf"}*,\n` +
@@ -226,7 +226,7 @@ if (event === "z_report" || event === "owner_zrep") {
     (d.notes ? `• *Catatan:* _"${d.notes}"_\n` : "");
 
 } else if (event === "payslip_issued" || event === "staff_payroll") {
-  icon = "💵";
+  icon = "[PAYSLIP]";
   roleBadge = "PENGGAJIAN RESMI · STAF";
   title = `SLIP GAJI BULANAN TELAH TERBIT`;
   content = `Halo *${d.staff_name || "Karyawan"}*,\n` +
@@ -237,7 +237,7 @@ if (event === "z_report" || event === "owner_zrep") {
 
 // ── KELOMPOK 4: MEMBER & PELANGGAN SETIA (LOYALTY & CRM) ──
 } else if (event === "otp_login" || event === "member_sec") {
-  icon = "🔐";
+  icon = "[OTP]";
   roleBadge = "AUTENTIKASI AKUN · MEMBER";
   title = `KODE RAHASIA OTP TIJARAH`;
   content = `Kode keamanan masuk ke akun Pelanggan *${tenant}* Anda:\n\n` +
@@ -245,7 +245,7 @@ if (event === "z_report" || event === "owner_zrep") {
     `_Jangan berikan kode ini kepada siapa pun termasuk staf kasir toko. Berlaku 5 menit._`;
 
 } else if (event === "receipt" || event === "member_rcpt") {
-  icon = "🧾";
+  icon = "[RECEIPT]";
   roleBadge = "BUKTI TRANSAKSI · MEMBER";
   title = `STRUK DIGITAL · ${tenant.toUpperCase()}`;
   const items = d.items_text || d.items_summary || "Produk Pembelian";
@@ -259,7 +259,7 @@ if (event === "z_report" || event === "owner_zrep") {
     `\n_Simpan nota digital ini sebagai bukti transaksi resmi Anda._`;
 
 } else if (event === "loyalty_points" || event === "member_points") {
-  icon = "⭐";
+  icon = "[REWARDS]";
   roleBadge = "TIJARAH REWARDS · MEMBER";
   title = `POIN LOYALITAS DITAMBAHKAN`;
   content = `Halo *${d.customer_name || "Pelanggan Setia"}*,\n` +
@@ -268,7 +268,7 @@ if (event === "z_report" || event === "owner_zrep") {
     `\n_Tukarkan akumulasi poin dengan potongan belanja dan menu gratis di kasir toko._`;
 
 } else if (event === "tier_upgrade" || event === "member_tier") {
-  icon = "👑";
+  icon = "[VIP]";
   roleBadge = "LEVEL MEMBERSHIP · MEMBER";
   title = `SELAMAT! LEVEL ANGGOTA NAIK`;
   content = `Halo *${d.customer_name || "Pelanggan Istimewa"}*,\n` +
@@ -276,7 +276,7 @@ if (event === "z_report" || event === "owner_zrep") {
     `Nikmati keuntungan diskon khusus, antrean prioritas, dan cashback lebih tinggi setiap transaksi!`;
 
 } else if (event === "birthday_voucher" || event === "member_promo") {
-  icon = "🎁";
+  icon = "[PROMO]";
   roleBadge = "SPESIAL ULANG TAHUN · MEMBER";
   title = `SELAMAT ULANG TAHUN DARI ${tenant.toUpperCase()}!`;
   content = `Semoga hari Anda menyenangkan! Kami mempersembahkan hadiah eksklusif:\n\n` +
@@ -286,7 +286,7 @@ if (event === "z_report" || event === "owner_zrep") {
     `\nTunjukkan pesan WhatsApp ini ke kasir toko saat pemesanan menu!`;
 
 } else if (event === "queue_ready" || event === "member_queue") {
-  icon = "🛎️";
+  icon = "[QUEUE]";
   roleBadge = "PANGGILAN PESANAN · MEMBER";
   title = `PESANAN ANDA SIAP DIAMBIL`;
   content = `Panggilan untuk Nomor Antrean: *#${d.queue_no || "01"}*\n` +
@@ -295,7 +295,7 @@ if (event === "z_report" || event === "owner_zrep") {
 
 // ── KELOMPOK 5: SUPERADMIN & DEVELOPER PLATFORM ──
 } else if (event.startsWith("dev_")) {
-  icon = "⚡";
+  icon = "[DEV]";
   roleBadge = "PLATFORM TELEMETRY · SUPERADMIN";
   title = `TELEMETRI ALERT: ${event.toUpperCase()}`;
   content = `• *Environment:* Production Cloud OS\n` +
@@ -303,9 +303,97 @@ if (event === "z_report" || event === "owner_zrep") {
     `• *Keterangan:* ${d.detail || d.message || JSON.stringify(d)}\n` +
     `• *Timestamp:* ${new Date().toISOString()}`;
 
-// ── KELOMPOK 6: UJI COBA RESMI DASHBOARD (TEST ALERT) ──
+// ── KELOMPOK 6: KEAMANAN KREDENSIAL & FINANSIAL S-WALLET (KRUSIAL) ──
+} else if (event === "pin_reset_otp") {
+  icon = "[SECURITY]";
+  roleBadge = "OTORISASI KRUSIAL · TIJARAH SECURITY";
+  title = "KODE OTP RESET PIN S-WALLET";
+  content = `Halo *${d.user_name || "Pemilik Akun"}*,\n` +
+    `Permintaan pengaturan ulang (reset) PIN Transaksi 6-Digit S-Wallet diterima.\n\n` +
+    `• *Kode OTP Verifikasi:* *>>> ${d.otp_code || "SW-XXXXXX"} <<<*\n` +
+    `• *Masa Berlaku:* 5 Menit\n` +
+    `• *Tujuan Keamanan:* Otorisasi pemulihan kredensial finansial\n\n` +
+    `_PENTING: Jangan berikan kode OTP ini kepada siapapun demi melindungi dana brankas S-Wallet Anda._`;
+
+} else if (event === "login_alert" || event === "account_login") {
+  icon = "[SECURITY]";
+  roleBadge = "AUDIT SESI & AKSES · SECURITY GATE";
+  title = "DETEKSI LOGIN AKUN BARU";
+  content = `Notifikasi akses masuk akun *${tenant}*:\n` +
+    `• *Nama Pengguna:* *${d.user_name || "Pengguna"}*\n` +
+    `• *Peran (RBAC):* ${d.role_label || "Merchant Member"}\n` +
+    `• *Waktu Sesi:* ${d.timestamp || new Date().toLocaleString("id-ID")}\n` +
+    `• *Perangkat / Browser:* ${d.device || "Chrome on MacOS"}\n` +
+    `• *Alamat IP:* ${d.ip_address || "127.0.0.1 (Lokal)"}\n\n` +
+    `_Jika aktivitas ini bukan Anda, segera ubah kata sandi dan amankan akun Anda._`;
+
+} else if (event === "wallet_topup" || event === "saldo_masuk") {
+  icon = "[FINANCE]";
+  roleBadge = "MUTASI KREDIT · S-WALLET DIGITAL";
+  title = `DANA MASUK (TOP-UP) · ${tenant.toUpperCase()}`;
+  content = `Isi ulang saldo brankas digital berhasil dibukukan:\n` +
+    `• *Nominal Masuk:* *+${formatRp(d.amount || 0)}*\n` +
+    `• *Metode:* ${d.method ? d.method.toUpperCase() : "QRIS Instan"}\n` +
+    `• *No. Referensi:* #${d.ref_no || "TOPUP-" + Date.now().toString().slice(-6)}\n` +
+    `• *Waktu:* ${d.timestamp || new Date().toLocaleString("id-ID")}\n` +
+    `• *Saldo Aktif Sekarang:* *${formatRp(d.new_balance || 0)}*`;
+
+} else if (event === "wallet_transfer_in") {
+  icon = "[TRANSFER]";
+  roleBadge = "TRANSFER MASUK · S-WALLET P2P";
+  title = `TRANSFER DITERIMA · ${tenant.toUpperCase()}`;
+  content = `Saldo P2P instan berhasil dikreditkan ke dompet Anda:\n` +
+    `• *Dari Pengirim:* *${d.sender_name || d.sender_id || "Pengguna Tijarah"}*\n` +
+    `• *Nominal:* *+${formatRp(d.amount || 0)}*\n` +
+    `• *Catatan:* _"${d.notes || "Transfer saldo S-Wallet"}"_\n` +
+    `• *No. Referensi:* #${d.ref_no || "TRF-" + Date.now().toString().slice(-6)}\n` +
+    `• *Saldo Akhir:* *${formatRp(d.new_balance || 0)}*`;
+
+} else if (event === "wallet_transfer_out" || event === "saldo_keluar") {
+  icon = "[TRANSFER]";
+  roleBadge = "TRANSFER KELUAR · S-WALLET P2P";
+  title = `TRANSFER TERKIRIM · ${tenant.toUpperCase()}`;
+  content = `Otorisasi transfer saldo berhasil dieksekusi:\n` +
+    `• *Tujuan:* *${d.receiver_identifier || "Penerima Saldo"}*\n` +
+    `• *Nominal Terpotong:* *-${formatRp(d.amount || 0)}*\n` +
+    `• *Biaya Admin:* Rp 0 (Bebas Biaya P2P)\n` +
+    `• *No. Referensi:* #${d.ref_no || "TRF-" + Date.now().toString().slice(-6)}\n` +
+    `• *Sisa Saldo Aktif:* *${formatRp(d.new_balance || 0)}*`;
+
+} else if (event === "wallet_withdrawal") {
+  icon = "[PAYOUT]";
+  roleBadge = "PENARIKAN REKENING BANK · PAYOUT";
+  title = `PENGAJUAN PENARIKAN SALDO · ${tenant.toUpperCase()}`;
+  content = `Pengajuan pencairan saldo ke rekening perbankan:\n` +
+    `• *Bank Tujuan:* *${d.bank_name || "BCA"}*\n` +
+    `• *No. Rekening:* ${d.account_number ? "••••" + d.account_number.slice(-4) : "Terdaftar"}\n` +
+    `• *Penerima:* ${d.account_holder || "Pemilik Rekening"}\n` +
+    `• *Nominal Bersih:* *${formatRp(d.amount || 0)}*\n` +
+    `• *Biaya Layanan:* ${formatRp(d.fee || 0)}\n` +
+    `• *Status Jendela:* ${d.status === "processing" ? "Sedang Diproses Kliring Instan" : "Antrean Terjadwal (09.00 WIB)"}\n` +
+    `• *Sisa Saldo:* *${formatRp(d.remaining_balance || 0)}*`;
+
+} else if (event === "two_factor_alert") {
+  icon = "[SECURITY]";
+  roleBadge = "KONTROL KEAMANAN · 2FA";
+  title = d.is_active ? "2FA DIAKTIFKAN" : "PERINGATAN: 2FA DINONAKTIFKAN";
+  content = `Pembaruan status keamanan akun *${tenant}*:\n` +
+    `• *Status:* ${d.is_active ? "Terproteksi Penuh (Google Authenticator)" : "Nonaktif (Rentan)"}\n` +
+    `• *Waktu Perubahan:* ${new Date().toLocaleString("id-ID")}\n` +
+    `• *Oleh Akun:* ${d.user_email || "Pemilik Usaha"}`;
+
+} else if (event === "pin_changed") {
+  icon = "[SECURITY]";
+  roleBadge = "KREDENSIAL MONETER · PIN TRANSAKSI";
+  title = "PIN TRANSAKSI BERHASIL DIPERBARUI";
+  content = `PIN Transaksi 6-Digit akun *${tenant}* berhasil disimpan:\n` +
+    `• *Status:* Aktif & Terenkripsi\n` +
+    `• *Waktu:* ${new Date().toLocaleString("id-ID")}\n` +
+    `• *Fungsi:* Otorisasi Transfer P2P & Penarikan Saldo Bank`;
+
+// ── KELOMPOK 7: UJI COBA RESMI DASHBOARD (TEST ALERT) ──
 } else if (event === "test_alert") {
-  icon = "🧪";
+  icon = "[TEST]";
   roleBadge = "UJI COBA RESMI DASHBOARD";
   title = `UJI KONEKSI BOT WHATSAPP HERMES`;
   content = `Halo Tim *${tenant}*!\n\n` +
@@ -315,7 +403,7 @@ if (event === "z_report" || event === "owner_zrep") {
     `• *Nomor Penerima:* ${cleanPhone(body.target || body.target_phone || defaultTarget)}\n` +
     `\n_Gateway Hermes siap menyalurkan seluruh peringatan operasional otomatis._`;
 
-// ── KELOMPOK 7: CUSTOM RAW MESSAGE / FALLBACK ──
+// ── KELOMPOK 8: CUSTOM RAW MESSAGE / FALLBACK ──
 } else {
   if (body.message || body.text) {
     const rawTarget = body.target || body.target_phone || body.phone || body.whatsapp_owner || body.whatsapp_gm || defaultTarget;
@@ -330,7 +418,7 @@ if (event === "z_report" || event === "owner_zrep") {
       }
     }];
   }
-  icon = "ℹ️";
+  icon = "[INFO]";
   title = `UPDATE OPERASIONAL · ${tenant.toUpperCase()}`;
   content = `• *Event:* ${event || "Informasi Sistem"}\n` +
     `• *Data Rincian:* ` + JSON.stringify(d);
