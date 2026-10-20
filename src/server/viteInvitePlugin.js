@@ -125,6 +125,11 @@ export function inviteSmtpPlugin() {
         if (url === "/api/hermes-dispatch" && req.method === "POST") {
           try {
             const body = await parseJsonBody(req);
+            const defaultPhone = process.env.HERMES_DEFAULT_PHONE || "6285256739684";
+            if (!body.target && !body.target_phone && !body.phone) {
+              body.target = defaultPhone;
+              body.target_phone = defaultPhone;
+            }
             const testUrl = process.env.HERMES_WEBHOOK_TEST_URL || "https://webhook.dentsweb.my.id/webhook-test/tijarah";
             const prodUrl = process.env.HERMES_WEBHOOK_URL || "https://webhook.dentsweb.my.id/webhook/tijarah";
 

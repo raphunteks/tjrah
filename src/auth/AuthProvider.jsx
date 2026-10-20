@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { loadApi } from "../api/index.js";
+import { dispatchHermesLoginAlert } from "../lib/hermes.js";
 
 const Ctx = createContext(null);
 const VIEW_KEY = "tijarah-view-tenant";
@@ -238,12 +239,15 @@ export function AuthProvider({ children }) {
           if (opt.tenant) setTenant(opt.tenant);
           try { localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(opt)); } catch {}
           setReady(true);
+          // Dispatch notifikasi login realtime ke WhatsApp Hermes (non-blocking)
+          dispatchHermesLoginAlert(opt);
         }
         try {
           const authData = await apiRef.current.signIn(e, p);
           const uid = authData?.user?.id || authData?.id;
           if (uid && syncRef.current) {
-            await syncRef.current(uid);
+            const synced = await syncRef.current(uid);
+            if (synced) dispatchHermesLoginAlert(synced);
           }
           return authData;
         } catch (signInErr) {

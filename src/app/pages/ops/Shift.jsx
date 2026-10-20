@@ -4,6 +4,7 @@ import { rupiah, dateTime } from "../../../lib/format.js";
 import { can } from "../../../lib/rbac.js";
 import { PageHead, Panel, Loading, ErrorNote, Field, useAsync, Stat, Badge, Empty } from "../../ui/index.jsx";
 import { useBranch, BranchSelect, useAction, Feedback } from "../../ops.jsx";
+import { dispatchHermesZReport } from "../../../lib/hermes.js";
 
 const M = { cash: "Tunai", card: "Kartu", qris: "QRIS", ewallet: "E-wallet", transfer: "Transfer" };
 
@@ -87,7 +88,23 @@ export default function Shift() {
             <p className="d-text">Mengunci total transaksi hari ini untuk {b.branch?.name}. Semua shift harus sudah ditutup.</p>
             {canOpen && (
               <button type="button" className="d-btn d-btn--ghost" disabled={a.busy}
-                onClick={() => a.run(async () => setZ(await api.rpc("z_report", { p_branch: b.branchId })), "Z-Report dikunci dan diantrekan ke Hermes")}>Kunci & kirim Z-Report</button>
+                onClick={() => a.run(async () => {
+                  const res = await api.rpc("z_report", { p_branch: b.branchId });
+                  setZ(res);
+                  // Dispatch Z-Report resmi ke WhatsApp Hermes Owner & GM
+                  dispatchHermesZReport({
+                    branchName: b.branch?.name || "Cabang Utama",
+                    tenantName: b.branch?.tenant_name || "Tijarah Merchant",
+                    orders: res?.orders || 0,
+                    revenue: res?.revenue || 0,
+                    tax: res?.tax || 0,
+                    cogs: res?.cogs || 0,
+                    voids: res?.voids || 0,
+                    cashActual: res?.cash_actual || 0,
+                    whatsappOwner: b.branch?.whatsapp_owner,
+                    whatsappGm: b.branch?.whatsapp_gm
+                  });
+                }, "Z-Report dikunci dan diantrekan ke Hermes")}>Kunci & kirim Z-Report</button>
             )}
             {z && (
               <ul className="d-list">

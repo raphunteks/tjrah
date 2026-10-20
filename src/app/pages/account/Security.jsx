@@ -7,6 +7,7 @@ import { useAccountLang } from "./i18n.js";
 import { qrSvg } from "../../../lib/qr.js";
 import ResetPinModal from "./ResetPinModal.jsx";
 import { saveUserPin } from "../../../api/swallet.js";
+import { dispatchHermesSecurityAlert } from "../../../lib/hermes.js";
 import {
   formatSecretKey,
   buildOtpauthUri,
@@ -199,6 +200,15 @@ export default function Security() {
           }).catch(() => {});
         }
       } catch {}
+
+      // Dispatch notifikasi aktivasi 2FA ke WhatsApp Hermes
+      dispatchHermesSecurityAlert({
+        type: "two_factor_alert",
+        isActive: true,
+        user: profile,
+        tenantName: profile?.tenant?.name
+      });
+
       setTwoFactorModal(false);
       setVerifyOtp("");
       setOtpError("");
@@ -221,6 +231,14 @@ export default function Security() {
           api.update("profiles", profile.id, { two_factor_enabled: false }).catch(() => {});
         }
       } catch {}
+
+      // Dispatch notifikasi penonaktifan 2FA ke WhatsApp Hermes
+      dispatchHermesSecurityAlert({
+        type: "two_factor_alert",
+        isActive: false,
+        user: profile,
+        tenantName: profile?.tenant?.name
+      });
     }
   };
 

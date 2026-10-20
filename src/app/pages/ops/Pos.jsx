@@ -9,6 +9,7 @@ import { useBranch, BranchSelect, useLive, useAction, Feedback, useIndex } from 
 import { PaymentModal } from "./Payment.jsx";
 import OfflineBar from "./OfflineBar.jsx";
 import { taxOf, taxLabel } from "../../../lib/tax.js";
+import { dispatchHermesVoidAlert } from "../../../lib/hermes.js";
 
 const TABLE_STATUS = { available: "Kosong", occupied: "Terisi", cooking: "Diproses dapur", reserved: "Reservasi", dirty: "Perlu dibersihkan" };
 const KITCHEN = { new: ["Baru", "neutral"], cooking: ["Dimasak", "warn"], ready: ["Siap", "ok"], served: ["Diantar", "neutral"] };
@@ -113,6 +114,17 @@ export default function Pos() {
   const sendVoid = () =>
     a.run(async () => {
       await api.rpc("request_void", { p_order: voidFor.id, p_reason: voidReason, p_note: voidNote, p_option: voidOption });
+      // Dispatch alert void transaksi kasir ke WhatsApp Hermes Owner & GM
+      dispatchHermesVoidAlert({
+        orderCode: voidFor.code || "NOTA-TRX",
+        amount: voidFor.total || 0,
+        cashierName: profile?.full_name || "Kasir Bertugas",
+        reason: `${voidReason}${voidNote ? `: ${voidNote}` : ""}`,
+        branchName: b.branch?.name || "Cabang Utama",
+        tenantName: tenant?.name || "Tijarah Merchant",
+        whatsappOwner: tenant?.whatsapp_owner,
+        whatsappGm: tenant?.whatsapp_gm
+      });
       setVoidFor(null);
       setVoidNote("");
     }, "Permintaan void dikirim. Nota baru batal setelah GM/Owner memutuskan dengan PIN.");

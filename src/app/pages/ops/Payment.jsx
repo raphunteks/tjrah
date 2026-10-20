@@ -5,6 +5,7 @@ import { Modal, Field, Badge, useAsync } from "../../ui/index.jsx";
 import { useAction, Feedback } from "../../ops.jsx";
 import { taxOf, taxLabel as taxLabelOf } from "../../../lib/tax.js";
 import { calculateAndCreditDoctorSplit } from "../../../api/swallet.js";
+import { dispatchHermesPosSale } from "../../../lib/hermes.js";
 import QrisPanel from "./QrisPanel.jsx";
 
 const METHODS = [["cash", "Tunai"], ["card", "Kartu"], ["qris", "QRIS"], ["ewallet", "E-wallet"], ["swallet", "S-Wallet"]];
@@ -60,6 +61,17 @@ export function PaymentModal({ open, order, onClose, onPaid }) {
   const onQrisPaid = async () => {
     const [o] = await api.list("orders", { eq: { id: order.id } });
     setReceipt({ ...(o ?? order), change: 0, rows: [] });
+    // Dispatch notifikasi realtime penjualan kasir (QRIS) ke WhatsApp Owner & GM
+    dispatchHermesPosSale({
+      order: o ?? order,
+      total: o?.total ?? total,
+      paymentMethod: "QRIS INSTAN",
+      cashierName: order.cashier_name || "Kasir",
+      tenantName: tenant?.name || "Tijarah Merchant",
+      branchName: order.branch_name || "Cabang Utama",
+      whatsappOwner: tenant?.whatsapp_owner,
+      whatsappGm: tenant?.whatsapp_gm
+    });
     onPaid();
   };
   const [cardTok, setCardTok] = useState("");
@@ -107,6 +119,19 @@ export function PaymentModal({ open, order, onClose, onPaid }) {
           orderCode: order.code
         });
       }
+
+      // Dispatch notifikasi realtime penjualan kasir ke WhatsApp Owner & GM
+      dispatchHermesPosSale({
+        order: { ...order, ...r },
+        total,
+        paymentMethod: rows.map((x) => x.method?.toUpperCase()).filter(Boolean).join(", ") || "TUNAI",
+        cashierName: order.cashier_name || "Kasir",
+        tenantName: tenant?.name || "Tijarah Merchant",
+        branchName: order.branch_name || "Cabang Utama",
+        whatsappOwner: tenant?.whatsapp_owner,
+        whatsappGm: tenant?.whatsapp_gm
+      });
+
       setReceipt({ ...r, change, rows });
       onPaid();
       return r;

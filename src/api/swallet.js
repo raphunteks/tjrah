@@ -3,6 +3,12 @@
 // 100% White-Label: Tidak mengekspos gateway brand di antarmuka publik.
 
 import { verifyTOTP } from "../lib/totp.js";
+import {
+  dispatchHermesWalletTopup,
+  dispatchHermesWalletTransfer,
+  dispatchHermesWalletWithdrawal,
+  dispatchHermesSecurityAlert
+} from "../lib/hermes.js";
 
 const STEP_UP_SESSION_KEY = "tijarah:swallet_2fa_ticket";
 const STORAGE_KEY_PLATFORM_SETTINGS = "tijarah:swallet_platform_pricing";
@@ -148,6 +154,11 @@ export function saveUserPin({ userId, email = "", pin, api }) {
     if (api?.update && userId) {
       api.update("profiles", userId, { transaction_pin: cleanPin }).catch(() => {});
     }
+    // Notifikasi WhatsApp pembaruan PIN transaksi
+    dispatchHermesSecurityAlert({
+      type: "pin_changed",
+      user: { id: userId, email }
+    });
     return true;
   } catch {
     return false;
@@ -580,8 +591,10 @@ export async function executeP2PTransfer(api, { senderUserId, receiverIdentifier
   };
   saveLocalDemoWallet(senderUserId, updated);
 
+  const refNo = "TRF-" + Date.now().toString().slice(-6);
+
   recordLocalTransaction(senderUserId, {
-    reference_no: "TRF-" + Date.now().toString().slice(-6),
+    reference_no: refNo,
     type: "transfer_out",
     title: "Transfer ke " + cleanId,
     amount: amt,
@@ -590,9 +603,19 @@ export async function executeP2PTransfer(api, { senderUserId, receiverIdentifier
     notes: notes || "Transfer Saldo S-Wallet"
   });
 
+  // Dispatch notifikasi transfer keluar ke WhatsApp Hermes
+  dispatchHermesWalletTransfer({
+    sender: { id: senderUserId },
+    receiverIdentifier: cleanId,
+    amount: amt,
+    refNo: refNo,
+    newBalance: updated.balance,
+    notes
+  });
+
   return {
     ok: true,
-    ref_no: "TRF-" + Date.now().toString().slice(-6),
+    ref_no: refNo,
     new_balance: updated.balance
   };
 }
@@ -681,9 +704,24 @@ export async function requestBankWithdrawal(api, { userId, bankName, accountNumb
     notes: operating.isOpen ? "Sedang diproses kliring instan" : "Diantrekan ke jam kerja berikutnya"
   });
 
+  const refNo = "WD-" + Date.now().toString().slice(-6);
+
+  // Dispatch notifikasi penarikan saldo ke WhatsApp Hermes
+  dispatchHermesWalletWithdrawal({
+    amount: amt,
+    bankName,
+    accountNumber,
+    accountHolder,
+    fee: feeCalc.userFee,
+    refNo: refNo,
+    remainingBalance: updated.balance,
+    status: targetStatus,
+    user: { id: userId }
+  });
+
   return {
     ok: true,
-    withdrawal_id: "wd-demo-" + Date.now(),
+    withdrawal_id: refNo,
     status: targetStatus,
     message: operating.isOpen
       ? "Penarikan berhasil diajukan dan sedang diproses kliring perbankan."
@@ -740,6 +778,15 @@ export async function executeTopUp(api, { userId, amount, method = "qris" }) {
     status: "completed",
     created_at: new Date().toISOString(),
     notes: "Top-up saldo berhasil dikreditkan"
+  });
+
+  // Dispatch notifikasi saldo masuk (top-up) ke WhatsApp Hermes
+  dispatchHermesWalletTopup({
+    amount: amt,
+    method,
+    refNo: orderId,
+    newBalance: updated.balance,
+    user: { id: userId }
   });
 
   return {

@@ -53,7 +53,21 @@ let content = "";
 let footer = "_Pesan otomatis resmi terverifikasi dari Tijarah Cloud OS._";
 
 // ── KELOMPOK 1: OWNER MERCHANT (FINANSIAL, AUDIT & OTORISASI BESAR) ──
-if (event === "z_report" || event === "owner_zrep") {
+if (event === "pos_sale" || event === "order_paid" || event === "transaksi_sukses") {
+  icon = "[TRANSAKSI]";
+  roleBadge = "KASIR POS · OWNER & GM";
+  title = `PENJUALAN KASIR SUKSES · ${tenant.toUpperCase()}`;
+  content = `Laporan transaksi penjualan kasir di *${branch}*:\n` +
+    `• *No. Nota:* *${d.order_code || d.code || "NOTA-TRX"}*\n` +
+    `• *Kasir:* ${d.cashier_name || "Kasir Bertugas"}\n` +
+    `• *Pelanggan/Meja:* ${d.table_label ? "Meja " + d.table_label : (d.customer_name || "Pesanan Langsung")}\n` +
+    `• *Total Pembayaran:* *${formatRp(d.total || d.amount || 0)}*\n` +
+    `• *Metode:* ${d.payment_method ? d.payment_method.toUpperCase() : "QRIS / TUNAI"}\n` +
+    `• *Waktu:* ${d.timestamp || new Date().toLocaleString("id-ID")}\n` +
+    (d.items_summary ? `• *Item Menu:* \n${d.items_summary}\n` : "") +
+    `\n_Pemberitahuan otomatis transaksi penjualan kasir cabang._`;
+
+} else if (event === "z_report" || event === "owner_zrep") {
   icon = "[REPORT]";
   roleBadge = "REKAP EKSEKUTIF · OWNER & GM";
   title = `DAILY Z-REPORT · ${tenant.toUpperCase()}`;
@@ -436,8 +450,8 @@ const text = `${icon} *${title}*\n` +
 let targets = [];
 if (body.targets && Array.isArray(body.targets) && body.targets.length > 0) {
   targets = body.targets;
-} else if ((event === "z_report" || event === "owner_zrep") && body.whatsapp_owner && body.whatsapp_gm && body.whatsapp_owner !== body.whatsapp_gm) {
-  // Z-Report harian otomatis diteruskan ke nomor Owner dan nomor GM
+} else if ((event === "z_report" || event === "owner_zrep" || event === "pos_sale" || event === "order_paid" || event === "void_alert") && body.whatsapp_owner && body.whatsapp_gm && body.whatsapp_owner !== body.whatsapp_gm) {
+  // Notifikasi operasional penting otomatis diteruskan ke nomor Owner dan nomor GM
   targets = [body.whatsapp_owner, body.whatsapp_gm];
 } else {
   const single = body.target || body.target_phone || body.phone || body.whatsapp || body.whatsapp_owner || body.whatsapp_gm || defaultTarget;
