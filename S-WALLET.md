@@ -678,8 +678,252 @@ $$;
      - Tabel Omni-Wallet Explorer dengan fitur 1-klik Freeze/Unfreeze dan Emergency Balance Correction.
      - Streaming ticker transaksi real-time seluruh tenant.
 5. **Fase 5: Integrasi Modul Kasir POS & Pembelanjaan Website (Ecosystem Layer)**
-   - Tambahkan tombol opsi pembayaran *"S-Wallet"* di `src/app/pages/ops/Pos.jsx`.
+   - Tambahkan tombol opsi pembayaran "S-Wallet" di `src/app/pages/ops/Pos.jsx`.
    - Sambungkan checkout pesanan online portal member `/m` dengan pemotongan saldo S-Wallet.
 6. **Fase 6: Validasi, Audit Keamanan, & Stress Test**
    - Jalankan `npm run secret:scan` dan unit testing `npm test`.
    - Uji simulasi transfer antar peran akun demo dan pengetesan anti-fraud di kasir.
+
+---
+
+## 10. HASIL AUDIT KAPABILITAS PENARIKAN PAKASIR & ARSITEKTUR SAFETY-FIRST WITHDRAWAL (ANTI-CHEAT / ANTI-HACK)
+
+### 10.1 Fakta Resmi Penarikan Dana di Gateway Pakasir (API v2)
+Berdasarkan audit dokumentasi resmi arsitektur dan endpoint Pakasir API v2 (`app.pakasir.com/api/v2`):
+1. **Pakasir Adalah Inbound Payment Gateway Murni**:
+   - Pakasir dirancang khusus untuk memfasilitasi penerimaan dana masuk (*inbound payment acceptance*) dari pelanggan ke merchant menggunakan QRIS Dinamis dan Virtual Account bank nasional.
+   - Pakasir API v2 **TIDAK MEMILIKI** endpoint publik untuk penarikan dana otomatis (*Disbursement / Payout API*) yang dapat dipicu langsung melalui skrip kode.
+2. **Jadwal & Mekanisme Pencairan (*Settlement*) Resmi Pakasir**:
+   - Seluruh dana transaksi penjualan yang berhasil masuk ke akun penampungan Pakasir tersedia untuk ditarik pada hari berikutnya (**H+1**) setelah pukul 12.00 WIB.
+   - Penarikan saldo riil dari akun Pakasir ke rekening bank pemilik usaha dilakukan melalui **Dashboard Web Merchant Pakasir** dengan estimasi waktu pemrosesan antara 5 hingga 30 menit pada jam operasional perbankan.
+
+---
+
+### 10.2 Arsitektur Staged Dual-Approval Payout (Penarikan Aman Berlapis S-Wallet)
+Karena ketiadaan Payout API otomatis langsung di Pakasir, S-Wallet menerapkan arsitektur **Staged Dual-Approval Payout Engine** berstandar keamanan perbankan tinggi (*Safety First*) untuk memastikan tidak ada celah kecurangan, manipulasi angka, maupun eksploitasi kode:
+
+```
+[ PENGGUNA AJUKAN TARIK SALDO KE BANK ]
+                   |
+     (1) Input 6-Digit TOTP 2FA (RFC 6238)
+     (2) Input PIN Transaksi 6-Digit
+     (3) Cek Validasi Rekening Bank KYC
+                   |
+                   v
+    [ ATOMIC BALANCE ISOLATION (DATABASE) ]
+    - SELECT ... FOR UPDATE (Row-Level Lock)
+    - Pindahkan Dana: balance -> locked_balance
+    - Validasi CHECK (balance >= 0)
+                   |
+                   v
+    [ TIKET PENARIKAN DIBUAT (STATUS: PENDING) ]
+    Tercatat di antrean Superadmin/Finance
+                   |
+                   v
+   [ REVIEW & KLIRING OLEH SUPERADMIN / FINANCE ]
+     /                                         \
+[ DISETUJUI & DITRANSFER ]               [ DITOLAK / SENGKETA ]
+- Transfer via m-Banking/Pakasir Dash     - Input Alasan Penolakan
+- Input Nomor Referensi Bank             - Auto-Reversal Saldo:
+- locked_balance Terpotong Permanen        locked_balance -> balance
+- Status: COMPLETED                      - Status: REJECTED
+```
+
+---
+
+### 10.3 Garansi Keamanan Tingkat Tinggi (Anti-Cheat, Anti-Hack & Zero-Exploit)
+
+Untuk menjamin agar pengguna tidak dapat melakukan kecurangan (*cheat*), penggandaan dana (*double spending*), maupun rekayasa permintaan jaringan (*network tampering*), sistem menerapkan 8 benteng perlindungan:
+
+1. **Row-Level Database Locking (`SELECT ... FOR UPDATE`)**:
+   - Setiap kali terjadi penarikan dana atau transfer antar dompet, baris rekening pengguna di tabel `public.wallets` dikunci seketika dalam transaksi atomik PostgreSQL.
+   - Jika pengguna sengaja membuka 10 tab peramban sekaligus atau menjalankan skrip otomatis *multithreaded* untuk menekan tombol tarik dana serentak, transaksi ke-2 hingga ke-10 akan antre secara serial dan langsung digagalkan karena saldo telah dipindahkan ke `locked_balance` pada milidetik pertama.
+2. **Integritas Kendala Tingkat Basis Data (Database Invariant Constraints)**:
+   - Kolom `balance` dan `locked_balance` dilindungi oleh constraint ketat:
+     ```sql
+     check (balance >= 0)
+     check (locked_balance >= 0)
+     ```
+   - Tidak ada celah bagi injeksi API, script peretas, atau *payload modification* untuk membuat saldo pengguna menjadi minus. Setiap mutasi yang melanggar ketentuan matematis ini akan otomatis di-*rollback* oleh database engine.
+3. **Pemisahan Saldo Terisolasi (Escrow Isolation Model)**:
+   - Begitu permohonan penarikan diajukan, nominal tersebut langsung ditarik dari `balance` aktif dan diamankan di brankas `locked_balance`.
+   - Pengguna tidak dapat membelanjakan atau mentransfer nominal yang sedang dalam proses penarikan.
+4. **Idempotency Key Unik (UUID v4 Enforcement)**:
+   - Setiap pengajuan penarikan dana wajib mengikutsertakan header `idempotency_key`. Jika jaringan internet pengguna mengalami *timeout* dan melakukan pengiriman ulang (*network retry*), basis data menolak duplikasi transaksi berkat indeks unik `unique(idempotency_key)`.
+5. **Verifikasi Identitas Rekening Bank (AML & KYC Whitelist)**:
+   - Pengguna hanya diperbolehkan menarik dana ke rekening bank yang nama pemiliknya telah terverifikasi cocok dengan nama resmi profil pengguna.
+   - Hal ini mencegah pelaku peretasan akun mengalihkan dana ke rekening pihak ketiga atau rekening penampung anonim.
+6. **Limit Nominal Penarikan Harian & Jeda Waktu Pengamanan (Cooling-off Period)**:
+   - Limit penarikan default dibatasi maksimal Rp 25.000.000 per hari per akun.
+   - Diterapkan jeda waktu minimal 15 menit antara satu pengajuan penarikan dengan pengajuan berikutnya pada akun yang sama guna mencegah pengurasan saldo kilat.
+7. **Jejak Audit Buku Besar Abadi (Immutable Double-Entry Ledger)**:
+   - Tidak ada mutasi yang dapat dihapus (`No DELETE operations allowed`).
+   - Setiap pergerakan saldo mencatat saldo awal (`balance_before`) dan saldo akhir (`balance_after`) yang wajib klop dengan selisih mutasi.
+8. **Opsi Payout Otomatis Pihak Ketiga (Engine Outbound Masa Depan)**:
+   - Jika di masa mendatang pemilik platform menghendaki penarikan dana ke rekening bank 100% otomatis detik demi detik tanpa campur tangan staf admin, platform Tijarah OS dapat menambahkan konektor ke agregator disbursement resmi Bank Indonesia seperti **Flip for Business API** atau **Xendit Disbursements API** sebagai mitra penyedia *outbound transfer engine*.
+
+---
+
+## 11. AUDIT MENYELURUH WORKSPACE: 8 FITUR INTEGRASI WORKFLOWS LENGKAP TANPA LOGIC DUPLICATE
+
+Berdasarkan audit komprehensif terhadap seluruh file halaman, routing, RBAC, dan komponen sistem di workspace Tijarah OS, berikut adalah pemetaan 8 fitur terpadu yang wajib ditambahkan untuk melengkapi ekosistem kerja S-Wallet tanpa ada satupun duplikasi logika (*zero logic duplicate*):
+
+```
++-------------------------------------------------------------------------------------------------------+
+| PETA 8 TOUCHPOINTS INTEGRASI WORKFLOWS S-WALLET DI SELURUH WORKSPACE TIJARAH OS                       |
++-------------------------------------------------------------------------------------------------------+
+| No | Modul / Lokasi File                | Fitur yang Ditambahkan            | Prinsip Anti-Duplikasi Logika |
++----+------------------------------------+-----------------------------------+-------------------------------+
+| 1  | src/app/pages/account/Wallet.jsx   | Dasbor Brankas & 2FA Gate         | Menggunakan totp.js eksisting |
+| 2  | src/app/pages/ops/Payment.jsx      | Opsi Bayar Kasir POS (swallet)    | Memakai pay_order via token   |
+| 3  | src/member/pages/ (Portal /m)      | Member S-Wallet & 1-Klik Checkout | Reuse demoMemberOrder schema  |
+| 4  | src/app/pages/superadmin/Plans.jsx | S-Wallet Master Command Center    | Sentralisasi audit likuiditas |
+| 5  | src/app/pages/growth/PaymentModal  | Bayar Langganan SaaS via Saldo    | Reuse gateway state machine   |
+| 6  | src/app/pages/ops/Payroll.jsx      | 1-Click Bulk Payroll Disbursement | Terhubung ke slip gaji MyPay  |
+| 7  | src/app/pages/clinic/Billing.jsx   | Auto-Split Revenue Jasa Medis     | Eksekusi paralel saat lunas   |
+| 8  | src/app/pages/ops/Recon.jsx        | Rekon Shift Kasir & Jurnal Ganda  | Jurnal otomatis berpasangan   |
++-------------------------------------------------------------------------------------------------------+
+```
+
+---
+
+### 11.1 Touchpoint 1: Dasbor S-Wallet Akun Pengguna (`src/app/pages/account/Wallet.jsx`)
+- **Status Saat Ini**: Berkas belum ada, navigasi bento di [AccountTabs.jsx](file:///Users/m.aksaarsyad/Downloads/TIJARAH%202/src/app/pages/account/AccountTabs.jsx) baru memiliki 7 kartu navigasi.
+- **Fitur yang Wajib Ditambahkan**:
+  1. Komponen `src/app/pages/account/Wallet.jsx` dengan antarmuka Bento Grid modern dan palet tema Tijarah OS.
+  2. Gerbang Otentikasi Dinamis TOTP 2FA:
+     - Jika status 2FA belum aktif di profil, arahkan pengguna ke tab Keamanan dengan banner panduan.
+     - Jika status 2FA sudah aktif, tampilkan modal input 6-digit kode OTP authenticator untuk menerbitkan tiket sesi brankas (berlaku 15 menit).
+  3. Kartu Brankas Utama (Saldo Aktif, Saldo Tertahan, Nomor Rekening `SW-YYYYMM-XXXXXXXX`, Tombol Salin & Tampilkan QR).
+  4. Modal Aksi Cepat:
+     - **Top-Up Saldo Gateway**: Terhubung langsung ke kalkulator fee dinamis Pakasir API v2 (QRIS & Virtual Account).
+     - **Transfer Antar Pengguna P2P**: Pencarian penerima berbasis email/no rekening, kartu preview foto & peran penerima, dan konfirmasi PIN transaksi 6-digit.
+     - **Tarik Dana ke Bank (Withdrawal)**: Pilihan rekening bank terdaftar, validasi nama KYC, otorisasi TOTP + PIN, dan saldo masuk ke status *Escrow Hold*.
+     - **Tampilkan Kode Bayar Kasir (Dynamic OTP 60s)**: Hitung mundur visual 60 detik dengan tombol salin cepat.
+  5. Tabel Mutasi Buku Besar Lengkap & Cetak Resi Digital PDF/Thermal.
+- **Integrasi Tanpa Duplikasi**:
+  - Memanfaatkan fungsi verifikasi TOTP dari [src/lib/totp.js](file:///Users/m.aksaarsyad/Downloads/TIJARAH%202/src/lib/totp.js) yang sudah ada tanpa menulis ulang logika RFC 6238.
+  - Memanfaatkan `getPakasirConfig()` dan `createPakasirTransaction()` dari [src/api/pakasir.js](file:///Users/m.aksaarsyad/Downloads/TIJARAH%202/src/api/pakasir.js) untuk kanal Top-Up.
+  - Mendaftarkan rute di [src/app/pages.js](file:///Users/m.aksaarsyad/Downloads/TIJARAH%202/src/app/pages.js) dan kartu bento ke-8 di [src/app/pages/account/AccountTabs.jsx](file:///Users/m.aksaarsyad/Downloads/TIJARAH%202/src/app/pages/account/AccountTabs.jsx).
+
+---
+
+### 11.2 Touchpoint 2: Kasir POS Non-Tunai Zero-Fraud (`src/app/pages/ops/Payment.jsx` & `Pos.jsx`)
+- **Status Saat Ini**: Pilihan metode pembayaran kasir hanya `["cash", "Tunai"]`, `["card", "Kartu"]`, `["qris", "QRIS"]`, `["ewallet", "E-wallet"]`. Kasir rawan penggelapan uang tunai (*cash skimming*) dan manipulasi pembatalan nota (*fake void*).
+- **Fitur yang Wajib Ditambahkan**:
+  1. Menambahkan opsi metode bayar `["swallet", "S-Wallet"]` pada daftar `METHODS`.
+  2. Saat metode S-Wallet dipilih:
+     - Tampilkan kolom input khusus: *"Masukkan 6-Digit Kode Bayar S-Wallet Pelanggan"*.
+     - Tombol cepat *"Verifikasi & Debet Saldo"*.
+     - Sistem memvalidasi token ke basis data: memeriksa apakah token cocok, belum pernah digunakan, dan belum kadaluarsa (< 60 detik).
+     - Saldo berpindah seketika dari dompet member ke dompet merchant/owner.
+  3. Proteksi Pembatalan Nota (*Anti-Fake Void Protection*):
+     - Jika transaksi berstatus S-Wallet dibatalkan atau di-void oleh kasir, sistem secara otomatis mengeksekusi pengembalian dana (*refund*) digital langsung ke saldo S-Wallet pelanggan.
+     - Kasir tidak menerima maupun memegang uang tunai kembalian, memusnahkan 100% peluang penggelapan kas toko.
+- **Integrasi Tanpa Duplikasi**:
+  - Tidak membuat form kasir baru. S-Wallet langsung memanfaatkan alur pembayaran modal kasir `PaymentModal` di [src/app/pages/ops/Payment.jsx](file:///Users/m.aksaarsyad/Downloads/TIJARAH%202/src/app/pages/ops/Payment.jsx) dengan menambahkan baris pembayaran `{ method: "swallet", reference: tokenCode }` ke parameter `pay_order`.
+  - Struk kasir, perhitungan diskon voucher, dan kalkulasi pajak restoran/klinik tetap berjalan melalui mesin kalkulasi pajak standar yang sudah teruji di [src/lib/tax.js](file:///Users/m.aksaarsyad/Downloads/TIJARAH%202/src/lib/tax.js).
+
+---
+
+### 11.3 Touchpoint 3: Belanja Mandiri di Member Portal (`/m/wallet` & `/m/pesan`)
+- **Status Saat Ini**: Pelanggan di portal member `/m` (terisolasi di `src/member/MemberShell.jsx`) hanya memiliki menu Beranda, Pesan, Reservasi, Kartu, Riwayat, dan Profil. Belum ada dompet mandiri terintegrasi.
+- **Fitur yang Wajib Ditambahkan**:
+  1. Menambahkan tab navigasi `["/m/wallet", "S-Wallet", MemberWallet]` pada `MemberShell.jsx`.
+  2. Halaman dompet pelanggan yang ramah ponsel pintar (*mobile-optimized*):
+     - Menampilkan saldo belanja aktif dan poin loyalty reward.
+     - Tombol besar: *"Tampilkan Kode Bayar Kasir"* (menghasilkan angka 6 digit dengan timer melingkar 60 detik saat pelanggan antre di depan kasir toko).
+     - Tombol *"Isi Saldo Mandiri"* via QRIS Dinamis Pakasir langsung di layar ponsel.
+     - Fitur *"Kirim Saldo ke Teman"* (patungan belanja / *split bill*).
+  3. Pembayaran 1-Klik pada Checkout Pesanan Mandiri di `/m/pesan`:
+     - Pelanggan dapat memilih *"Bayar dengan S-Wallet (Saldo Cukup)"*.
+     - Pemotongan saldo terjadi detik itu juga dan pesanan langsung masuk ke antrean dapur tanpa perlu verifikasi nota transfer manual.
+- **Integrasi Tanpa Duplikasi**:
+  - Menggunakan API pesanan yang sama di [src/api/demoMemberOrder.js](file:///Users/m.aksaarsyad/Downloads/TIJARAH%202/src/api/demoMemberOrder.js) dengan menambahkan tanda pelunasan langsung melalui saldo member.
+
+---
+
+### 11.4 Touchpoint 4: Superadmin God-Mode Financial Command Center (`src/app/pages/superadmin/Plans.jsx`)
+- **Status Saat Ini**: Konsol Superadmin di [Plans.jsx](file:///Users/m.aksaarsyad/Downloads/TIJARAH%202/src/app/pages/superadmin/Plans.jsx) hanya menampilkan daftar paket langganan dan kuota tenant. Belum ada pengawasan moneter terpusat.
+- **Fitur yang Wajib Ditambahkan**:
+  1. Subtab baru **"S-Wallet Master Command Center"** pada panel Superadmin.
+  2. **Radar Likuiditas Platform Terpusat**:
+     - Agregat saldo seluruh akun di platform: `Total Saldo Sistem = Dompet Owner + Dompet GM + Dompet Staf + Dompet Dokter + Dompet Member`.
+     - Sinkronisasi dengan mutasi akun penampung Pakasir.
+  3. **Antrean Persetujuan Penarikan Dana (*Pending Payout Approvals*)**:
+     - Tabel daftar permohonan penarikan dana ke rekening bank dari Owner, Dokter, maupun Member.
+     - Tombol aksi: `[Tandai Berhasil & Masukkan Ref Bank]` atau `[Tolak & Kembalikan Saldo]`.
+  4. **Omni-Wallet Explorer**:
+     - Pencarian cepat seluruh dompet berdasarkan nama akun, email, nomor rekening `SW-XXXX`, atau tenant.
+     - Tombol darurat: `[Bekukan Dompet (Freeze)]` dan `[Aktifkan Kembali (Unfreeze)]`.
+     - Tombol koreksi saldo sistemik (*Balance Adjustment*) dengan modal isian berita acara audit.
+  5. **Circuit Breaker Saklar Darurat Platform**:
+     - Saklar pemutus sirkuit moneter darurat untuk mengunci transaksi keluar seluruh sistem dalam hitungan milidetik jika terdeteksi ancaman siber.
+- **Integrasi Tanpa Duplikasi**:
+  - Menempatkan antarmuka ini sebagai subtab organik di dalam tab platform Superadmin yang sudah memiliki rute guard L0 di [src/app/pages.js](file:///Users/m.aksaarsyad/Downloads/TIJARAH%202/src/app/pages.js).
+
+---
+
+### 11.5 Touchpoint 5: Pembayaran Langganan SaaS & Kuota Copilot AI (`src/app/pages/growth/PaymentModal.jsx`)
+- **Status Saat Ini**: Modal pembayaran perpanjangan paket Tijarah OS di [PaymentModal.jsx](file:///Users/m.aksaarsyad/Downloads/TIJARAH%202/src/app/pages/growth/PaymentModal.jsx) saat ini hanya mendukung saluran Pakasir (QRIS, VA Bank).
+- **Fitur yang Wajib Ditambahkan**:
+  1. Menambahkan kanal pembayaran **"S-Wallet Merchant"** pada daftar pilihan metode di modal tagihan langganan.
+  2. Jika saldo S-Wallet Owner mencukupi untuk membayar tagihan (misal Rp 2.500.000):
+     - Tampilkan kartu hijau konfirmasi: *"Saldo S-Wallet Anda: Rp 12.850.000 (Cukup)"*.
+     - Tombol 1-klik: *"Bayar Sekarang Menggunakan Saldo S-Wallet"*.
+     - Masukkan PIN Transaksi 6-Digit Owner untuk eksekusi pelunasan seketika.
+  3. Status langganan tenant langsung diperpanjang otomatis detik itu juga tanpa perlu menunggu verifikasi transfer bank.
+- **Integrasi Tanpa Duplikasi**:
+  - Menggunakan komponen `PaymentModal` yang sudah ada, hanya menambahkan kanal `swallet` ke dalam seleksi metode pembayaran yang memicu RPC pelunasan langganan.
+
+---
+
+### 11.6 Touchpoint 6: Penggajian Karyawan & Kas Bon Terintegrasi (`src/app/pages/ops/Payroll.jsx` & `MyPay.jsx`)
+- **Status Saat Ini**: Modul penggajian menghitung komponen gaji, lembur, dan absensi di [Payroll.jsx](file:///Users/m.aksaarsyad/Downloads/TIJARAH%202/src/app/pages/ops/Payroll.jsx), serta menampilkan slip gaji di [MyPay.jsx](file:///Users/m.aksaarsyad/Downloads/TIJARAH%202/src/app/pages/ops/MyPay.jsx), tetapi proses transfer gaji masih dilakukan manual di luar aplikasi.
+- **Fitur yang Wajib Ditambahkan**:
+  1. Tombol Aksi Massal di Payroll Owner: **"Cairkan Gaji ke S-Wallet Seluruh Karyawan (1-Click Bulk Payroll)"**.
+  2. Saat tombol ditekan:
+     - Sistem memvalidasi saldo S-Wallet Owner mencukupi total nominal payroll bersih (misal Rp 45.000.000).
+     - Owner memasukkan PIN Transaksi dan kode OTP 2FA.
+     - Dalam satu transaksi database atomik berpasangan, saldo Owner dipotong Rp 45.000.000 dan dikreditkan langsung ke masing-masing kantong S-Wallet karyawan sesuai nilai *take-home pay* di slip gaji mereka.
+  3. Saldo karyawan langsung bertambah seketika, dan karyawan menerima notifikasi pembayaran gaji di halaman profil mereka.
+  4. Pengajuan Kas Bon Staf:
+     - Karyawan dapat mengajukan kas bon di [MyPay.jsx](file:///Users/m.aksaarsyad/Downloads/TIJARAH%202/src/app/pages/ops/MyPay.jsx).
+     - Setelah disetujui GM dan Owner di [src/app/pages/owner/Approvals.jsx](file:///Users/m.aksaarsyad/Downloads/TIJARAH%202/src/app/pages/owner/Approvals.jsx), dana kas bon langsung cair ke S-Wallet karyawan detik itu juga.
+- **Integrasi Tanpa Duplikasi**:
+  - Tidak merombak rumus perhitungan gaji karyawan di [Payroll.jsx](file:///Users/m.aksaarsyad/Downloads/TIJARAH%202/src/app/pages/ops/Payroll.jsx); S-Wallet hanya bertindak sebagai mekanisme penyelesaian (*settlement rail*) pembayaran akhir.
+
+---
+
+### 11.7 Touchpoint 7: Automated Split Revenue Dokter & Tenaga Medis (`src/app/pages/clinic/Billing.jsx`)
+- **Status Saat Ini**: Modul kasir klinik di [Billing.jsx](file:///Users/m.aksaarsyad/Downloads/TIJARAH%202/src/app/pages/clinic/Billing.jsx) mencatat invoice tindakan dokter dan penjualan obat apotek, namun rekapitulasi jasa medis dokter dilakukan secara manual di akhir bulan.
+- **Fitur yang Wajib Ditambahkan**:
+  1. Saat tagihan pasien klinik dinyatakan lunas di kasir klinik (baik bayar via S-Wallet, QRIS, atau Kartu):
+     - Sistem secara otomatis menghitung porsi bagi hasil jasa medis dokter sesuai persentase yang disepakati (misal 30% dari biaya tindakan odontogram/cabut gigi).
+     - Sistem memicu stored procedure pembagian hasil: 70% masuk ke rekening S-Wallet klinik/owner, dan 30% langsung dikreditkan detik itu juga ke rekening S-Wallet pribadi dokter yang menangani.
+  2. Dokter yang bertugas dapat langsung melihat komisi tindakan masuk di dasbor S-Wallet mereka tanpa harus menunggu staf keuangan membuat laporan bulanan.
+- **Integrasi Tanpa Duplikasi**:
+  - Pengait (*hook*) bagi hasil dipasang pada fungsi penutupan billing klinik di [Billing.jsx](file:///Users/m.aksaarsyad/Downloads/TIJARAH%202/src/app/pages/clinic/Billing.jsx), memanfaatkan data `doctor_id` yang sudah tercatat pada rekam medis pasien.
+
+---
+
+### 11.8 Touchpoint 8: Rekonsiliasi Kas Bersih & Jurnal Akuntansi Berpasangan (`src/app/pages/ops/Recon.jsx` & `Journal.jsx`)
+- **Status Saat Ini**: Tabel rekonsiliasi kasir di [Recon.jsx](file:///Users/m.aksaarsyad/Downloads/TIJARAH%202/src/app/pages/ops/Recon.jsx) memverifikasi penerimaan uang tunai dan QRIS bank.
+- **Fitur yang Wajib Ditambahkan**:
+  1. Penambahan kanal **"S-Wallet Digital Settlement"** pada tabel rekonsiliasi kas kasir dan penutupan shift kasir di [src/app/pages/ops/Shift.jsx](file:///Users/m.aksaarsyad/Downloads/TIJARAH%202/src/app/pages/ops/Shift.jsx).
+  2. Karena seluruh transaksi S-Wallet tercatat secara digital dengan presisi kriptografis, kolom selisih kas (*cash discrepancy*) untuk metode S-Wallet selalu dijamin **Rp 0 (100% Klop)**.
+  3. Pemetaan Otomatis ke Jurnal Umum Akuntansi (`src/app/pages/ops/Journal.jsx`):
+     - **Saat Pengguna Top-Up S-Wallet**:
+       - Debit: `1102 - Kas Penampung Gateway Pakasir`
+       - Kredit: `2105 - Utang Saldo Dompet Digital Pengguna (S-Wallet Reserve)`
+     - **Saat Pelanggan Belanja di Kasir POS**:
+       - Debit: `2105 - Utang Saldo Dompet Digital Pengguna`
+       - Kredit: `4101 - Pendapatan Penjualan Merchant`
+     - **Saat Bagi Hasil Jasa Medis Dokter**:
+       - Debit: `5102 - Beban Jasa Medis Dokter`
+       - Kredit: `2106 - Utang Saldo Dompet Digital Dokter`
+     - **Saat Penarikan Dana (Withdrawal) ke Rekening Bank**:
+       - Debit: `2105 - Utang Saldo Dompet Digital Pengguna`
+       - Kredit: `1101 - Kas di Bank Platform`
+- **Integrasi Tanpa Duplikasi**:
+  - Jurnal diposting langsung menggunakan format standar entri jurnal yang telah digunakan di [Journal.jsx](file:///Users/m.aksaarsyad/Downloads/TIJARAH%202/src/app/pages/ops/Journal.jsx), menjaga keseimbangan neraca keuangan dan laba rugi bisnis tanpa membuat buku kas terpisah.
