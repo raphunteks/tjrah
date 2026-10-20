@@ -532,7 +532,7 @@ export default function Subscription() {
       {/* ──────── PUSAT NAVIGASI AKUN & TATA KELOLA SISTEM (DOCK BAWAH) ──────── */}
       <AccountTabs />
 
-      {/* ──────── MODAL PEMBAYARAN GATEWAY PAKASIR ──────── */}
+      {/* ──────── MODAL PEMBAYARAN GATEWAY DIGITAL ──────── */}
       {checkoutPlan && (
         <PaymentModal
           isOpen={Boolean(checkoutPlan)}

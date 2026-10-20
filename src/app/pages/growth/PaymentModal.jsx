@@ -37,7 +37,7 @@ export default function PaymentModal({ isOpen, onClose, plan, onSuccess, tenant,
 
   const [cfg, setCfg] = useState(() => getPakasirConfig());
 
-  // Hitung perkiraan biaya dari kalkulator fee Pakasir (dinamis / kustom)
+  // Hitung perkiraan biaya dari kalkulator fee gateway (dinamis / kustom)
   useEffect(() => {
     let active = true;
 
@@ -70,7 +70,7 @@ export default function PaymentModal({ isOpen, onClose, plan, onSuccess, tenant,
     };
   }, [basePrice]);
 
-  // Hitung mundur dan Auto-Polling Status Pembayaran Real-Time (Pakasir Live & Sandbox)
+  // Hitung mundur dan Auto-Polling Status Pembayaran Real-Time (Gateway Live & Sandbox)
   useEffect(() => {
     if (stage !== "instruction" || !txData) return;
 
@@ -79,7 +79,7 @@ export default function PaymentModal({ isOpen, onClose, plan, onSuccess, tenant,
       setCountdownSec((prev) => (prev > 0 ? prev - 1 : 0));
     }, 1000);
 
-    // 2. Auto-polling status ke API Pakasir tiap 3.5 detik (Real-Time Detection)
+    // 2. Auto-polling status ke API gateway tiap 3.5 detik (Real-Time Detection)
     let checking = false;
     const intervalPoll = setInterval(async () => {
       if (checking) return;
@@ -173,7 +173,7 @@ export default function PaymentModal({ isOpen, onClose, plan, onSuccess, tenant,
       setCountdownSec(selectedMethod === "qris" ? 15 * 60 : 24 * 3600);
       setStage("instruction");
     } catch (err) {
-      setErrorMsg(err.message || "Gagal memproses transaksi ke gateway Pakasir.");
+      setErrorMsg(err.message || "Gagal memproses transaksi ke gateway pembayaran digital.");
     } finally {
       setBusy(false);
     }
@@ -324,7 +324,7 @@ export default function PaymentModal({ isOpen, onClose, plan, onSuccess, tenant,
                 Metode Pembayaran
               </div>
 
-              {/* LIST CHANNEL PEMBAYARAN RESMI PAKASIR (DIKELOMPOKKAN SECARA ELEGAN) */}
+              {/* LIST CHANNEL PEMBAYARAN RESMI GATEWAY DIGITAL (DIKELOMPOKKAN SECARA ELEGAN) */}
               <div style={{ maxHeight: "320px", overflowY: "auto", paddingRight: "4px" }}>
                 {/* KELOMPOK 1: INSTAN & DIGITAL */}
                 <div
@@ -614,12 +614,12 @@ export default function PaymentModal({ isOpen, onClose, plan, onSuccess, tenant,
                     </div>
                     <div>
                       <div style={{ fontWeight: 700, fontSize: "0.95rem" }}>{activeChannel.name}</div>
-                      <div style={{ fontSize: "0.75rem", color: "#64748b" }}>Tautan Pembayaran Resmi Pakasir</div>
+                      <div style={{ fontSize: "0.75rem", color: "#64748b" }}>Tautan Pembayaran Digital Resmi</div>
                     </div>
                   </div>
 
                   <p style={{ margin: "0 0 0.85rem", fontSize: "0.82rem", color: "#475569", lineHeight: 1.5 }}>
-                    Silakan buka tautan pembayaran resmi di bawah ini untuk menyelesaikan tagihan via checkout Pakasir:
+                    Silakan buka tautan pembayaran resmi di bawah ini untuk menyelesaikan tagihan secara instan:
                   </p>
 
                   <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
@@ -658,7 +658,7 @@ export default function PaymentModal({ isOpen, onClose, plan, onSuccess, tenant,
                     style={{ display: "inline-flex", width: "100%", justifyContent: "center", textDecoration: "none" }}
                   >
                     <i className="fa-solid fa-arrow-up-right-from-square" aria-hidden="true" style={{ marginRight: "0.4rem" }} />
-                    Buka Halaman Checkout Pakasir
+                    Buka Halaman Pembayaran
                   </a>
                 </div>
               ) : (
@@ -723,7 +723,7 @@ export default function PaymentModal({ isOpen, onClose, plan, onSuccess, tenant,
               )}
 
               <div style={{ fontSize: "0.8rem", color: "#64748b", background: "#f1f5f9", padding: "0.6rem 0.85rem", borderRadius: "8px", width: "100%" }}>
-                No. Order: <strong>{txData.order_id}</strong> &bull; Gateway: Pakasir Cloud
+                No. Order: <strong>{txData.order_id}</strong> &bull; Gateway: Pembayaran Digital Terverifikasi
               </div>
 
               {/* TOMBOL SIMULASI CEPAT UNTUK DEMO & DEV */}

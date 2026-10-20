@@ -104,14 +104,14 @@ Subtab S-Wallet dirancang sebagai pusat kendali finansial mandiri dengan 7 modul
 
 ---
 
-### 3.2 Fitur 2: Top-Up Saldo Instan Terintegrasi Gateway Pakasir API v2
+### 3.2 Fitur 2: Top-Up Saldo Instan Terintegrasi Gateway Pembayaran Digital (QRIS & Virtual Account)
 Pengguna dapat mengisi ulang kantong S-Wallet mereka kapan saja dengan verifikasi otomatis tanpa perlu konfirmasi manual admin:
 1. **Kanal Pembayaran Otomatis**:
-   - **QRIS Dinamis**: Tampil instan di layar, dapat dipindai oleh semua aplikasi m-Banking (BCA, Mandiri Livin, BRImo, BNI) dan e-Wallet (GoPay, OVO, ShopeePay, DANA, LinkAja).
+   - **QRIS Dinamis Nasional**: Tampil instan di layar, dapat dipindai oleh semua aplikasi m-Banking (BCA, Mandiri Livin, BRImo, BNI) dan e-Wallet (GoPay, OVO, ShopeePay, DANA, LinkAja).
    - **Virtual Account 24 Jam**: Mendukung 9 bank nasional (BRI, BNI, CIMB Niaga, Maybank, Danamon, Neo Commerce, BSI, Muamalat, OCBC) dengan verifikasi otomatis 24/7.
    - **Payment Link**: Pembayaran kartu debit atau tautan *checkout* instan.
 2. **Kalkulator Nominal Cepat**: Pilihan nominal instan (Rp 50rb, Rp 100rb, Rp 250rb, Rp 500rb, Rp 1jt, Rp 2,5jt) atau bebas input nominal kustom (minimal Rp 10.000).
-3. **Penyelesaian Otomatis (< 2 Detik)**: Begitu pembayaran selesai di Pakasir, webhook serverless (`/api/webhook/pakasir`) secara otomatis memicu stored procedure `process_pakasir_wallet_topup` untuk mengkreditkan saldo ke S-Wallet pengguna secara *real-time*.
+3. **Penyelesaian Otomatis (< 2 Detik)**: Begitu pembayaran selesai di gateway bank, webhook serverless (`/api/webhook/pakasir`) secara otomatis memicu stored procedure `process_wallet_topup` untuk mengkreditkan saldo ke S-Wallet pengguna secara *real-time*.
 
 ---
 
@@ -268,7 +268,7 @@ Sesuai dengan matriks RBAC resmi Tijarah OS (BAB IV Blueprint: 20 Fitur x 5 Pera
 ### 4.6 POV 6: Member Pelanggan / Pasien (Level L5 - Customer Loyalty & Shopping Wallet)
 - **Perspektif**: Konsumen yang berbelanja produk makanan/minuman, retail, atau perawatan klinik.
 - **Wewenang Spesifik**:
-  - Mengisi saldo (*Top-Up*) mandiri melalui QRIS/VA Pakasir di portal pelanggan `/m`.
+  - Mengisi saldo (*Top-Up*) mandiri melalui QRIS Dinamis dan Virtual Account di portal pelanggan `/m`.
   - Menerbitkan **Kode Bayar 60 Detik** saat berada di depan meja kasir toko untuk transaksi nirsentuh.
   - Melakukan *Checkout 1-Klik* pesanan online di web portal tanpa perlu konfirmasi manual WhatsApp.
   - Mengirim saldo ke sesama teman/keluarga pengguna Tijarah (contoh: patungan belanja / *split bill*).
@@ -727,9 +727,9 @@ Untuk memastikan implementasi berjalan sistematis, aman, teruji, dan tanpa menim
   2. Komponen UI `src/app/pages/account/Wallet.jsx`:
      - **Gerbang Keamanan 2FA (Step-Up Challenge)**: Jika pengguna belum membuka brankas dalam 15 menit terakhir, sistem menampilkan layar tantangan kode 6-digit OTP authenticator. Tiket sesi disimpan aman di `sessionStorage` (kedaluwarsa otomatis dalam 15 menit).
      - **Kartu Brankas Bento Dinamis**: Menampilkan saldo aktif, saldo tertahan (*locked balance*), nomor rekening unik `SW-YYYYMM-XXXXXXXX`, tombol salin, dan kode QR personal.
-     - **Modal Top-Up Saldo Gateway**: Pemilihan nominal cepat atau input bebas, terhubung langsung ke kalkulator fee dinamis Pakasir API v2 (QRIS Dinamis & Virtual Account 9 bank).
+     - **Modal Top-Up Saldo Gateway**: Pemilihan nominal cepat atau input bebas, terhubung langsung ke gateway pembayaran digital terintegrasi (QRIS Dinamis & Virtual Account 9 bank).
      - **Modal Transfer P2P**: Validasi penerima (menampilkan kartu identitas nama, peran, dan foto untuk mencegah salah kirim) serta otorisasi PIN 6-digit.
-     - **Modal Tarik Dana Bank (Withdrawal)**: Pilihan rekening bank terdaftar, validasi KYC, kalkulasi biaya admin (Pakasir + Profit Platform), pengecekan jam kerja (Senin-Sabtu 09.00-16.00 WIB), otorisasi ganda TOTP 2FA + PIN transaksi.
+     - **Modal Tarik Dana Bank (Withdrawal)**: Pilihan rekening bank terdaftar, validasi KYC, kalkulasi biaya admin (modal pokok + Profit Platform), pengecekan jam kerja (Senin-Sabtu 09.00-16.00 WIB), otorisasi ganda TOTP 2FA + PIN transaksi.
      - **Generator Kode Bayar Dinamis Kasir**: Tampilan hitung mundur visual 60 detik dengan tombol salin angka OTP sekali pakai.
      - **Tabel Mutasi Buku Besar**: Filter riwayat lengkap (Top-up, Belanja POS, Bagi Hasil, Transfer, Penarikan) dan tombol cetak resi digital resmi Tijarah OS.
 * **Kriteria Selesai (Definition of Done)**: Seluruh aksi finansial pengguna berjalan lancar, brankas terkunci otomatis setelah 15 menit, dan tidak ada data fiktif statis.
@@ -927,9 +927,9 @@ Berdasarkan audit komprehensif terhadap seluruh file halaman, routing, RBAC, dan
      - Jika status 2FA sudah aktif, tampilkan modal input 6-digit kode OTP authenticator untuk menerbitkan tiket sesi brankas (berlaku 15 menit).
   3. Kartu Brankas Utama (Saldo Aktif, Saldo Tertahan, Nomor Rekening `SW-YYYYMM-XXXXXXXX`, Tombol Salin & Tampilkan QR).
   4. Modal Aksi Cepat:
-     - **Top-Up Saldo Gateway**: Terhubung langsung ke kalkulator fee dinamis Pakasir API v2 (QRIS & Virtual Account).
+     - **Top-Up Saldo Gateway**: Terhubung langsung ke gateway pembayaran digital terintegrasi (QRIS & Virtual Account).
      - **Transfer Antar Pengguna P2P**: Pencarian penerima berbasis email/no rekening, kartu preview foto & peran penerima, dan konfirmasi PIN transaksi 6-digit.
-     - **Tarik Dana ke Bank (Withdrawal)**: Pilihan rekening bank terdaftar, validasi nama KYC, kalkulasi biaya admin (Pakasir + Profit Platform), pengecekan jam operasional (09.00-16.00 WIB), otorisasi TOTP + PIN, dan saldo masuk ke status *Escrow Hold*.
+     - **Tarik Dana ke Bank (Withdrawal)**: Pilihan rekening bank terdaftar, validasi nama KYC, kalkulasi biaya admin (modal pokok + Profit Platform), pengecekan jam operasional (09.00-16.00 WIB), otorisasi TOTP + PIN, dan saldo masuk ke status *Escrow Hold*.
      - **Tampilkan Kode Bayar Kasir (Dynamic OTP 60s)**: Hitung mundur visual 60 detik dengan tombol salin cepat.
   5. Tabel Mutasi Buku Besar Lengkap & Cetak Resi Digital PDF/Thermal.
 - **Integrasi Tanpa Duplikasi**:
@@ -964,7 +964,7 @@ Berdasarkan audit komprehensif terhadap seluruh file halaman, routing, RBAC, dan
   2. Halaman dompet pelanggan yang ramah ponsel pintar (*mobile-optimized*):
      - Menampilkan saldo belanja aktif dan poin loyalty reward.
      - Tombol besar: *"Tampilkan Kode Bayar Kasir"* (menghasilkan angka 6 digit dengan timer melingkar 60 detik saat pelanggan antre di depan kasir toko).
-     - Tombol *"Isi Saldo Mandiri"* via QRIS Dinamis Pakasir langsung di layar ponsel.
+     - Tombol *"Isi Saldo Mandiri"* via QRIS Dinamis Nasional langsung di layar ponsel.
      - Fitur *"Kirim Saldo ke Teman"* (patungan belanja / *split bill*).
   3. Pembayaran 1-Klik pada Checkout Pesanan Mandiri di `/m/pesan`:
      - Pelanggan dapat memilih *"Bayar dengan S-Wallet (Saldo Cukup)"*.
@@ -1156,7 +1156,7 @@ TIJARAH 2/
    - Saklar darurat Global Circuit Breaker.
 4. **`src/member/pages/Wallet.jsx` (Dompet Member Mobile-First)**:
    - Tampilan dompet ringkas dan responsif untuk pelanggan retail, restoran, dan pasien klinik.
-   - Menampilkan kartu loyalitas member, saldo koin/rupiah, generator kode bayar 60 detik kasir dengan animasi lingkaran mundur (*countdown ring*), dan tombol Top-Up mandiri QRIS Dinamis Pakasir.
+   - Menampilkan kartu loyalitas member, saldo koin/rupiah, generator kode bayar 60 detik kasir dengan animasi lingkaran mundur (*countdown ring*), dan tombol Top-Up mandiri QRIS Dinamis Nasional.
 5. **`supabase/migrations/20261020_swallet_core.sql` (Skema Basis Data Produksi)**:
    - Tabel `public.wallets`, `public.wallet_transactions`, `public.wallet_ledger`, `public.wallet_payment_tokens`, `public.wallet_withdrawals`, dan `public.wallet_platform_settings`.
    - Stored procedures atomik:
@@ -1165,3 +1165,234 @@ TIJARAH 2/
      - `request_wallet_withdrawal`: Pemindahan saldo ke `locked_balance` dengan validasi jam operasional (09.00-16.00 WIB) dan perhitungan split margin keuntungan platform.
      - `execute_approved_payout`: Pemotongan saldo `locked_balance` permanen dan transfer profit platform ke `SW-PLATFORM-REVENUE`.
      - `admin_adjust_wallet_balance`: Intervensi darurat saldo oleh Superadmin dengan berita acara audit.
+
+---
+
+## 13. PETA ROUTING LENGKAP SELURUH FITUR S-WALLET & INTEGRASI WORKFLOWS
+
+### 13.1 Kebijakan Mutlak White-Label Frontend (Zero Pakasir di Frontend)
+Sesuai arahan privasi dan arsitektur produk:
+1. **Pemisahan Lapisan Identitas Gateway**:
+   - **Backend / Internal Serverless (Private Superadmin Only)**: Nama modul internal seperti `api/pakasir/*`, environment variable `PAKASIR_API_KEY`, dan webhook endpoint `/api/webhook/pakasir` tetap berjalan di server dan hanya diketahui oleh Superadmin/Owner.
+   - **Frontend / Client UI (100% White-Label)**: DILARANG KERAS menampilkan nama "Pakasir", "Pakasir Gateway", atau turunannya di layar pengguna kasir, dokter, staf, member, maupun merchant.
+2. **Kamus Standar Terminologi UI Frontend**:
+   - Saluran QRIS -> **"QRIS Dinamis Nasional"** / **"QRIS Instan"**
+   - Saluran Virtual Account -> **"Virtual Account 24 Jam (BRI, BNI, Mandiri, BCA, Permata, Danamon, CIMB, BSI, Maybank)"**
+   - Form Isi Saldo -> **"Top-Up Saldo Gateway Digital"**
+   - Penarikan Saldo -> **"Tarik Dana ke Rekening Bank (Transfer Otomatis)"**
+   - Pengaturan Gateway Superadmin -> **"Konfigurasi Payment Gateway Digital"** / **"Kredensial Merchant Provider"**
+   - Validasi Struk Kasir & Invoice -> **"Gateway: Pembayaran Digital Terverifikasi"**
+
+---
+
+### 13.2 Tabel Peta Routing Utama (Main Application Routes)
+
+| Rute URL (Path) | Peran (RBAC) | Komponen Berkas | Deskripsi & Tujuan Navigasi |
+| :--- | :--- | :--- | :--- |
+| `/app/akun/wallet` | L0, L1, L2, L3, L4 | `src/app/pages/account/Wallet.jsx` | Dasbor Brankas S-Wallet Terpadu seluruh pengguna bisnis (Owner, GM, Staf, Dokter). Terlindungi oleh gerbang 2FA Step-Up Challenge 15 menit. |
+| `/app/paket?sub=wallet-master` | L0 (Superadmin) | `src/app/pages/superadmin/WalletMaster.jsx` | God-Mode Financial Command Center Superadmin: Pengatur tarif & profit margin, radar likuiditas, antrean payout, omni-explorer, circuit breaker. |
+| `/m/wallet` | L5 (Member) | `src/member/pages/Wallet.jsx` | Portal Mandiri Dompet Digital Member Pelanggan: Cek saldo, kode bayar POS 60s, topup QRIS mandiri, kirim saldo teman. |
+| `/app/akun/security` | L0, L1, L2, L3, L4 | `src/app/pages/account/Security.jsx` | Pengaturan Keamanan Akun: Aktivasi TOTP 2FA (Google/Microsoft/Authy Authenticator) dan pembuatan/perubahan PIN Transaksi 6-Digit. |
+
+---
+
+### 13.3 Peta Sub-Fitur & Query Parameters Dasbor S-Wallet (`/app/akun/wallet`)
+
+Halaman `/app/akun/wallet` mengelola status tampilan melalui parameter URL query `?tab={id}` sehingga pengguna dapat melakukan bookmark atau navigasi langsung:
+
+```
+/app/akun/wallet
+├── ?tab=ringkasan   (Default: Kartu Saldo Bento, Rekening SW-XXXX, Quick Actions, Status KYC)
+├── ?tab=mutasi      (Tabel Mutasi Buku Besar Lengkap, Filter Kategori, Filter Tanggal, Cetak Resi)
+├── ?tab=rekening    (Daftar Rekening Bank Penarikan, Tambah Rekening Baru, Validasi Nama Rekening)
+└── ?tab=limit       (Batas Transaksi Harian, Batas Penarikan Harian, Masa Sesi 2FA, Ganti PIN)
+```
+
+#### Rincian Sub-Fitur per Tab:
+1. **`?tab=ringkasan`**:
+   - Saldo Aktif Dapat Ditarik `{rupiah(wallet.balance)}`
+   - Saldo Tertahan / Escrow `{rupiah(wallet.locked_balance)}`
+   - Nomor Rekening Brankas Unik `SW-YYYYMM-XXXXXXXX` + Tombol Salin
+   - Tombol Buka Kode QR Personal untuk Terima Transfer
+   - Tombol Aksi Cepat: `[Isi Saldo]`, `[Transfer Saldo]`, `[Tarik ke Bank]`, `[Kode Bayar Kasir]`
+   - Kartu Status Keamanan: Status 2FA Terverifikasi & Sisa Waktu Tiket Sesi Brankas (Hitung Mundur 15 Menit)
+2. **`?tab=mutasi`**:
+   - Tabel Buku Besar Ganda (*Double-Entry Ledger*)
+   - Filter Kategori: `all` (Semua), `topup` (Isi Saldo), `pos_payment` (Belanja POS), `transfer_in` (Transfer Masuk), `transfer_out` (Transfer Keluar), `medical_split` (Bagi Hasil Medis), `payroll` (Gaji), `withdrawal` (Penarikan Bank)
+   - Filter Rentang Tanggal (Hari ini, 7 Hari Terakhir, Bulan Ini, Kustom)
+   - Kolom: Waktu, No. Referensi, Kategori, Keterangan, Status, Mutasi (+ / -), Saldo Akhir, Aksi Cetak Resi
+3. **`?tab=rekening`**:
+   - Daftar rekening bank dan e-wallet tujuan penarikan yang telah terdaftar
+   - Form penambahan rekening baru: Nama Bank (BRI, BNI, Mandiri, BCA, BSI, dll), Nomor Rekening, Nama Pemilik Rekening
+   - Validasi KYC: Nama pemilik rekening bank wajib klop dengan nama profil pengguna
+4. **`?tab=limit`**:
+   - Indikator pemakaian limit transaksi harian: `{rupiah(used_today)}` dari limit `{rupiah(max_daily_limit)}`
+   - Indikator limit penarikan otomatis harian: `{rupiah(withdrawn_today)}` dari `{rupiah(max_withdrawal_limit)}`
+   - Tombol pintas: Ubah PIN Transaksi 6-Digit & Kelola Authenticator 2FA
+
+---
+
+### 13.4 Peta Modal Action Triggers (URL Hash & Query Action)
+
+Untuk memudahkan pemanggilan modal dari halaman lain maupun interaksi tombol di dalam dasbor, modal aksi S-Wallet mendukung trigger query parameter `?action={nama_aksi}`:
+
+| Trigger Action | Nama Modal | Deskripsi Alur & Validasi |
+| :--- | :--- | :--- |
+| `?action=topup` | Modal Isi Saldo Gateway | 1. Input nominal bebas atau pilih nominal cepat (Rp 50rb, 100rb, 250rb, 500rb, 1jt, 2.5jt).<br>2. Pilih kanal: QRIS Dinamis atau Virtual Account 9 Bank.<br>3. Kalkulasi biaya administrasi gateway real-time.<br>4. Tampilkan kode bayar / QRIS dengan countdown 15 menit.<br>5. Auto-detect pelunasan via webhook (< 2 detik). |
+| `?action=transfer` | Modal Transfer P2P | 1. Input no. rekening `SW-YYYYMM-XXXXXXXX` atau email penerima.<br>2. Verifikasi instan: Tampilkan kartu identitas penerima (Nama, Peran, Tenant, Foto Profil).<br>3. Input nominal transfer & catatan.<br>4. Otorisasi PIN Transaksi 6-digit.<br>5. Eksekusi atomik RPC PostgreSQL (Saldo pengirim berkurang, saldo penerima bertambah detik itu juga). |
+| `?action=withdraw` | Modal Tarik Dana Otomatis | 1. Pilih rekening bank tujuan terverifikasi.<br>2. Masukkan nominal penarikan (Min. Rp 15.000).<br>3. Sistem memeriksa jam operasional (Senin-Sabtu 09.00-16.00 WIB) dan menampilkan estimasi waktu proses.<br>4. Sistem menghitung biaya penarikan (modal pokok gateway + profit platform).<br>5. Otorisasi ganda: 6-Digit TOTP Authenticator + PIN Transaksi 6-Digit.<br>6. Saldo dipindahkan ke `locked_balance` (Escrow Hold) dan tiket disbursement diterbitkan. |
+| `?action=pay-code` | Modal Kode Bayar Kasir | 1. Generate token dinamis 6 digit via stored procedure `generate_payment_token`.<br>2. Tampilan angka tebal monospaced berjarak jelas: `XXX - XXX`.<br>3. Lingkaran hitung mundur animasi 60 detik.<br>4. Tombol Salin Cepat.<br>5. Token hangus seketika setelah 60 detik atau setelah didebet oleh kasir toko. |
+| `?action=security` | Modal Konfigurasi Kredensial | Pintasan cepat untuk memperbarui PIN Transaksi 6-digit atau mengonfigurasi ulang aplikasi Authenticator. |
+
+---
+
+### 13.5 Peta Sub-Fitur Superadmin Command Center (`/app/paket?sub=wallet-master`)
+
+Konsol pengawasan dan kendali moneter Superadmin L0 mengelola status pengawasan melalui parameter `?view={id}`:
+
+```
+/app/paket?sub=wallet-master
+├── ?view=radar      (Default: Radar Likuiditas Total, Agregat Saldo Sistem vs Cadangan Riil)
+├── ?view=pricing    (Pengaturan Biaya Penarikan Otomatis Tier 1-3 & Margin Profit Website)
+├── ?view=payouts    (Antrean Eksekusi Payout Bank, Status Jam Operasional, Tombol Eksekusi)
+├── ?view=explorer   (Omni-Wallet Explorer, Cari Seluruh Dompet, Freeze/Unfreeze, Saldo Audit)
+└── ?view=circuit    (Global Circuit Breaker: Saklar Pemutus Transaksi Darurat)
+```
+
+#### Rincian Sub-Fitur Superadmin:
+1. **`?view=radar`**:
+   - Total Saldo Pengguna Beredar: `{sum(wallets.balance)}`
+   - Total Saldo Tertahan (Escrow Payout): `{sum(wallets.locked_balance)}`
+   - Total Brankas Keuntungan Platform: `{wallets.platform_revenue.balance}`
+   - Cadangan Dana Riil di Akun Gateway: `{gateway.cash_balance}`
+   - Selisih Likuiditas: Menampilkan badge hijau *"100% SINKRON (Selisih Rp 0)"*.
+2. **`?view=pricing`**:
+   - Form konfigurasi tarif penarikan otomatis per tier:
+     * Tier 1 (Rp 15rb - Rp 4,99jt): Modal pokok Rp 3.000 + Input Margin Platform -> Biaya Final User
+     * Tier 2 (Rp 5jt - Rp 9,99jt): Modal pokok Rp 5.000 + Input Margin Platform -> Biaya Final User
+     * Tier 3 (Rp 10jt ke atas): Modal pokok Rp 7.000 + Input Margin Platform -> Biaya Final User
+   - Pengaturan jam operasional (Ikuti jadwal resmi gateway: Senin-Sabtu 09.00-16.00 WIB)
+   - Tombol Simpan Konfigurasi & Reset ke Standar Default
+3. **`?view=payouts`**:
+   - Filter status: `all`, `pending`, `scheduled`, `completed`, `rejected`
+   - Tabel antrean: ID Penarikan, Waktu Pengajuan, Pengguna/Tenant, Bank & No. Rekening, Nominal, Biaya Modal, Profit Platform, Status
+   - Tombol Aksi: `[Eksekusi Payout]` (Memicu API disbursement) dan `[Tolak & Kembalikan Saldo]` (Mengembalikan dana dari `locked_balance` ke `balance`)
+4. **`?view=explorer`**:
+   - Pencarian dompet lintas tenant berdasarkan Nama, Email, Nomor `SW-XXXX`, atau ID Tenant
+   - Tabel profil dompet: Avatar, Nama, Role, Tenant, Nomor Dompet, Saldo Aktif, Saldo Terkunci, Status (Aktif / Frozen)
+   - Aksi: Tombol 1-klik `[Freeze / Bekukan]` dan `[Unfreeze]`
+   - Aksi Intervensi: Tombol `[Koreksi Saldo]` dengan modal wajib pengisian berita acara audit
+5. **`?view=circuit`**:
+   - Status Sistem Transaksi: Normal (Hijau) / Lockdown (Merah)
+   - Saklar Global Circuit Breaker: Jika diaktifkan, seluruh API transfer, penarikan, dan debet kasir POS diblokir seketika pada level database.
+
+---
+
+### 13.6 Peta Portal Mandiri Member Pelanggan (`/m/wallet` & `/m/pesan`)
+
+| Rute URL (Path) | Peran | Komponen Berkas | Deskripsi Alur & Aksi |
+| :--- | :--- | :--- | :--- |
+| `/m/wallet` | L5 (Member) | `src/member/pages/Wallet.jsx` | Dompet mandiri pelanggan: Kartu saldo poin loyalty, saldo rupiah, generator kode bayar 60 detik kasir POS, tombol top-up QRIS mandiri, riwayat belanja. |
+| `/m/pesan` | L5 (Member) | `src/member/pages/Order.jsx` | Checkout mandiri menu toko/restoran: Pada pilihan pembayaran, tampilkan opsi 1-klik *"Bayar dengan Saldo S-Wallet"*. Pesanan langsung terkonfirmasi seketika. |
+| `/m/kartu` | L5 (Member) | `src/member/pages/Card.jsx` | Kartu identitas member digital: Tertera barcode / QR nomor member dan nomor rekening `SW-YYYYMM-XXXXXXXX` untuk top-up via kasir toko. |
+
+---
+
+### 13.7 Peta Integrasi Rute Lintas Modul (8 Touchpoints Inter-Module Routing)
+
+Seluruh modul operasional dihubungkan secara harmonis ke S-Wallet tanpa ada logika ganda:
+
+```
+[ Modul POS Kasir: /app/kasir ] ──(method=swallet + token 60s)──> [ S-Wallet Core RPC ]
+[ Portal Member : /m/pesan ]    ──(1-klik debet saldo)──────────> [ S-Wallet Core RPC ]
+[ Tagihan SaaS  : /app/paket ]  ──(debet saldo merchant)────────> [ S-Wallet Core RPC ]
+[ Payroll Massal: /app/gaji ]   ──(bulk disbursement)──────────> [ S-Wallet Core RPC ]
+[ Kas Bon Staf  : /app/slip ]   ──(pencairan approval)──────────> [ S-Wallet Core RPC ]
+[ Billing Medis : /app/medis ]  ──(auto-split jasa 30%)─────────> [ S-Wallet Core RPC ]
+[ Shift Kasir   : /app/shift ]  ──(settlement saldo digital)────> [ S-Wallet Core RPC ]
+[ Akuntansi     : /app/jurnal ] ──(auto-posting debit-kredit)───> [ S-Wallet Core RPC ]
+```
+
+1. **Kasir POS (`/app/kasir` -> `src/app/pages/ops/Payment.jsx`)**:
+   - Trigger: Tombol bayar kasir memilih `method: "swallet"`
+   - Param Input: `token: "123456"` (kode 6 digit pelanggan)
+   - Handler: Memanggil RPC `execute_pos_wallet_payment(order_id, token)`
+   - Auto-Refund: Jika nota di-void di `/app/pesanan`, sistem memicu RPC refund otomatis ke saldo member.
+2. **Member Checkout (`/m/pesan` -> `src/member/pages/Order.jsx`)**:
+   - Trigger: Tombol *"Selesaikan Pesanan & Bayar via S-Wallet"*
+   - Handler: Memanggil RPC `execute_pos_wallet_payment` dengan token sesi member internal.
+3. **Tagihan SaaS (`/app/langganan` -> `src/app/pages/growth/PaymentModal.jsx`)**:
+   - Trigger: Modal pembayaran paket langganan memilih metode *"S-Wallet Saldo Merchant"*
+   - Handler: Memotong saldo S-Wallet Owner dan memperpanjang masa aktif tenant di basis data.
+4. **Payroll Penggajian (`/app/penggajian` -> `src/app/pages/ops/Payroll.jsx`)**:
+   - Trigger: Tombol *"Cairkan Payroll ke S-Wallet Karyawan"*
+   - Handler: Membaca rekap slip gaji dan memotong saldo Owner secara massal untuk dikreditkan ke masing-masing rekening S-Wallet staf.
+5. **Kas Bon Staf (`/app/slip` -> `src/app/pages/ops/MyPay.jsx`)**:
+   - Trigger: Tombol *"Ajukan Kas Bon"* di slip gaji
+   - Rute Approval: Disetujui Owner di `/app/persetujuan` (`src/app/pages/owner/Approvals.jsx`)
+   - Handler: Dana kas bon langsung cair ke S-Wallet staf.
+6. **Billing Dokter Odontogram (`/app/tagihan` -> `src/app/pages/clinic/Billing.jsx`)**:
+   - Trigger: Pelunasan tagihan rawat jalan klinik gigi/umum
+   - Handler: Menghitung persentase jasa medis (misal 30%) dan mengkreditkan porsi dokter langsung ke dompet dokter yang merawat.
+7. **Penutupan Shift Kasir (`/app/shift` & `/app/rekonsiliasi`)**:
+   - Trigger: Kasir melakukan rekap akhir shift di `/app/shift`
+   - Kolom Rekonsiliasi: Menampilkan baris penerimaan digital S-Wallet dengan selisih kas selalu Rp 0.
+8. **Jurnal Umum Akuntansi (`/app/jurnal` -> `src/app/pages/ops/Journal.jsx`)**:
+   - Trigger: Setiap transaksi S-Wallet yang berstatus `completed`
+   - Handler: Otomatis memposting entri debet-kredit pada akun aktiva, utang saldo, dan pendapatan komisi.
+
+---
+
+### 13.8 Matriks Hak Akses RBAC per Rute & Sub-Fitur
+
+| Rute / Sub-Fitur | Superadmin (L0) | Owner (L1) | GM (L2) | Staf / Kasir (L3) | Dokter (L4) | Member (L5) |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| `/app/akun/wallet` (Dasbor Brankas) | Izinkan | Izinkan | Izinkan | Izinkan | Izinkan | Dialihkan ke `/m` |
+| `?action=topup` (Isi Saldo Gateway) | Izinkan | Izinkan | Izinkan | Izinkan | Izinkan | Izinkan (via `/m`) |
+| `?action=transfer` (Transfer P2P) | Izinkan | Izinkan | Izinkan | Izinkan | Izinkan | Izinkan (ke Member) |
+| `?action=withdraw` (Tarik Dana Bank) | Izinkan | Izinkan | Izinkan | Izinkan | Izinkan | Dibatasi / KYC |
+| `?action=pay-code` (Generate Token 60s) | Izinkan | Izinkan | Izinkan | Izinkan | Izinkan | Izinkan (via `/m`) |
+| `/app/paket?sub=wallet-master` | Izinkan (Penuh) | Tolak (403) | Tolak (403) | Tolak (403) | Tolak (403) | Tolak (403) |
+| `?view=pricing` (Ubah Tarif & Profit) | Izinkan | Tolak (403) | Tolak (403) | Tolak (403) | Tolak (403) | Tolak (403) |
+| `?view=payouts` (Eksekusi Payout) | Izinkan | Tolak (403) | Tolak (403) | Tolak (403) | Tolak (403) | Tolak (403) |
+| `?view=explorer` (Freeze & Saldo Audit) | Izinkan | Tolak (403) | Tolak (403) | Tolak (403) | Tolak (403) | Tolak (403) |
+| `?view=circuit` (Circuit Breaker) | Izinkan | Tolak (403) | Tolak (403) | Tolak (403) | Tolak (403) | Tolak (403) |
+| `/m/wallet` (Portal Member) | Dialihkan ke `/app` | Dialihkan ke `/app` | Dialihkan ke `/app` | Dialihkan ke `/app` | Dialihkan ke `/app` | Izinkan |
+| Opsi Bayar Kasir POS (`method=swallet`) | Izinkan | Izinkan | Izinkan | Izinkan (Kasir) | N/A | Pelanggan Bayar |
+| Bulk Payroll ke S-Wallet Karyawan | N/A | Izinkan | Izinkan | Tolak (403) | Tolak (403) | Tolak (403) |
+| Auto-Split Jasa Medis Dokter | N/A | Izinkan | Izinkan | N/A | Penerima Otomatis | N/A |
+
+---
+
+### 13.9 State Machine Keamanan Navigasi: Step-Up 2FA & Auto-Lock 15 Menit
+
+Alur kendali akses saat pengguna membuka URL `/app/akun/wallet`:
+
+```
+                    [ Pengguna Membuka /app/akun/wallet ]
+                                      |
+                                      v
+                      [ Apakah Pengguna Terotentikasi? ]
+                           /                    \
+                         (Tidak)               (Ya)
+                         /                        \
+           [ Redirect ke /login ]           [ Periksa Status 2FA di Profil ]
+                                                 /                  \
+                                            (Belum Aktif)          (Sudah Aktif)
+                                               /                        \
+                        [ Tampilkan Banner Wajib 2FA ]     [ Cek Tiket Sesi Brankas ]
+                        [ & Tombol Buka /app/akun/security ]     /              \
+                                                            (Valid <15m)    (Kedaluwarsa / Baru)
+                                                                /                  \
+                                                 [ Buka Dasbor Brankas ]    [ Tampilkan Tantangan 2FA ]
+                                                 [ (Akses Penuh Saldo) ]    [ (Input 6-Digit OTP App) ]
+                                                                                   |
+                                                                             (Validasi Sukses)
+                                                                                   |
+                                                                                   v
+                                                                       [ Terbitkan Tiket 15 Menit ]
+                                                                       [ di sessionStorage ]
+```
+
+Dengan arsitektur ini, seluruh rute, sub-fitur, modal action triggers, dan hak akses RBAC telah terpetakan secara lengkap dan presisi, siap dieksekusi secara berjenjang dimulai dari **FASE 1** begitu pengguna memberikan perintah eksekusi.
+

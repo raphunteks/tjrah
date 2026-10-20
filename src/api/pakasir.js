@@ -67,7 +67,7 @@ export function savePakasirConfig(cfg) {
   try {
     localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(cfg));
   } catch (e) {
-    console.warn("Gagal menyimpan konfigurasi Pakasir:", e);
+    console.warn("Gagal menyimpan konfigurasi payment gateway:", e);
   }
   emitFeesUpdated(cfg);
 }
@@ -222,12 +222,12 @@ export async function createPakasirTransaction({ orderId, method, amount, custom
         if (errJson?.message === "Method not available") {
           if (cfg.isSandbox) {
             console.warn(
-              `[Pakasir Sandbox] Kanal ${method} belum diaktifkan di dashboard merchant, beralih ke simulasi sandbox.`
+              `[Gateway Sandbox] Kanal ${method} belum diaktifkan di dashboard merchant, beralih ke simulasi sandbox.`
             );
           } else {
             const chName = PAYMENT_CHANNELS.find((c) => c.id === method)?.name || method;
             throw new Error(
-              `Kanal ${chName} saat ini belum diaktifkan di dashboard merchant Pakasir. Silakan pilih QRIS Dinamis, BRI VA, BNI VA, BNC VA, Maybank VA, atau Payment Link.`
+              `Kanal ${chName} saat ini belum diaktifkan. Silakan pilih QRIS Dinamis, BRI VA, BNI VA, BNC VA, Maybank VA, atau Virtual Account lainnya.`
             );
           }
         } else if (errJson?.message) {
@@ -239,7 +239,7 @@ export async function createPakasirTransaction({ orderId, method, amount, custom
     if (!cfg.isSandbox && err.message && !err.message.includes("Failed to fetch")) {
       throw err;
     }
-    console.warn("[Pakasir] Panggilan API live dialihkan ke simulator:", err.message);
+    console.warn("[Payment Gateway] Panggilan API live dialihkan ke simulator:", err.message);
   }
 
   // Simulator Fallback jika API Key offline atau mode dev
@@ -304,7 +304,7 @@ export async function checkPakasirStatus(txnId, orderId) {
         return data;
       }
     } catch (e) {
-      console.warn("[Pakasir] Gagal cek status API:", e);
+      console.warn("[Payment Gateway] Gagal cek status API:", e);
     }
   }
 

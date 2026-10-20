@@ -59,7 +59,7 @@ export default function Plans() {
   const [edit, setEdit] = useState(null);
   const [err, setErr] = useState(null);
 
-  // 1. Kredensial Gateway Pakasir
+  // 1. Kredensial Gateway Pembayaran
   const [pakasirConfig, setPakasirConfig] = useState(getPakasirConfig);
   const [showApiKey, setShowApiKey] = useState(false);
   const [copiedWebhook, setCopiedWebhook] = useState(false);
@@ -110,11 +110,11 @@ export default function Plans() {
 
   const tenantName = (id) => tenants.data?.find((t) => t.id === id)?.name ?? (id || "—");
 
-  // Handler Simpan Konfigurasi Gateway Pakasir
+  // Handler Simpan Konfigurasi Gateway Pembayaran
   const handleSaveGateway = (e) => {
     e.preventDefault();
     savePakasirConfig(pakasirConfig);
-    setGatewayNotice("Konfigurasi gateway Pakasir berhasil diperbarui.");
+    setGatewayNotice("Konfigurasi gateway pembayaran berhasil diperbarui.");
     setTimeout(() => setGatewayNotice(null), 4000);
   };
 
@@ -170,12 +170,12 @@ export default function Plans() {
     setTimeout(() => setFeeNotice(null), 4000);
   };
 
-  // Handler Reset Tarif ke Standar Resmi Pakasir
+  // Handler Reset Tarif ke Standar Resmi Provider
   const handleResetFeesToDefault = () => {
-    if (!confirm("Kembalikan seluruh tarif kanal pembayaran ke standar resmi Pakasir?")) return;
+    if (!confirm("Kembalikan seluruh tarif kanal pembayaran ke standar resmi provider gateway?")) return;
     const def = resetProviderFeesToDefault();
     setFeeSettings(def);
-    setFeeNotice("Seluruh tarif kanal berhasil direset ke standar resmi Pakasir (QRIS 1% & VA/Link Rp 3.500 flat).");
+    setFeeNotice("Seluruh tarif kanal berhasil direset ke standar resmi provider gateway (QRIS 1% & VA/Link Rp 3.500 flat).");
     setTimeout(() => setFeeNotice(null), 4000);
   };
 
@@ -187,16 +187,16 @@ export default function Plans() {
     setTimeout(() => setFeeNotice(null), 4000);
   };
 
-  // Handler Uji Sinkronisasi API Pakasir Live
+  // Handler Uji Sinkronisasi API Gateway Live
   const handleTestFeeApi = async () => {
-    setApiPreviewNotice("Menghubungi endpoint API Pakasir /payment-fee/2500000...");
+    setApiPreviewNotice("Menghubungi endpoint API gateway /payment-fee/2500000...");
     try {
       const fees = await calculateChannelFees(2500000);
       setApiPreviewNotice(
-        `Hasil Kalkulasi Pakasir (Simulasi Paket 2.5jt): QRIS=${rupiah(fees.qris || 0)}, BRI VA=${rupiah(fees.bri_va || 0)}, BNI VA=${rupiah(fees.bni_va || 0)}, Maybank VA=${rupiah(fees.maybank_va || 0)}, Payment Link=${rupiah(fees.payment_link || 0)}.`
+        `Hasil Kalkulasi Gateway (Simulasi Paket 2.5jt): QRIS=${rupiah(fees.qris || 0)}, BRI VA=${rupiah(fees.bri_va || 0)}, BNI VA=${rupiah(fees.bni_va || 0)}, Maybank VA=${rupiah(fees.maybank_va || 0)}, Payment Link=${rupiah(fees.payment_link || 0)}.`
       );
     } catch (e) {
-      setApiPreviewNotice("Gagal memuat API Pakasir: " + e.message);
+      setApiPreviewNotice("Gagal memuat API gateway: " + e.message);
     }
     setTimeout(() => setApiPreviewNotice(null), 9000);
   };
@@ -318,7 +318,7 @@ export default function Plans() {
       <PageHead
         eyebrow="Superadmin · Fitur 1"
         title="Paket & tagihan"
-        desc="Pusat tata kelola paket langganan SaaS, gateway pembayaran Pakasir, kalkulasi tarif & akumulasi provider, serta audit transaksi."
+        desc="Pusat tata kelola paket langganan SaaS, gateway pembayaran digital terintegrasi, kalkulasi tarif & akumulasi provider, serta audit transaksi."
         actions={
           activeSubtab === "plans" &&
           can(role, 1, "c") && (
@@ -349,7 +349,7 @@ export default function Plans() {
       >
         {[
           { id: "plans", label: "Paket Langganan", icon: "fa-cubes" },
-          { id: "gateway", label: "Gateway Pakasir & Webhook", icon: "fa-plug" },
+          { id: "gateway", label: "Gateway Pembayaran & Webhook", icon: "fa-plug" },
           { id: "fees", label: "Tarif & Akumulasi Provider", icon: "fa-chart-pie" },
           { id: "transactions", label: "Transaksi Pembayaran (CRUD)", icon: "fa-receipt" },
           { id: "referrals", label: "Kebijakan Referral", icon: "fa-gift" },
@@ -460,11 +460,11 @@ export default function Plans() {
         </>
       )}
 
-      {/* -------- SUBTAB 2: GATEWAY PAKASIR & WEBHOOK -------- */}
+      {/* -------- SUBTAB 2: GATEWAY PEMBAYARAN & WEBHOOK -------- */}
       {activeSubtab === "gateway" && (
-        <Panel title="Konfigurasi Payment Gateway Pakasir (API v2)">
+        <Panel title="Konfigurasi Payment Gateway Digital (API v2)">
           <p className="d-text d-muted" style={{ margin: "0 0 1rem", fontSize: "0.85rem" }}>
-            Kelola kredensial resmi akun Pakasir, status mode sandbox/live, dan endpoint Webhook URL untuk sinkronisasi pelunasan paket langganan secara instan.
+            Kelola kredensial resmi merchant gateway, status mode sandbox/live, dan endpoint Webhook URL untuk sinkronisasi pelunasan paket langganan secara instan.
           </p>
 
           {gatewayNotice && (
@@ -483,7 +483,7 @@ export default function Plans() {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "1rem" }}>
               <div>
                 <label className="d-label" style={{ display: "block", marginBottom: "0.35rem" }}>
-                  Project Slug Pakasir
+                  Merchant Slug / Project Identifier
                 </label>
                 <input
                   className="d-input"
@@ -496,7 +496,7 @@ export default function Plans() {
 
               <div>
                 <label className="d-label" style={{ display: "block", marginBottom: "0.35rem" }}>
-                  API Key Pakasir
+                  API Secret Key Gateway
                 </label>
                 <div style={{ display: "flex", gap: "0.4rem" }}>
                   <input
@@ -548,7 +548,7 @@ export default function Plans() {
             {/* TAMPILAN TAUTAN WEBHOOK URL SIAP SALIN */}
             <div style={{ background: "#f8fafc", padding: "1rem", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
               <label className="d-label" style={{ display: "block", marginBottom: "0.35rem", fontWeight: 700 }}>
-                Tautan Webhook URL Resmi (Untuk Didaftarkan di Dashboard Pakasir)
+                Tautan Webhook URL Resmi (Daftarkan ke Dashboard Provider)
               </label>
               <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
                 <input
@@ -570,7 +570,7 @@ export default function Plans() {
                 </button>
               </div>
               <p className="d-text d-muted" style={{ margin: "0.35rem 0 0", fontSize: "0.75rem" }}>
-                Tempelkan URL ini di halaman detail proyek Pakasir. Serverless handler otomatis memvalidasi header <code>X-Secret</code> dan merespons dengan HTTP 200 OK saat pembayaran selesai.
+                Tempelkan URL ini di pengaturan webhook merchant gateway Anda. Handler otomatis memvalidasi header <code>X-Secret</code> dan merespons dengan HTTP 200 OK saat pembayaran selesai.
               </p>
             </div>
 
@@ -666,19 +666,19 @@ export default function Plans() {
                   type="button"
                   className="d-btn d-btn--ghost d-btn--sm"
                   onClick={handleResetFeesToDefault}
-                  title="Kembalikan semua tarif ke standar resmi Pakasir"
+                  title="Kembalikan semua tarif ke standar resmi provider"
                 >
                   <i className="fa-solid fa-rotate-left" aria-hidden="true" style={{ marginRight: "0.35rem" }} />
-                  Reset ke Default Pakasir
+                  Reset ke Default Provider
                 </button>
                 <button
                   type="button"
                   className="d-btn d-btn--ghost d-btn--sm"
                   onClick={handleTestFeeApi}
-                  title="Uji coba response live API Pakasir /payment-fee"
+                  title="Uji coba response live API gateway /payment-fee"
                 >
                   <i className="fa-solid fa-cloud-bolt" aria-hidden="true" style={{ marginRight: "0.35rem" }} />
-                  Uji API Pakasir
+                  Uji Koneksi Gateway
                 </button>
               </div>
             }
@@ -691,7 +691,7 @@ export default function Plans() {
 
             {apiPreviewNotice && (
               <div className="d-note d-note--info" style={{ marginBottom: "1rem" }} role="status">
-                <strong>Info API Pakasir:</strong> {apiPreviewNotice}
+                <strong>Info API Gateway:</strong> {apiPreviewNotice}
               </div>
             )}
 
@@ -708,7 +708,7 @@ export default function Plans() {
                       checked={pakasirConfig.useDynamicFee}
                       onChange={() => setPakasirConfig({ ...pakasirConfig, useDynamicFee: true })}
                     />
-                    <span>Kalkulasi Otomatis Dinamis dari API Pakasir (payment-fee)</span>
+                    <span>Kalkulasi Otomatis Dinamis dari Server Gateway (payment-fee)</span>
                   </label>
                   <label className="d-check">
                     <input
@@ -777,7 +777,7 @@ export default function Plans() {
                             <span style={{ fontSize: "0.85rem", fontWeight: 700 }}>{ch.name}</span>
                           </div>
                           <Badge tone={isDefault ? "neutral" : "info"}>
-                            {isDefault ? "Default Pakasir" : "Kustom"}
+                            {isDefault ? "Default Provider" : "Kustom"}
                           </Badge>
                         </div>
 
@@ -815,7 +815,7 @@ export default function Plans() {
                         </div>
 
                         <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.74rem", color: "#64748b" }}>
-                          <span>Standar Pakasir: {ch.defaultFee}{ch.feeType === "percent" ? "%" : " flat"}</span>
+                          <span>Standar Provider: {ch.defaultFee}{ch.feeType === "percent" ? "%" : " flat"}</span>
                           <span style={{ fontWeight: 600, color: "#0f766e" }}>Simulasi 2.5jt: {rupiah(sampleEst)}</span>
                         </div>
                       </div>
@@ -927,7 +927,7 @@ export default function Plans() {
                             <button
                               type="button"
                               className="d-btn d-btn--ghost d-btn--sm"
-                              title="Sinkronisasi status dengan Pakasir API"
+                              title="Sinkronisasi status dengan server gateway"
                               onClick={() => handleSyncStatus(t)}
                             >
                               <i className="fa-solid fa-arrows-rotate" aria-hidden="true" />
