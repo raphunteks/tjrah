@@ -354,7 +354,7 @@ export default function Security() {
                     <strong style={{ color: strengthColor }}>{strengthLabel}</strong>
                   </div>
                   <div style={{ height: "4px", background: "var(--color-rule)", borderRadius: "2px", overflow: "hidden" }}>
-                    <div style={{ height: "100%", width: `${(strengthScore / 5) * 100}%`, background: strengthColor, transition: "width 0.3s ease" }} />
+                    <div style={{ height: "100%", width: "100%", transform: `scaleX(${strengthScore / 5})`, transformOrigin: "left center", background: strengthColor, transition: "transform 0.3s ease" }} />
                   </div>
                 </div>
               )}
@@ -587,9 +587,11 @@ export default function Security() {
               <div
                 style={{
                   height: "100%",
-                  width: `${(countdown / 30) * 100}%`,
+                  width: "100%",
+                  transform: `scaleX(${countdown / 30})`,
+                  transformOrigin: "left center",
                   background: countdown <= 5 ? "var(--color-danger)" : "var(--color-accent)",
-                  transition: "width 1s linear"
+                  transition: "transform 1s linear"
                 }}
               />
             </div>
