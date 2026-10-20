@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "./AuthProvider.jsx";
 import { Link, useRouter } from "../lib/router.jsx";
 import { ROLE_LABEL, ROLE_LEVEL } from "../lib/rbac-matrix.js";
+import { executeRecaptchaVerification } from "../lib/recaptcha.js";
 import "../styles/dashboard.css";
 
 // Hanya tampil saat `npm run dev` dengan Supabase asli (dibuang dari build produksi). Email tetap; kata sandi = DEMO_PASSWORD di .env.local.
@@ -65,6 +66,14 @@ export default function Login() {
     setBusy(true);
     setErr(null);
     try {
+      // Verifikasi keamanan Google reCAPTCHA v3 untuk submit formulir manual
+      if (!creds && api?.mode !== "demo") {
+        const recaptchaRes = await executeRecaptchaVerification("login");
+        if (!recaptchaRes.ok) {
+          throw new Error(recaptchaRes.error || "Verifikasi keamanan (reCAPTCHA) gagal. Silakan coba kembali.");
+        }
+      }
+
       const rawEmail = (creds?.email ?? email).trim();
       const emailToUse = rawEmail.replace(/@demo\.tijarah\.id$/i, "@demo.harum.in");
       const passToUse = creds?.password ?? password;
@@ -232,6 +241,12 @@ export default function Login() {
           <button type="submit" className="d-btn d-btn--primary d-btn--block" disabled={busy || !api}>
             {busy ? "Memeriksa…" : "Masuk"}
           </button>
+          <div style={{ marginTop: "1rem", textAlign: "center", fontSize: "0.72rem", color: "var(--color-ink-muted, #94a3b8)", lineHeight: "1.4" }}>
+            <span>Situs ini dilindungi oleh Google reCAPTCHA v3. </span>
+            <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" style={{ color: "var(--color-ink-muted, #94a3b8)", textDecoration: "underline" }}>Privasi</a>
+            <span> &amp; </span>
+            <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer" style={{ color: "var(--color-ink-muted, #94a3b8)", textDecoration: "underline" }}>Persyaratan</a>
+          </div>
         </form>
 
         {import.meta.env.DEV && api?.mode === "supabase" && (

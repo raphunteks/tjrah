@@ -31,6 +31,24 @@ function sendJson(res, statusCode, data) {
   res.end(JSON.stringify(data));
 }
 
+const recaptchaRateLimit = new Map();
+const RECAPTCHA_RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const RECAPTCHA_MAX_ATTEMPTS = 5;
+
+function checkRecaptchaRateLimit(ip) {
+  if (!ip) return false;
+  const now = Date.now();
+  const history = recaptchaRateLimit.get(ip) || [];
+  const valid = history.filter((ts) => now - ts < RECAPTCHA_RATE_LIMIT_WINDOW_MS);
+  if (valid.length >= RECAPTCHA_MAX_ATTEMPTS) {
+    recaptchaRateLimit.set(ip, valid);
+    return true;
+  }
+  valid.push(now);
+  recaptchaRateLimit.set(ip, valid);
+  return false;
+}
+
 export function inviteSmtpPlugin() {
   return {
     name: "vite-plugin-invite-smtp",
@@ -39,13 +57,78 @@ export function inviteSmtpPlugin() {
         const url = req.url?.split("?")[0];
 
         // Preflight CORS
-        if (req.method === "OPTIONS" && (url === "/api/invite-account" || url === "/api/test-smtp" || url === "/api/hermes-dispatch" || url === "/api/send-test-email" || url === "/api/send-email")) {
+        if (req.method === "OPTIONS" && (url === "/api/invite-account" || url === "/api/test-smtp" || url === "/api/hermes-dispatch" || url === "/api/send-test-email" || url === "/api/send-email" || url === "/api/verify-recaptcha")) {
           res.statusCode = 204;
           res.setHeader("Access-Control-Allow-Origin", "*");
           res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
           res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
           return res.end();
         }
+
+        // Endpoint: Verifikasi Google reCAPTCHA v3 Server-Side dengan Rate Limiting
+        if (url === "/api/verify-recaptcha" && req.method === "POST") {
+          const clientIp = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket?.remoteAddress || "127.0.0.1";
+          if (checkRecaptchaRateLimit(clientIp)) {
+            return sendJson(res, 429, {
+              ok: false,
+              error: "Terlalu banyak percobaan masuk dari alamat IP ini. Silakan tunggu 1 menit sebelum mencoba kembali."
+            });
+          }
+
+          try {
+            const body = await parseJsonBody(req);
+            const { token, action } = body || {};
+            const secretKey = (process.env.RECAPTCHA_SECRET_KEY || "").replace(/^['"](.*)['"]$/, "$1");
+            const enabled = process.env.VITE_RECAPTCHA_ENABLED !== "false";
+
+            if (!enabled || !secretKey) {
+              return sendJson(res, 200, { ok: true, score: 1.0, bypassed: true });
+            }
+
+            if (!token) {
+              return sendJson(res, 400, { ok: false, error: "Token verifikasi reCAPTCHA wajib disertakan." });
+            }
+
+            const params = new URLSearchParams();
+            params.append("secret", secretKey);
+            params.append("response", token);
+            if (clientIp) params.append("remoteip", clientIp);
+
+            const googleRes = await fetch("https://www.google.com/recaptcha/api/siteverify", {
+              method: "POST",
+              headers: { "Content-Type": "application/x-www-form-urlencoded" },
+              body: params.toString()
+            });
+
+            if (!googleRes.ok) {
+              throw new Error(`Google reCAPTCHA HTTP ${googleRes.status}`);
+            }
+
+            const data = await googleRes.json();
+            if (data.success && (data.score === undefined || data.score >= 0.5)) {
+              return sendJson(res, 200, {
+                ok: true,
+                score: data.score ?? 1.0,
+                action: data.action || action,
+                hostname: data.hostname
+              });
+            }
+
+            return sendJson(res, 403, {
+              ok: false,
+              error: "Verifikasi reCAPTCHA mendeteksi aktivitas mencurigakan atau skor risiko tinggi.",
+              score: data.score ?? 0,
+              codes: data["error-codes"] || []
+            });
+          } catch (err) {
+            console.error("[reCAPTCHA Vite Plugin Error]", err);
+            return sendJson(res, 500, {
+              ok: false,
+              error: "Gagal memverifikasi token ke server Google. Silakan coba kembali."
+            });
+          }
+        }
+
 
         // Endpoint: Verifikasi Status SMTP
         if (url === "/api/test-smtp" && req.method === "GET") {
