@@ -686,65 +686,96 @@ $$;
 
 ---
 
-## 10. HASIL AUDIT KAPABILITAS PENARIKAN PAKASIR & ARSITEKTUR SAFETY-FIRST WITHDRAWAL (ANTI-CHEAT / ANTI-HACK)
+## 10. INTEGRASI PENARIKAN OTOMATIS PAKASIR, ATURAN RESMI, DAN PENGATURAN TARIF & KEUNTUNGAN WEBSITE DI SUPERADMIN
 
-### 10.1 Fakta Resmi Penarikan Dana di Gateway Pakasir (API v2)
-Berdasarkan audit dokumentasi resmi arsitektur dan endpoint Pakasir API v2 (`app.pakasir.com/api/v2`):
-1. **Pakasir Adalah Inbound Payment Gateway Murni**:
-   - Pakasir dirancang khusus untuk memfasilitasi penerimaan dana masuk (*inbound payment acceptance*) dari pelanggan ke merchant menggunakan QRIS Dinamis dan Virtual Account bank nasional.
-   - Pakasir API v2 **TIDAK MEMILIKI** endpoint publik untuk penarikan dana otomatis (*Disbursement / Payout API*) yang dapat dipicu langsung melalui skrip kode.
-2. **Jadwal & Mekanisme Pencairan (*Settlement*) Resmi Pakasir**:
-   - Seluruh dana transaksi penjualan yang berhasil masuk ke akun penampungan Pakasir tersedia untuk ditarik pada hari berikutnya (**H+1**) setelah pukul 12.00 WIB.
-   - Penarikan saldo riil dari akun Pakasir ke rekening bank pemilik usaha dilakukan melalui **Dashboard Web Merchant Pakasir** dengan estimasi waktu pemrosesan antara 5 hingga 30 menit pada jam operasional perbankan.
-
----
-
-### 10.2 Arsitektur Staged Dual-Approval Payout (Penarikan Aman Berlapis S-Wallet)
-Karena ketiadaan Payout API otomatis langsung di Pakasir, S-Wallet menerapkan arsitektur **Staged Dual-Approval Payout Engine** berstandar keamanan perbankan tinggi (*Safety First*) untuk memastikan tidak ada celah kecurangan, manipulasi angka, maupun eksploitasi kode:
-
-```
-[ PENGGUNA AJUKAN TARIK SALDO KE BANK ]
-                   |
-     (1) Input 6-Digit TOTP 2FA (RFC 6238)
-     (2) Input PIN Transaksi 6-Digit
-     (3) Cek Validasi Rekening Bank KYC
-                   |
-                   v
-    [ ATOMIC BALANCE ISOLATION (DATABASE) ]
-    - SELECT ... FOR UPDATE (Row-Level Lock)
-    - Pindahkan Dana: balance -> locked_balance
-    - Validasi CHECK (balance >= 0)
-                   |
-                   v
-    [ TIKET PENARIKAN DIBUAT (STATUS: PENDING) ]
-    Tercatat di antrean Superadmin/Finance
-                   |
-                   v
-   [ REVIEW & KLIRING OLEH SUPERADMIN / FINANCE ]
-     /                                         \
-[ DISETUJUI & DITRANSFER ]               [ DITOLAK / SENGKETA ]
-- Transfer via m-Banking/Pakasir Dash     - Input Alasan Penolakan
-- Input Nomor Referensi Bank             - Auto-Reversal Saldo:
-- locked_balance Terpotong Permanen        locked_balance -> balance
-- Status: COMPLETED                      - Status: REJECTED
-```
+### 10.1 Fakta & Aturan Resmi Penarikan Otomatis Pakasir (Berdasarkan Sistem Pakasir)
+Sesuai rilis dan pengumuman resmi platform penarikan Pakasir:
+1. **Definisi Penarikan Otomatis**:
+   - Penarikan otomatis dilakukan di mana saldo ditransfer langsung ke rekening bank atau e-wallet pengguna melalui API pihak ketiga (disbursement network perbankan nasional).
+2. **Jadwal & Waktu Pengajuan**:
+   - Pengajuan penarikan otomatis dapat diajukan pada: **Senin - Sabtu, pukul 09.00 - 16.00 WIB**.
+   - Pengajuan di luar jam operasional (hari Minggu atau malam hari) akan diantrekan oleh sistem dan diproses secara berurutan pada jendela jam operasional berikutnya.
+3. **Struktur Biaya Pokok Admin Pakasir (Base Cost Modal)**:
+   Pakasir mengenakan biaya pokok administrasi penarikan berdasarkan tingkatan (tier) nominal penarikan:
+   - **Tier 1 (Rp 15.000 s/d Rp 4.999.999)**: Biaya pokok Pakasir = **Rp 3.000**
+   - **Tier 2 (Rp 5.000.000 s/d Rp 9.999.999)**: Biaya pokok Pakasir = **Rp 5.000**
+   - **Tier 3 (Rp 10.000.000 ke atas)**: Biaya pokok Pakasir = **Rp 7.000**
 
 ---
 
-### 10.3 Garansi Keamanan Tingkat Tinggi (Anti-Cheat, Anti-Hack & Zero-Exploit)
+### 10.2 Fitur Pengaturan Tarif di Superadmin & Model Keuntungan Platform (Platform Profit Engine)
 
-Untuk menjamin agar pengguna tidak dapat melakukan kecurangan (*cheat*), penggandaan dana (*double spending*), maupun rekayasa permintaan jaringan (*network tampering*), sistem menerapkan 8 benteng perlindungan:
+Agar pemilik platform Tijarah OS dapat memperoleh aliran pendapatan baru (*monetization revenue stream*) dari setiap aktivitas penarikan saldo, sistem S-Wallet dilengkapi dengan **Modul Pengaturan Tarif Penarikan Dinamis di Konsol Superadmin**:
+
+```
++-------------------------------------------------------------------------------------------------------+
+| SUPERADMIN: PENGATURAN BIAYA PENARIKAN DANA OTOMATIS & MARGIN KEUNTUNGAN WEBSITE                      |
++-------------------------------------------------------------------------------------------------------+
+| [ FORMULA MONETISASI PENARIKAN OTOMATIS ]                                                             |
+|   Biaya Dikenakan ke User = Biaya Modal Pokok Pakasir + Margin Keuntungan Bersih Platform            |
++-------------------------------------------------------------------------------------------------------+
+| TIER NOMINAL PENARIKAN      | BIAYA POKOK PAKASIR | MARGIN PROFIT PLATFORM | BIAYA DITAMPILKAN KE USER |
+| --------------------------- | ------------------- | ---------------------- | ------------------------- |
+| Tier 1: Rp 15rb - Rp 4,99jt | Rp 3.000 (Tetap)    | [ Rp 2.000 ] (Ubah)    | Rp 5.000 (Otomatis)       |
+| Tier 2: Rp 5jt - Rp 9,99jt  | Rp 5.000 (Tetap)    | [ Rp 3.000 ] (Ubah)    | Rp 8.000 (Otomatis)       |
+| Tier 3: Rp 10jt ke atas     | Rp 7.000 (Tetap)    | [ Rp 5.000 ] (Ubah)    | Rp 12.000 (Otomatis)      |
++-------------------------------------------------------------------------------------------------------+
+| [ KONTROL OPERASIONAL ]                                                                               |
+|   Status Penarikan Otomatis Platform : [ AKTIF / DIIZINKAN ]                                          |
+|   Mode Jam Operasional               : [ IKUTI JADWAL PAKASIR (Senin-Sabtu 09.00 - 16.00 WIB) ]       |
+|   Tindakan di Luar Jam Operasional   : [ TAMPUNG DI ANTREAN TERJADWAL & BERI NOTIFIKASI ]             |
+|   Rekening Penampung Profit Platform : SW-PLATFORM-REVENUE (Superadmin Master Wallet)                 |
+|                                                                                                       |
+|   [ SIMPAN KONFIGURASI TARIF ]               [ RESET KE TARIF DEFAULT ]                               |
++-------------------------------------------------------------------------------------------------------+
+```
+
+#### Mekanisme Pembagian Dana (*Split Allocation*) Saat Penarikan Dieksekusi:
+Misalkan seorang Dokter atau Owner Merchant menarik dana sebesar Rp 2.000.000 (Tier 1):
+1. **Total Saldo yang Dipotong dari Dompet Pengguna**:
+   - Nominal Penarikan: Rp 2.000.000
+   - Biaya Admin Pengguna: Rp 5.000
+   - Total Terpotong: **Rp 2.005.000**
+2. **Penyaluran Finansial Real-Time**:
+   - Dana Ditransfer ke Rekening Bank Pengguna: **Rp 2.000.000** (Utuh)
+   - Biaya Pokok Dibayarkan ke Gateway Pakasir: **Rp 3.000** (Via API Pihak Ketiga)
+   - Margin Keuntungan Website: **Rp 2.000** langsung otomatis masuk ke kantong `SW-PLATFORM-REVENUE` milik Superadmin platform.
+3. **Pencatatan Buku Besar Ganda Akuntansi**:
+   - Debit: `2105 - Utang Saldo Dompet Digital Pengguna` sebesar Rp 2.005.000
+   - Kredit: `1101 - Kas/Bank Penampung Platform` sebesar Rp 2.003.000 (Rp 2jt ke user + Rp 3rb ke Pakasir)
+   - Kredit: `4201 - Pendapatan Administrasi Penarikan Platform` sebesar Rp 2.000 (Keuntungan Bersih Website)
+
+---
+
+### 10.3 Manajemen Jam Operasional & Antrean Cerdas (*Smart Queue Window*)
+1. **Pengecekan Waktu Nyata Berbasis Zona Waktu Indonesia Barat (WIB)**:
+   - Sistem membaca jam server saat permintaan penarikan dikirim.
+   - **Kondisi A (Di Dalam Jam Operasional: Senin - Sabtu, 09.00 - 16.00 WIB)**:
+     - Permintaan langsung diteruskan ke API penarikan otomatis pihak ketiga.
+     - Status transaksi langsung berubah menjadi `processing` dan berhasil dalam hitungan menit (*Instant Real-Time Payout*).
+   - **Kondisi B (Di Luar Jam Operasional: Hari Minggu, Hari Libur Tertentu, atau Pukul 16.01 - 08.59 WIB)**:
+     - Sistem memunculkan banner informatif transparan di modal penarikan:
+       *"Pengajuan penarikan di luar jam operasional resmi (Senin - Sabtu, 09.00 - 16.00 WIB). Saldo Anda telah diamankan dan transaksi akan diproses otomatis saat jam operasional buka kembali pada hari kerja berikutnya pukul 09.00 WIB."*
+     - Saldo pengguna langsung dipindahkan secara atomik ke `locked_balance` agar tidak dapat dibelanjakan ganda.
+     - Tiket masuk ke status `scheduled_in_queue`.
+     - *Cron Job* / Scheduler platform otomatis memicu eksekusi antrean tepat pada pukul 09.05 WIB di hari kerja berikutnya.
+
+---
+
+### 10.4 Arsitektur Safety-First Anti-Cheat & Anti-Hack Penarikan Saldo
+
+Untuk menjamin agar pengguna tidak dapat melakukan kecurangan (*cheat*), manipulasi angka saldo (*balance hacking*), maupun eksploitasi celah jaringan (*network race attack*), sistem menerapkan 8 benteng perlindungan:
 
 1. **Row-Level Database Locking (`SELECT ... FOR UPDATE`)**:
-   - Setiap kali terjadi penarikan dana atau transfer antar dompet, baris rekening pengguna di tabel `public.wallets` dikunci seketika dalam transaksi atomik PostgreSQL.
-   - Jika pengguna sengaja membuka 10 tab peramban sekaligus atau menjalankan skrip otomatis *multithreaded* untuk menekan tombol tarik dana serentak, transaksi ke-2 hingga ke-10 akan antre secara serial dan langsung digagalkan karena saldo telah dipindahkan ke `locked_balance` pada milidetik pertama.
+   - Setiap kali terjadi penarikan dana, baris rekening pengguna di tabel `public.wallets` dikunci seketika dalam transaksi atomik PostgreSQL.
+   - Jika pengguna sengaja membuka 10 tab peramban sekaligus atau menjalankan bot multi-thread untuk menekan tombol tarik dana serentak, transaksi ke-2 hingga ke-10 akan antre secara serial dan langsung digagalkan karena saldo telah dipindahkan ke `locked_balance` pada milidetik pertama.
 2. **Integritas Kendala Tingkat Basis Data (Database Invariant Constraints)**:
-   - Kolom `balance` dan `locked_balance` dilindungi oleh constraint ketat:
+   - Kolom `balance` dan `locked_balance` dilindungi oleh constraint ketat di level PostgreSQL:
      ```sql
      check (balance >= 0)
      check (locked_balance >= 0)
      ```
-   - Tidak ada celah bagi injeksi API, script peretas, atau *payload modification* untuk membuat saldo pengguna menjadi minus. Setiap mutasi yang melanggar ketentuan matematis ini akan otomatis di-*rollback* oleh database engine.
+   - Tidak ada celah bagi injeksi API, script peretas, atau modifikasi DevTools untuk membuat saldo pengguna menjadi minus. Setiap mutasi yang melanggar ketentuan matematis ini akan otomatis di-*rollback* oleh database engine.
 3. **Pemisahan Saldo Terisolasi (Escrow Isolation Model)**:
    - Begitu permohonan penarikan diajukan, nominal tersebut langsung ditarik dari `balance` aktif dan diamankan di brankas `locked_balance`.
    - Pengguna tidak dapat membelanjakan atau mentransfer nominal yang sedang dalam proses penarikan.
@@ -754,13 +785,13 @@ Untuk menjamin agar pengguna tidak dapat melakukan kecurangan (*cheat*), penggan
    - Pengguna hanya diperbolehkan menarik dana ke rekening bank yang nama pemiliknya telah terverifikasi cocok dengan nama resmi profil pengguna.
    - Hal ini mencegah pelaku peretasan akun mengalihkan dana ke rekening pihak ketiga atau rekening penampung anonim.
 6. **Limit Nominal Penarikan Harian & Jeda Waktu Pengamanan (Cooling-off Period)**:
-   - Limit penarikan default dibatasi maksimal Rp 25.000.000 per hari per akun.
+   - Limit penarikan default dibatasi maksimal Rp 25.000.000 per hari per akun (dapat disesuaikan oleh Superadmin).
    - Diterapkan jeda waktu minimal 15 menit antara satu pengajuan penarikan dengan pengajuan berikutnya pada akun yang sama guna mencegah pengurasan saldo kilat.
 7. **Jejak Audit Buku Besar Abadi (Immutable Double-Entry Ledger)**:
    - Tidak ada mutasi yang dapat dihapus (`No DELETE operations allowed`).
    - Setiap pergerakan saldo mencatat saldo awal (`balance_before`) dan saldo akhir (`balance_after`) yang wajib klop dengan selisih mutasi.
-8. **Opsi Payout Otomatis Pihak Ketiga (Engine Outbound Masa Depan)**:
-   - Jika di masa mendatang pemilik platform menghendaki penarikan dana ke rekening bank 100% otomatis detik demi detik tanpa campur tangan staf admin, platform Tijarah OS dapat menambahkan konektor ke agregator disbursement resmi Bank Indonesia seperti **Flip for Business API** atau **Xendit Disbursements API** sebagai mitra penyedia *outbound transfer engine*.
+8. **Circuit Breaker Darurat di Superadmin**:
+   - Jika sistem mendeteksi lonjakan penarikan tidak wajar atau anomali saldo, Superadmin dapat mengaktifkan *Circuit Breaker* global dalam 1-klik untuk membekukan semua penarikan platform sementara waktu.
 
 ---
 
@@ -798,7 +829,7 @@ Berdasarkan audit komprehensif terhadap seluruh file halaman, routing, RBAC, dan
   4. Modal Aksi Cepat:
      - **Top-Up Saldo Gateway**: Terhubung langsung ke kalkulator fee dinamis Pakasir API v2 (QRIS & Virtual Account).
      - **Transfer Antar Pengguna P2P**: Pencarian penerima berbasis email/no rekening, kartu preview foto & peran penerima, dan konfirmasi PIN transaksi 6-digit.
-     - **Tarik Dana ke Bank (Withdrawal)**: Pilihan rekening bank terdaftar, validasi nama KYC, otorisasi TOTP + PIN, dan saldo masuk ke status *Escrow Hold*.
+     - **Tarik Dana ke Bank (Withdrawal)**: Pilihan rekening bank terdaftar, validasi nama KYC, kalkulasi biaya admin (Pakasir + Profit Platform), pengecekan jam operasional (09.00-16.00 WIB), otorisasi TOTP + PIN, dan saldo masuk ke status *Escrow Hold*.
      - **Tampilkan Kode Bayar Kasir (Dynamic OTP 60s)**: Hitung mundur visual 60 detik dengan tombol salin cepat.
   5. Tabel Mutasi Buku Besar Lengkap & Cetak Resi Digital PDF/Thermal.
 - **Integrasi Tanpa Duplikasi**:
@@ -847,17 +878,21 @@ Berdasarkan audit komprehensif terhadap seluruh file halaman, routing, RBAC, dan
 - **Status Saat Ini**: Konsol Superadmin di [Plans.jsx](file:///Users/m.aksaarsyad/Downloads/TIJARAH%202/src/app/pages/superadmin/Plans.jsx) hanya menampilkan daftar paket langganan dan kuota tenant. Belum ada pengawasan moneter terpusat.
 - **Fitur yang Wajib Ditambahkan**:
   1. Subtab baru **"S-Wallet Master Command Center"** pada panel Superadmin.
-  2. **Radar Likuiditas Platform Terpusat**:
-     - Agregat saldo seluruh akun di platform: `Total Saldo Sistem = Dompet Owner + Dompet GM + Dompet Staf + Dompet Dokter + Dompet Member`.
+  2. **Pengatur Tarif & Margin Keuntungan Penarikan Website**:
+     - Form konfigurasi margin profit platform per tingkatan tier (Tier 1, 2, 3).
+     - Monitoring total pendapatan platform dari akumulasi potongan fee penarikan.
+  3. **Radar Likuiditas Platform Terpusat**:
+     - Agregat saldo seluruh akun di platform: `Total Saldo Sistem = Dompet Owner + Dompet GM + Dompet Staf + Dompet Dokter + Dompet Member + Brankas Revenue Platform`.
      - Sinkronisasi dengan mutasi akun penampung Pakasir.
-  3. **Antrean Persetujuan Penarikan Dana (*Pending Payout Approvals*)**:
+  4. **Antrean Persetujuan & Eksekusi Penarikan Dana (*Pending Payout Approvals & Execution*)**:
      - Tabel daftar permohonan penarikan dana ke rekening bank dari Owner, Dokter, maupun Member.
-     - Tombol aksi: `[Tandai Berhasil & Masukkan Ref Bank]` atau `[Tolak & Kembalikan Saldo]`.
-  4. **Omni-Wallet Explorer**:
+     - Status jam kerja (09.00 - 16.00 WIB) dan tombol eksekusi via gateway / transfer manual.
+     - Tombol aksi: `[Eksekusi Payout & Masukkan Ref Bank]` atau `[Tolak & Kembalikan Saldo]`.
+  5. **Omni-Wallet Explorer**:
      - Pencarian cepat seluruh dompet berdasarkan nama akun, email, nomor rekening `SW-XXXX`, atau tenant.
      - Tombol darurat: `[Bekukan Dompet (Freeze)]` dan `[Aktifkan Kembali (Unfreeze)]`.
      - Tombol koreksi saldo sistemik (*Balance Adjustment*) dengan modal isian berita acara audit.
-  5. **Circuit Breaker Saklar Darurat Platform**:
+  6. **Circuit Breaker Saklar Darurat Platform**:
      - Saklar pemutus sirkuit moneter darurat untuk mengunci transaksi keluar seluruh sistem dalam hitungan milidetik jika terdeteksi ancaman siber.
 - **Integrasi Tanpa Duplikasi**:
   - Menempatkan antarmuka ini sebagai subtab organik di dalam tab platform Superadmin yang sudah memiliki rute guard L0 di [src/app/pages.js](file:///Users/m.aksaarsyad/Downloads/TIJARAH%202/src/app/pages.js).
@@ -923,7 +958,110 @@ Berdasarkan audit komprehensif terhadap seluruh file halaman, routing, RBAC, dan
        - Debit: `5102 - Beban Jasa Medis Dokter`
        - Kredit: `2106 - Utang Saldo Dompet Digital Dokter`
      - **Saat Penarikan Dana (Withdrawal) ke Rekening Bank**:
-       - Debit: `2105 - Utang Saldo Dompet Digital Pengguna`
-       - Kredit: `1101 - Kas di Bank Platform`
+       - Debit: `2105 - Utang Saldo Dompet Digital Pengguna` (sebesar total ditarik + fee)
+       - Kredit: `1101 - Kas di Bank Platform / Gateway` (sebesar nominal ditarik + modal Pakasir)
+       - Kredit: `4201 - Pendapatan Administrasi Penarikan Platform` (margin keuntungan website)
 - **Integrasi Tanpa Duplikasi**:
   - Jurnal diposting langsung menggunakan format standar entri jurnal yang telah digunakan di [Journal.jsx](file:///Users/m.aksaarsyad/Downloads/TIJARAH%202/src/app/pages/ops/Journal.jsx), menjaga keseimbangan neraca keuangan dan laba rugi bisnis tanpa membuat buku kas terpisah.
+
+---
+
+## 12. STRUKTUR FOLDER, BERKAS, & ARSITEKTUR KODE WORKSPACE LENGKAP (PRODUCTION-READY ARCHITECTURE)
+
+Berikut adalah cetak biru susunan direktori dan berkas lengkap di dalam workspace `TIJARAH 2` yang mencakup implementasi S-Wallet secara modular, aman, dan siap produksi:
+
+```
+TIJARAH 2/
+├── S-WALLET.MD                                # Spesifikasi Master Arsitektur S-Wallet
+├── .env.local                                 # Kredensial Lingkungan Aman (Tervalidasi Nol Kebocoran)
+│
+├── supabase/
+│   └── migrations/
+│       └── 20261020_swallet_core.sql          # Migrasi DDL: wallets, transactions, ledger, tokens, withdrawals, settings
+│
+├── api/
+│   ├── pakasir/
+│   │   ├── fee.js                             # Kalkulator Fee Gateway Pakasir (Serverless Handler)
+│   │   └── payout.js                          # Endpoint Payout Otomatis Pakasir (Disbursement Proxy)
+│   └── webhook/
+│       ├── pakasir.js                         # Webhook Resmi Penerimaan Dana Inbound (Top-Up S-Wallet)
+│       └── pakasir-payout.js                  # Webhook Callback Notifikasi Status Penarikan Bank
+│
+├── src/
+│   ├── api/
+│   │   ├── pakasir.js                         # Klien Gateway Pakasir Inbound (API v2)
+│   │   └── swallet.js                         # Klien Resmi S-Wallet Engine: RPC wrapper, 2FA Challenge, Token 60s, Payout Fee & Profit Calculator
+│   │
+│   ├── lib/
+│   │   ├── totp.js                            # Mesin RFC 6238 TOTP (Validasi Kode 6-Digit Authenticator)
+│   │   ├── rbac.js                            # Pengecekan Izin Matriks Peran RBAC (can, permOf)
+│   │   └── tax.js                             # Kalkulator Pajak & Diskon Kasir POS Teruji
+│   │
+│   ├── member/                                # Portal Mandiri Pelanggan / Member (Level L5)
+│   │   ├── MemberShell.jsx                    # Navigasi Portal Member (Penambahan Tab /m/wallet)
+│   │   └── pages/
+│   │       ├── Wallet.jsx                     # Dasbor S-Wallet Member: Saldo, Kode Bayar 60s Kasir, Top-up QRIS
+│   │       └── Order.jsx                      # Checkout Pesanan Online (Opsi Bayar 1-Klik via S-Wallet)
+│   │
+│   └── app/                                   # Portal Dashboard Bisnis & Operasional (Level L0 - L4)
+│       ├── pages.js                           # Registrasi Rute Aplikasi (Rute /app/akun/wallet dengan RBAC Gate)
+│       └── pages/
+│           ├── account/                       # Modul Tata Kelola Akun & Keamanan
+│           │   ├── AccountTabs.jsx            # Bento Dock 8 Kartu Navigasi (Penambahan Kartu S-Wallet)
+│           │   ├── Security.jsx               # Pengaturan TOTP 2FA & PIN Transaksi 6-Digit
+│           │   └── Wallet.jsx                 # Dasbor S-Wallet Akun Pengguna (2FA Gate 15m, Topup, Transfer P2P, Tarik Bank, Mutasi)
+│           │
+│           ├── superadmin/                    # Modul Tata Kelola Platform God-Mode (Level L0)
+│           │   ├── Plans.jsx                  # Registrasi Subtab S-Wallet Master Command Center
+│           │   └── WalletMaster.jsx           # Konsol Finansial Superadmin: Pengatur Tarif & Profit Margin, Radar Likuiditas, Omni-Wallet Explorer, Antrean Payout, Circuit Breaker
+│           │
+│           ├── ops/                           # Modul Operasional Cabang & Kasir (Level L1 - L3)
+│           │   ├── Payment.jsx                # Modal Pembayaran Kasir POS (Opsi swallet, Token 60s, Anti-Fake Void)
+│           │   ├── Pos.jsx                    # Layar Kasir Penjualan Utama
+│           │   ├── Payroll.jsx                # 1-Click Bulk Payroll Disbursement ke S-Wallet Staf
+│           │   ├── MyPay.jsx                  # Dasbor Slip Gaji Karyawan & Pengajuan Kas Bon ke S-Wallet
+│           │   ├── Shift.jsx                  # Penutupan Shift Kasir & Rekonsiliasi Saldo Digital S-Wallet
+│           │   ├── Recon.jsx                  # Rekonsiliasi Kasir S-Wallet Digital Settlement (Selisih Rp 0)
+│           │   └── Journal.jsx                # Pencatatan Buku Besar Berpasangan Otomatis S-Wallet
+│           │
+│           ├── growth/                        # Modul Pertumbuhan & Bisnis Merchant (Level L1)
+│           │   └── PaymentModal.jsx           # Modal Bayar Langganan SaaS & Token AI via Saldo S-Wallet
+│           │
+│           └── clinic/                        # Modul Layanan Kesehatan & Dokter (Level L4)
+│               └── Billing.jsx                # Kasir Tindakan Medis & Auto-Split Jasa Medis Dokter 30% Real-Time
+```
+
+---
+
+### 12.1 Penjelasan Rinci Peran Setiap Berkas Baru
+
+1. **`src/api/swallet.js` (S-Wallet Engine Client)**:
+   - Menghubungkan frontend ke database PostgreSQL / Supabase RPC.
+   - Fungsi utama:
+     - `getWalletProfile(userId)`: Mengambil saldo aktif, saldo terkunci, nomor rekening unik `SW-YYYYMM-XXXXXXXX`.
+     - `verifyTotpChallenge(token)`: Memvalidasi 6-digit kode authenticator untuk membuka gerbang subtab S-Wallet (tiket 15 menit).
+     - `generatePaymentToken(walletId)`: Menerbitkan kode bayar dinamis 6 digit berlaku 60 detik untuk transaksi di kasir POS.
+     - `executeP2PTransfer({ senderWalletId, receiverIdentifier, amount, pin, notes })`: Transfer instan antar sesama pengguna Tijarah.
+     - `requestBankWithdrawal({ walletId, bankCode, accountNumber, accountName, amount, pin, totpCode })`: Mengajukan penarikan dana ke rekening bank dengan kalkulasi biaya admin tier + margin profit website.
+     - `getPayoutPricingConfig()`: Mengambil tarif penarikan terkini yang dikonfigurasi Superadmin.
+2. **`src/app/pages/account/Wallet.jsx` (Dasbor Brankas S-Wallet)**:
+   - Memiliki 2 tampilan keadaan (*state view*):
+     - *State 1 (Terkunci / 2FA Gate)*: Memeriksa apakah sesi 15 menit aktif. Jika tidak, menampilkan layar tantangan 6-digit TOTP Google/Microsoft Authenticator.
+     - *State 2 (Terbuka / Brankas Aktif)*: Menampilkan kartu brankas saldo bento, tombol aksi cepat (Top-up, Transfer, Tarik Bank, Kode Bayar), serta riwayat mutasi buku besar.
+3. **`src/app/pages/superadmin/WalletMaster.jsx` (Command Center God-Mode Superadmin)**:
+   - Form interaktif pengatur tarif biaya penarikan otomatis (Tier 1, 2, 3) dan kalkulator proyeksi keuntungan website.
+   - Radar total likuiditas sistem (membandingkan total saldo seluruh dompet vs saldo akun penampung Pakasir).
+   - Tabel omni-wallet explorer untuk melihat seluruh akun pengguna dari semua tenant dengan fitur 1-klik Freeze/Unfreeze dompet dan penyesuaian saldo resmi.
+   - Antrean persetujuan dan riwayat eksekusi payout bank dengan penanda jam operasional (09.00 - 16.00 WIB).
+   - Saklar darurat Global Circuit Breaker.
+4. **`src/member/pages/Wallet.jsx` (Dompet Member Mobile-First)**:
+   - Tampilan dompet ringkas dan responsif untuk pelanggan retail, restoran, dan pasien klinik.
+   - Menampilkan kartu loyalitas member, saldo koin/rupiah, generator kode bayar 60 detik kasir dengan animasi lingkaran mundur (*countdown ring*), dan tombol Top-Up mandiri QRIS Dinamis Pakasir.
+5. **`supabase/migrations/20261020_swallet_core.sql` (Skema Basis Data Produksi)**:
+   - Tabel `public.wallets`, `public.wallet_transactions`, `public.wallet_ledger`, `public.wallet_payment_tokens`, `public.wallet_withdrawals`, dan `public.wallet_platform_settings`.
+   - Stored procedures atomik:
+     - `execute_wallet_transfer`: Transfer P2P berpasangan dengan penguncian baris `FOR UPDATE`.
+     - `execute_pos_wallet_payment`: Validasi kode bayar 60 detik kasir POS dan pemindahan saldo ke merchant.
+     - `request_wallet_withdrawal`: Pemindahan saldo ke `locked_balance` dengan validasi jam operasional (09.00-16.00 WIB) dan perhitungan split margin keuntungan platform.
+     - `execute_approved_payout`: Pemotongan saldo `locked_balance` permanen dan transfer profit platform ke `SW-PLATFORM-REVENUE`.
+     - `admin_adjust_wallet_balance`: Intervensi darurat saldo oleh Superadmin dengan berita acara audit.
