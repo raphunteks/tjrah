@@ -188,10 +188,19 @@ function Billing() {
   ];
 
   return (
-    <Panel title="Tagihan langganan">
+    <section aria-labelledby="billing-heading" style={{ marginBottom: "0.5rem" }}>
+      <div style={{ marginBottom: "0.85rem" }}>
+        <h2 id="billing-heading" style={{ fontSize: "1.2rem", fontWeight: 700, margin: "0 0 0.35rem", color: "var(--color-ink)" }}>
+          Tagihan &amp; Histori Pembayaran Langganan
+        </h2>
+        <p className="d-text d-muted" style={{ margin: 0, fontSize: "0.875rem", color: "var(--color-ink-2, #334155)", maxWidth: "52ch", lineHeight: 1.6, textWrap: "pretty" }}>
+          Informasi status langganan aktif, ringkasan tagihan toko, dan arsip faktur resmi Tijarah OS.
+        </p>
+      </div>
+
       {q.loading && !q.data ? <Loading /> : q.error ? <ErrorNote error={q.error} onRetry={q.reload} /> : (
         <>
-          <div className="d-stats d-stats--3 d-stats--inner" style={{ marginBottom: "1.25rem" }}>
+          <div className="d-stats d-stats--2" style={{ marginBottom: "1.25rem" }}>
             <Stat
               label="Status akun"
               value="Aktif (Akses Penuh)"
@@ -200,7 +209,7 @@ function Billing() {
             <Stat
               label="Tagihan belum lunas"
               value={q.data.b.unpaid.length}
-              sub={q.data.b.unpaid.length ? `Total ${rupiah(q.data.b.unpaid.reduce((s, i) => s + i.amount, 0))}` : "Tidak ada"}
+              sub={q.data.b.unpaid.length ? `Total ${rupiah(q.data.b.unpaid.reduce((s, i) => s + i.amount, 0))}` : "Tidak ada tagihan tertunggak"}
             />
           </div>
           {q.data.b.unpaid.map((i) => (
@@ -208,66 +217,68 @@ function Billing() {
               Tagihan {String(i.period).slice(0, 7)} · {rupiah(i.amount)} · jatuh tempo {date(i.due)}{i.days_overdue > 0 ? ` (terlambat ${i.days_overdue} hari; penangguhan ${date(i.suspend_on)})` : ""}. Pembayaran dikonfirmasi tim Tijarah setelah transfer diterima.
             </p>
           ))}
-          <div className="d-table-wrap">
-            <table className="d-table d-table--billing">
-              <thead>
-                <tr>
-                  <th scope="col">TANGGAL</th>
-                  <th scope="col">PAKET</th>
-                  <th scope="col">JUMLAH</th>
-                  <th scope="col">PERIODE</th>
-                  <th scope="col" style={{ textAlign: "center" }}>STATUS</th>
-                  <th scope="col" style={{ textAlign: "right" }}>AKSI</th>
-                </tr>
-              </thead>
-              <tbody>
-                {displayInvoices.map((inv) => (
-                  <tr key={inv.id}>
-                    <td className="d-mono">{inv.date}</td>
-                    <td>
-                      <strong style={{ font: "700 0.92rem var(--font-brand)", color: "var(--color-ink)" }}>
-                        {inv.plan}
-                      </strong>
-                    </td>
-                    <td>
-                      <strong style={{ font: "700 0.95rem var(--font-mono)", color: "var(--color-ink)", display: "block" }}>
-                        {rupiah(inv.amount)}
-                      </strong>
-                      {inv.hasReferral && inv.discount > 0 && (
-                        <span style={{ color: "#059669", fontSize: "0.75rem", fontWeight: 500, display: "block", marginTop: "2px" }}>
-                          Diskon referral -{rupiah(inv.discount)}
-                        </span>
-                      )}
-                    </td>
-                    <td className="d-mono" style={{ fontSize: "0.85rem" }}>
-                      {inv.period}
-                    </td>
-                    <td style={{ textAlign: "center" }}>
-                      <span className={`d-status-badge d-status-badge--${inv.status === "ACTIVE" || inv.status === "paid" ? "active" : inv.status === "UNPAID" ? "warn" : "neutral"}`}>
-                        <span className="d-status-dot" aria-hidden="true" />
-                        {inv.status}
-                      </span>
-                    </td>
-                    <td style={{ textAlign: "right" }}>
-                      <button
-                        type="button"
-                        className="d-btn d-btn--ghost d-btn--sm"
-                        disabled={downloadingId === inv.id}
-                        onClick={() => handleDownloadInvoice(inv)}
-                        title="Unduh Bukti Pembayaran / Kuitansi PDF Resmi"
-                      >
-                        <i className="fa-solid fa-file-pdf" aria-hidden="true" style={{ marginRight: "0.35rem", color: "var(--color-accent)" }} />
-                        {downloadingId === inv.id ? "Menyiapkan…" : "Unduh PDF"}
-                      </button>
-                    </td>
+          <div className="d-panel" style={{ padding: "0", overflow: "hidden" }}>
+            <div className="d-table-wrap">
+              <table className="d-table d-table--billing">
+                <thead>
+                  <tr>
+                    <th scope="col">TANGGAL</th>
+                    <th scope="col">PAKET</th>
+                    <th scope="col">JUMLAH</th>
+                    <th scope="col">PERIODE</th>
+                    <th scope="col" style={{ textAlign: "center" }}>STATUS</th>
+                    <th scope="col" style={{ textAlign: "right" }}>AKSI</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {displayInvoices.map((inv) => (
+                    <tr key={inv.id}>
+                      <td className="d-mono">{inv.date}</td>
+                      <td>
+                        <strong style={{ font: "700 0.92rem var(--font-brand)", color: "var(--color-ink)" }}>
+                          {inv.plan}
+                        </strong>
+                      </td>
+                      <td>
+                        <strong style={{ font: "700 0.95rem var(--font-mono)", color: "var(--color-ink)", display: "block" }}>
+                          {rupiah(inv.amount)}
+                        </strong>
+                        {inv.hasReferral && inv.discount > 0 && (
+                          <span style={{ color: "#059669", fontSize: "0.75rem", fontWeight: 500, display: "block", marginTop: "2px" }}>
+                            Diskon referral -{rupiah(inv.discount)}
+                          </span>
+                        )}
+                      </td>
+                      <td className="d-mono" style={{ fontSize: "0.85rem" }}>
+                        {inv.period}
+                      </td>
+                      <td style={{ textAlign: "center" }}>
+                        <span className={`d-status-badge d-status-badge--${inv.status === "ACTIVE" || inv.status === "paid" ? "active" : inv.status === "UNPAID" ? "warn" : "neutral"}`}>
+                          <span className="d-status-dot" aria-hidden="true" />
+                          {inv.status}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: "right" }}>
+                        <button
+                          type="button"
+                          className="d-btn d-btn--ghost d-btn--sm"
+                          disabled={downloadingId === inv.id}
+                          onClick={() => handleDownloadInvoice(inv)}
+                          title="Unduh Bukti Pembayaran / Kuitansi PDF Resmi"
+                        >
+                          <i className="fa-solid fa-file-pdf" aria-hidden="true" style={{ marginRight: "0.35rem", color: "var(--color-accent)" }} />
+                          {downloadingId === inv.id ? "Menyiapkan…" : "Unduh PDF"}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </>
       )}
-    </Panel>
+    </section>
   );
 }
 
@@ -489,37 +500,37 @@ export default function Subscription() {
           </div>
         </section>
 
-        {/* KUOTA AI BULAN INI (1 TANYA = 1 KUOTA) */}
-        <Panel title="Pemantauan Kuota Pertanyaan AI (1 Tanya = 1 Kuota)">
-          {ai.loading && !ai.data ? <Loading /> : ai.error ? <ErrorNote error={ai.error} onRetry={ai.reload} /> : (
-            <>
-              <div className="d-stats d-stats--3 d-stats--inner">
-                <Stat
-                  label="Pertanyaan Diajukan"
-                  value={`${usedCalls} Tanya`}
-                  sub="Percakapan Copilot Analitik"
-                />
-                <Stat
-                  label="Sisa Kuota Tanya AI"
-                  value={`${remainingCalls} / ${totalCallsQuota}`}
-                  sub="Paket Growth Bulanan"
-                />
-                <Stat
-                  label="Persentase Pemakaian"
-                  value={`${Math.round((usedCalls / totalCallsQuota) * 100)}%`}
-                  sub="Batas aman operasional"
-                />
-              </div>
+        {/* KUOTA AI BULAN INI (1 TANYA = 1 KUOTA) - MANDIRI TOP-LEVEL TANPA NESTED CARDS */}
+        <section aria-labelledby="ai-quota-heading" style={{ marginBottom: "0.5rem" }}>
+          <div style={{ marginBottom: "0.85rem" }}>
+            <h2 id="ai-quota-heading" style={{ fontSize: "1.2rem", fontWeight: 700, margin: "0 0 0.35rem", color: "var(--color-ink)" }}>
+              Pemantauan Kuota Pertanyaan AI (1 Tanya = 1 Kuota)
+            </h2>
+            <p className="d-text d-muted" style={{ margin: 0, fontSize: "0.875rem", color: "var(--color-ink-2, #334155)", maxWidth: "52ch", lineHeight: 1.6, textWrap: "pretty" }}>
+              Monitoring real-time penggunaan kuota interaksi AI Copilot Analitik toko Anda.
+            </p>
+          </div>
 
-              <div style={{ marginTop: "1rem", padding: "0.75rem", background: "var(--color-paper-1)", borderRadius: "var(--radius-md)", border: "1px solid var(--color-rule)", fontSize: "0.8rem" }}>
-                <p style={{ margin: "0 0 0.25rem", fontWeight: 600 }}>Kebijakan Kuota AI Tijarah OS:</p>
-                <p className="d-text d-muted" style={{ margin: 0, maxWidth: "65ch", lineHeight: 1.6 }}>
-                  Sistem menghitung 1 pertanyaan pengguna ke asisten AI sebagai 1 kuota pemakaian langsung (bukan token mentah model LLM). Jika kuota habis sebelum akhir periode, Anda dapat mengajukan kuota tambahan melalui Superadmin.
-                </p>
-              </div>
-            </>
+          {ai.loading && !ai.data ? <Loading /> : ai.error ? <ErrorNote error={ai.error} onRetry={ai.reload} /> : (
+            <div className="d-stats d-stats--3">
+              <Stat
+                label="Pertanyaan Diajukan"
+                value={`${usedCalls} Tanya`}
+                sub="Percakapan Copilot Analitik"
+              />
+              <Stat
+                label="Sisa Kuota Tanya AI"
+                value={`${remainingCalls} / ${totalCallsQuota}`}
+                sub="Paket Growth Bulanan"
+              />
+              <Stat
+                label="Persentase Pemakaian"
+                value={`${Math.round((usedCalls / totalCallsQuota) * 100)}%`}
+                sub="Batas aman operasional"
+              />
+            </div>
           )}
-        </Panel>
+        </section>
 
         <Billing />
 
