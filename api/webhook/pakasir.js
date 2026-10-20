@@ -32,20 +32,23 @@ export default async function handler(req, res) {
 
       if (supabaseUrl && serviceKey) {
         try {
-          const fetchRes = await fetch(`${supabaseUrl}/rest/v1/rpc/mark_invoice_paid_system`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "apikey": serviceKey,
-              "Authorization": `Bearer ${serviceKey}`
-            },
-            body: JSON.stringify({
-              p_invoice: order_id,
-              p_ref: txn_id || "pakasir_webhook"
-            })
-          });
-          if (!fetchRes.ok) {
-            console.warn("[Pakasir Webhook] Gagal memanggil RPC Supabase:", await fetchRes.text());
+          const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+          if (UUID_REGEX.test(order_id)) {
+            const fetchRes = await fetch(`${supabaseUrl}/rest/v1/rpc/mark_invoice_paid_system`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "apikey": serviceKey,
+                "Authorization": `Bearer ${serviceKey}`
+              },
+              body: JSON.stringify({
+                p_invoice: order_id,
+                p_ref: txn_id || "pakasir_webhook"
+              })
+            });
+            if (!fetchRes.ok) {
+              console.warn("[Pakasir Webhook] Gagal memanggil RPC Supabase:", await fetchRes.text());
+            }
           }
         } catch (dbErr) {
           console.warn("[Pakasir Webhook] Error koneksi DB Supabase:", dbErr.message);

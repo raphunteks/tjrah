@@ -165,25 +165,51 @@ export async function createPakasirTransaction({ orderId, method, amount, custom
 
       if (res.ok) {
         const data = await res.json();
-        recordTransaction({
+        const record = {
           order_id: orderId,
           txn_id: data.txn_id,
           method,
-          amount,
-          fee: data.fee,
-          total_payment: data.total_payment || (amount + data.fee),
-          qr_string: data.qr_string,
-          va_number: data.va_number,
-          expired_at: data.expired_at || new Date(Date.now() + 24 * 3600e3).toISOString(),
-          status: "pending",
+          payment_method: method,
+          amount: Number(amount),
+          fee: Number(data.fee) || 0,
+          total_payment: Number(data.total_payment) || (Number(amount) + Number(data.fee || 0)),
+          qr_string: data.qr_string || "",
+          va_number: data.va_number || "",
+          payment_url:
+            data.payment_url ||
+            (method === "payment_link" ? `https://app.pakasir.com/pay/${cfg.slug}/${orderId}` : ""),
+          expired_at:
+            data.expired_at || data.expires_at || new Date(Date.now() + 24 * 3600e3).toISOString(),
+          status: data.status || "pending",
+          is_sandbox: Boolean(data.is_sandbox),
           created_at: new Date().toISOString(),
           customerInfo
-        });
-        return data;
+        };
+        recordTransaction(record);
+        return { ...data, ...record };
+      } else {
+        const errJson = await res.json().catch(() => null);
+        if (errJson?.message === "Method not available") {
+          if (cfg.isSandbox) {
+            console.warn(
+              `[Pakasir Sandbox] Kanal ${method} belum diaktifkan di dashboard merchant, beralih ke simulasi sandbox.`
+            );
+          } else {
+            const chName = PAYMENT_CHANNELS.find((c) => c.id === method)?.name || method;
+            throw new Error(
+              `Kanal ${chName} saat ini belum diaktifkan di dashboard merchant Pakasir. Silakan pilih QRIS Dinamis, BRI VA, BNI VA, BNC VA, Maybank VA, atau Payment Link.`
+            );
+          }
+        } else if (errJson?.message) {
+          throw new Error(errJson.message);
+        }
       }
     }
   } catch (err) {
-    console.warn("[Pakasir] Panggilan API live gagal, menggunakan simulator:", err);
+    if (!cfg.isSandbox && err.message && !err.message.includes("Failed to fetch")) {
+      throw err;
+    }
+    console.warn("[Pakasir] Panggilan API live dialihkan ke simulator:", err.message);
   }
 
   // Simulator Fallback jika API Key offline atau mode dev
@@ -358,7 +384,7 @@ export function recalculateFeeAccumulation() {
   // Jika belum ada satupun transaksi selesai, berikan inisialisasi default dari invoice tenant aktif
   const hasCompleted = Object.values(acc).some((x) => x.count > 0);
   if (!hasCompleted) {
-    acc["mandiri_va"] = { count: 1, grossAmount: 2500000, totalFee: 3500 };
+    acc["bri_va"] = { count: 1, grossAmount: 2500000, totalFee: 3500 };
   }
 
   try {

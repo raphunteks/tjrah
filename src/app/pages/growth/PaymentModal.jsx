@@ -70,14 +70,55 @@ export default function PaymentModal({ isOpen, onClose, plan, onSuccess, tenant,
     };
   }, [basePrice]);
 
-  // Hitung mundur untuk layar instruksi
+  // Hitung mundur dan Auto-Polling Status Pembayaran Real-Time (Pakasir Live & Sandbox)
   useEffect(() => {
-    if (stage !== "instruction") return;
-    const interval = setInterval(() => {
+    if (stage !== "instruction" || !txData) return;
+
+    // 1. Timer hitung mundur kadaluarsa pembayaran
+    const intervalCountdown = setInterval(() => {
       setCountdownSec((prev) => (prev > 0 ? prev - 1 : 0));
     }, 1000);
-    return () => clearInterval(interval);
-  }, [stage]);
+
+    // 2. Auto-polling status ke API Pakasir tiap 3.5 detik (Real-Time Detection)
+    let checking = false;
+    const intervalPoll = setInterval(async () => {
+      if (checking) return;
+      checking = true;
+      try {
+        const res = await checkPakasirStatus(txData.txn_id, txData.order_id);
+        if (res.status === "completed" || res.status === "paid") {
+          setStage("success");
+          if (onSuccess) onSuccess({ ...txData, ...res, status: "completed" });
+        }
+      } catch {
+        // Lanjutkan polling di interval berikutnya
+      } finally {
+        checking = false;
+      }
+    }, 3500);
+
+    // 3. Listener event real-time jika pembayaran diselesaikan di tab lain atau simulasi webhook
+    const handleTxnUpdated = () => {
+      try {
+        const raw = localStorage.getItem("tijarah:pakasir_transactions");
+        if (raw) {
+          const list = JSON.parse(raw);
+          const found = list.find((t) => t.order_id === txData.order_id);
+          if (found && (found.status === "completed" || found.status === "paid")) {
+            setStage("success");
+            if (onSuccess) onSuccess({ ...txData, ...found, status: "completed" });
+          }
+        }
+      } catch {}
+    };
+    window.addEventListener("tijarah:fees_updated", handleTxnUpdated);
+
+    return () => {
+      clearInterval(intervalCountdown);
+      clearInterval(intervalPoll);
+      window.removeEventListener("tijarah:fees_updated", handleTxnUpdated);
+    };
+  }, [stage, txData, onSuccess]);
 
   const activeChannel = useMemo(() => {
     return PAYMENT_CHANNELS.find((c) => c.id === selectedMethod) || PAYMENT_CHANNELS[0];
