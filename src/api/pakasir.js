@@ -7,7 +7,7 @@ const STORAGE_KEY_ACCUMULATION = "tijarah:provider_fee_accumulation";
 const STORAGE_KEY_TRANSACTIONS = "tijarah:pakasir_transactions";
 
 export const PAYMENT_CHANNELS = [
-  { id: "qris", name: "QRIS Dinamis", type: "qris", icon: "/iconpay/qris-icon.png", defaultFee: 0.7, feeType: "percent", feeUnit: "%" },
+  { id: "qris", name: "QRIS Dinamis", type: "qris", icon: "/iconpay/qris-icon.png", defaultFee: 1.0, feeType: "percent", feeUnit: "%" },
   { id: "payment_link", name: "Payment Link", type: "link", icon: "/iconpay/paymentlink-icon.svg", defaultFee: 3500, feeType: "fixed", feeUnit: "Rp" },
   { id: "bri_va", name: "VA BRI", type: "va", icon: "/iconpay/bankbri-icon.png", defaultFee: 3500, feeType: "fixed", feeUnit: "Rp" },
   { id: "bni_va", name: "VA BNI", type: "va", icon: "/iconpay/bankbni-icon.png", defaultFee: 3500, feeType: "fixed", feeUnit: "Rp" },
@@ -63,7 +63,17 @@ export function getDefaultProviderFeeSettings() {
 export function getProviderFeeSettings() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_FEES);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      // Migrasi otomatis jika masih tersimpan nilai 0.7 dari versi awal dan belum dicustom secara eksplisit
+      if (parsed.qris && parsed.qris.fee === 0.7 && !parsed.qris.isExplicitCustom) {
+        parsed.qris.fee = 1.0;
+        try {
+          localStorage.setItem(STORAGE_KEY_FEES, JSON.stringify(parsed));
+        } catch {}
+      }
+      return parsed;
+    }
   } catch {}
   return getDefaultProviderFeeSettings();
 }
@@ -128,8 +138,8 @@ export async function calculateChannelFees(amount) {
     } else {
       const c = customFees[ch.id] || { fee: ch.defaultFee, feeType: ch.feeType };
       if (c.feeType === "percent") {
-        // Formula resmi Pakasir untuk QRIS: jika amount <= 105.000 -> 0.7% + 310, jika > 105.000 -> 0.7% / 1%
-        if (ch.id === "qris" && Number(c.fee) === 0.7 && amount <= 105000) {
+        // Formula resmi Pakasir untuk QRIS: jika amount <= 105.000 -> 0.7% + 310, jika > 105.000 -> 1% (atau custom %)
+        if (ch.id === "qris" && (Number(c.fee) === 1.0 || Number(c.fee) === 0.7) && amount <= 105000) {
           result[ch.id] = Math.round(amount * 0.007 + 310);
         } else {
           result[ch.id] = Math.round((amount * Number(c.fee)) / 100);
@@ -218,7 +228,7 @@ export async function createPakasirTransaction({ orderId, method, amount, custom
   const c = customFees[method] || { fee: channel.defaultFee, feeType: channel.feeType };
   const calculatedFee =
     c.feeType === "percent"
-      ? method === "qris" && Number(c.fee) === 0.7 && Number(amount) <= 105000
+      ? method === "qris" && (Number(c.fee) === 1.0 || Number(c.fee) === 0.7) && Number(amount) <= 105000
         ? Math.round(Number(amount) * 0.007 + 310)
         : Math.round((Number(amount) * Number(c.fee)) / 100)
       : Math.round(Number(c.fee)) || 3500;

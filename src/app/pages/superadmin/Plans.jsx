@@ -175,7 +175,7 @@ export default function Plans() {
     if (!confirm("Kembalikan seluruh tarif kanal pembayaran ke standar resmi Pakasir?")) return;
     const def = resetProviderFeesToDefault();
     setFeeSettings(def);
-    setFeeNotice("Seluruh tarif kanal berhasil direset ke standar resmi Pakasir.");
+    setFeeNotice("Seluruh tarif kanal berhasil direset ke standar resmi Pakasir (QRIS 1% & VA/Link Rp 3.500 flat).");
     setTimeout(() => setFeeNotice(null), 4000);
   };
 
@@ -753,7 +753,7 @@ export default function Plans() {
                     const currentSetting = feeSettings[ch.id] || { fee: ch.defaultFee, feeType: ch.feeType };
                     const currentVal = currentSetting.fee ?? ch.defaultFee;
                     const currentType = currentSetting.feeType ?? ch.feeType ?? "fixed";
-                    const isDefault = currentVal === ch.defaultFee && currentType === ch.feeType;
+                    const isDefault = Number(currentVal) === Number(ch.defaultFee) && currentType === ch.feeType;
 
                     // Perhitungan simulasi fee pada nominal 2.5jt
                     const sampleEst = currentType === "percent" ? Math.round((2500000 * Number(currentVal)) / 100) : Number(currentVal);
@@ -788,10 +788,10 @@ export default function Plans() {
                             value={currentType}
                             onChange={(e) => {
                               const newType = e.target.value;
-                              const newFee = newType === "percent" ? (ch.feeType === "percent" ? ch.defaultFee : 0.7) : (ch.feeType === "fixed" ? ch.defaultFee : 3000);
+                              const newFee = newType === "percent" ? (ch.feeType === "percent" ? ch.defaultFee : 1.0) : (ch.feeType === "fixed" ? ch.defaultFee : 3500);
                               setFeeSettings({
                                 ...feeSettings,
-                                [ch.id]: { fee: newFee, feeType: newType }
+                                [ch.id]: { fee: newFee, feeType: newType, isExplicitCustom: true }
                               });
                             }}
                           >
@@ -808,7 +808,7 @@ export default function Plans() {
                             onChange={(e) => {
                               setFeeSettings({
                                 ...feeSettings,
-                                [ch.id]: { fee: Number(e.target.value), feeType: currentType }
+                                [ch.id]: { fee: Number(e.target.value), feeType: currentType, isExplicitCustom: true }
                               });
                             }}
                           />

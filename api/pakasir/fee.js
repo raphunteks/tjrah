@@ -40,7 +40,7 @@ export default async function handler(req, res) {
       muamalat_va: 3500,
       ocbc_va: 3500,
       payment_link: 3500,
-      qris: nominal <= 105000 ? Math.round(nominal * 0.007 + 310) : Math.round(nominal * 0.007)
+      qris: nominal <= 105000 ? Math.round(nominal * 0.007 + 310) : Math.round(nominal * 0.01)
     };
     return res.status(200).json(fallbackFees);
   } catch (err) {
@@ -56,7 +56,7 @@ export default async function handler(req, res) {
       muamalat_va: 3500,
       ocbc_va: 3500,
       payment_link: 3500,
-      qris: nominal <= 105000 ? Math.round(nominal * 0.007 + 310) : Math.round(nominal * 0.007)
+      qris: nominal <= 105000 ? Math.round(nominal * 0.007 + 310) : Math.round(nominal * 0.01)
     };
     return res.status(200).json(fallbackFees);
   }
