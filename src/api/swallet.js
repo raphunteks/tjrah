@@ -102,11 +102,14 @@ export function isUserTwoFactorActive(user) {
   if (!user || (!user.id && !user.email)) return false;
   if (user?.two_factor_enabled === true) return true;
   try {
-    const byId = user?.id ? localStorage.getItem(`tijarah:2fa:${user.id}`) : null;
-    const byEmail = user?.email ? localStorage.getItem(`tijarah:2fa:${user.email}`) : null;
-    const isOwnerTarget = user?.role === "owner" || user?.email === "ksanihtest@gmail.com";
-    const byOwner = isOwnerTarget ? localStorage.getItem("tijarah:2fa:owner") : null;
-    return byId === "true" || byEmail === "true" || byOwner === "true";
+    // Bersihkan sisa legacy dummy flag jika ada di browser
+    if (localStorage.getItem("tijarah:2fa:owner")) {
+      localStorage.removeItem("tijarah:2fa:owner");
+    }
+    // Hanya aktif jika user secara eksplisit telah memverifikasi QR code di Google Authenticator
+    const verifiedById = user?.id ? localStorage.getItem(`tijarah:2fa_verified:${user.id}`) : null;
+    const verifiedByEmail = user?.email ? localStorage.getItem(`tijarah:2fa_verified:${user.email}`) : null;
+    return verifiedById === "true" || verifiedByEmail === "true";
   } catch {
     return false;
   }
@@ -213,11 +216,11 @@ export async function sendPinResetOtp({ channel, target, otpCode, userName = "Pe
       }).catch(() => null);
 
       if (res && res.ok) {
-        return { ok: true, message: `Kode OTP verifikasi (${otpCode}) berhasil dikirim ke Email: ${target}` };
+        return { ok: true, message: `Kode OTP verifikasi berhasil dikirim ke Email: ${target}` };
       }
     } catch {}
 
-    return { ok: true, message: `Kode OTP verifikasi (${otpCode}) diproses untuk Email: ${target}` };
+    return { ok: true, message: `Kode OTP verifikasi diproses untuk Email: ${target}` };
   }
 
   if (channel === "whatsapp") {
@@ -228,17 +231,22 @@ export async function sendPinResetOtp({ channel, target, otpCode, userName = "Pe
         body: JSON.stringify({
           channel: "whatsapp",
           target: target,
+          event: "pin_reset_otp",
           kind: "pin_reset_otp",
-          message: `[TIJARAH S-WALLET] Halo ${userName}, kode OTP reset PIN Transaksi S-Wallet Anda adalah *${otpCode}*. Berlaku selama 5 menit. Jangan berikan kode ini kepada siapa pun demi keamanan brankas finansial Anda.`
+          message: `[TIJARAH S-WALLET] Halo ${userName}, kode OTP reset PIN Transaksi S-Wallet Anda adalah *${otpCode}*. Berlaku selama 5 menit. Jangan berikan kode ini kepada siapa pun demi keamanan brankas finansial Anda.`,
+          data: {
+            user_name: userName,
+            otp_code: otpCode
+          }
         })
       }).catch(() => null);
 
       if (res && res.ok) {
-        return { ok: true, message: `Kode OTP verifikasi (${otpCode}) berhasil dikirim via Hermes WhatsApp ke ${target}` };
+        return { ok: true, message: `Kode OTP verifikasi berhasil dikirim via Hermes WhatsApp ke ${target}` };
       }
     } catch {}
 
-    return { ok: true, message: `Kode OTP verifikasi (${otpCode}) diproses untuk Hermes WhatsApp: ${target}` };
+    return { ok: true, message: `Kode OTP verifikasi diproses untuk Hermes WhatsApp: ${target}` };
   }
 
   return { ok: false, error: "Saluran pengiriman tidak didukung." };

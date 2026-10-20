@@ -27,8 +27,7 @@ export default function Security() {
   const { profile, api } = useAuth();
   const { t } = useAccountLang();
 
-  const userEmail = profile?.email || "owner@tijarah.id";
-  const isTargetUser = profile?.email === "ksanihtest@gmail.com" || profile?.id === "fe2bfa01-8956-4df0-acbd-da7fc3a8f15f";
+  const userEmail = profile?.email || "owner@demo.tijarah.id";
 
   // 1. STATE UBAH SANDI
   const [oldPassword, setOldPassword] = useState("");
@@ -67,21 +66,23 @@ export default function Security() {
 
   // 2. STATE AUTENTIKASI DUA FAKTOR (REAL RFC 6238 TOTP DENGAN PERSISTENSI CLOUD DATABASE)
   const [twoFactorActive, setTwoFactorActive] = useState(() => {
-    if (isTargetUser) return true;
     if (profile?.two_factor_enabled != null) return Boolean(profile.two_factor_enabled);
     try {
-      const saved = localStorage.getItem(`tijarah:2fa:${profile?.id}`) || localStorage.getItem(`tijarah:2fa:${profile?.email}`) || localStorage.getItem("tijarah:2fa:owner");
-      return saved === "true";
+      if (localStorage.getItem("tijarah:2fa:owner")) localStorage.removeItem("tijarah:2fa:owner");
+      const verified = (profile?.id && localStorage.getItem(`tijarah:2fa_verified:${profile.id}`)) ||
+                       (profile?.email && localStorage.getItem(`tijarah:2fa_verified:${profile.email}`));
+      return verified === "true";
     } catch {
       return false;
     }
   });
 
-  // Secret Key Base32 Unik Pengguna (Default: JBSWY3DPEHPK3PXP yang telah terscan di Google Authenticator)
+  // Secret Key Base32 Unik Pengguna (Default: JBSWY3DPEHPK3PXP yang dapat dipindai di Google Authenticator)
   const [secretKey, setSecretKey] = useState(() => {
     if (profile?.two_factor_secret) return profile.two_factor_secret;
     try {
-      const saved = localStorage.getItem(`tijarah:2fa_secret:${profile?.id}`) || localStorage.getItem(`tijarah:2fa_secret:${profile?.email}`) || localStorage.getItem("tijarah:2fa_secret:owner");
+      const saved = (profile?.id && localStorage.getItem(`tijarah:2fa_secret:${profile?.id}`)) ||
+                    (profile?.email && localStorage.getItem(`tijarah:2fa_secret:${profile?.email}`));
       if (saved) return saved;
     } catch {}
     return "JBSWY3DPEHPK3PXP";
@@ -96,33 +97,28 @@ export default function Security() {
   // Sinkronisasi otomatis saat profil pengguna dari database termuat
   useEffect(() => {
     if (!profile) return;
-    const isOwnerTarget = profile?.email === "ksanihtest@gmail.com" || profile?.id === "fe2bfa01-8956-4df0-acbd-da7fc3a8f15f";
-    const isActive = isOwnerTarget
-      ? true
-      : (profile?.two_factor_enabled === true ||
-         localStorage.getItem(`tijarah:2fa:${profile.id}`) === "true" ||
-         Boolean(profile?.email && localStorage.getItem(`tijarah:2fa:${profile.email}`) === "true"));
+    try {
+      if (localStorage.getItem("tijarah:2fa:owner")) localStorage.removeItem("tijarah:2fa:owner");
+    } catch {}
+
+    const isDbEnabled = profile?.two_factor_enabled === true;
+    const isLocalVerified = Boolean(
+      (profile.id && localStorage.getItem(`tijarah:2fa_verified:${profile.id}`) === "true") ||
+      (profile.email && localStorage.getItem(`tijarah:2fa_verified:${profile.email}`) === "true")
+    );
+    const isActive = isDbEnabled || isLocalVerified;
+
     const secret = profile?.two_factor_secret ||
-      localStorage.getItem(`tijarah:2fa_secret:${profile.id}`) ||
-      (profile?.email && localStorage.getItem(`tijarah:2fa_secret:${profile.email}`)) ||
+      (profile.id && localStorage.getItem(`tijarah:2fa_secret:${profile.id}`)) ||
+      (profile.email && localStorage.getItem(`tijarah:2fa_secret:${profile.email}`)) ||
       "JBSWY3DPEHPK3PXP";
 
     setTwoFactorActive(Boolean(isActive));
     setSecretKey(secret);
 
     try {
-      if (isActive) {
-        if (profile.id) localStorage.setItem(`tijarah:2fa:${profile.id}`, "true");
-        if (profile.email) localStorage.setItem(`tijarah:2fa:${profile.email}`, "true");
-        if (profile.role === "owner" || isOwnerTarget) {
-          localStorage.setItem("tijarah:2fa:owner", "true");
-        }
-      }
       if (profile.id) localStorage.setItem(`tijarah:2fa_secret:${profile.id}`, secret);
       if (profile.email) localStorage.setItem(`tijarah:2fa_secret:${profile.email}`, secret);
-      if (profile.role === "owner" || isOwnerTarget) {
-        localStorage.setItem("tijarah:2fa_secret:owner", secret);
-      }
     } catch {}
   }, [profile]);
 
@@ -186,12 +182,15 @@ export default function Security() {
 
       setTwoFactorActive(true);
       try {
-        if (profile?.id) localStorage.setItem(`tijarah:2fa:${profile.id}`, "true");
-        if (profile?.email) localStorage.setItem(`tijarah:2fa:${profile.email}`, "true");
-        if (profile?.role === "owner") localStorage.setItem("tijarah:2fa:owner", "true");
-        if (profile?.id) localStorage.setItem(`tijarah:2fa_secret:${profile.id}`, secretKey);
-        if (profile?.email) localStorage.setItem(`tijarah:2fa_secret:${profile.email}`, secretKey);
-        if (profile?.role === "owner") localStorage.setItem("tijarah:2fa_secret:owner", secretKey);
+        if (profile?.id) {
+          localStorage.setItem(`tijarah:2fa_verified:${profile.id}`, "true");
+          localStorage.setItem(`tijarah:2fa_secret:${profile.id}`, secretKey);
+        }
+        if (profile?.email) {
+          localStorage.setItem(`tijarah:2fa_verified:${profile.email}`, "true");
+          localStorage.setItem(`tijarah:2fa_secret:${profile.email}`, secretKey);
+        }
+        if (localStorage.getItem("tijarah:2fa:owner")) localStorage.removeItem("tijarah:2fa:owner");
 
         if (api?.update && profile?.id) {
           api.update("profiles", profile.id, {
@@ -224,9 +223,15 @@ export default function Security() {
     if (confirm("Apakah Anda yakin ingin menonaktifkan Autentikasi Dua Faktor (2FA)? Akun Anda akan lebih rentan.")) {
       setTwoFactorActive(false);
       try {
-        if (profile?.id) localStorage.removeItem(`tijarah:2fa:${profile.id}`);
-        if (profile?.email) localStorage.removeItem(`tijarah:2fa:${profile.email}`);
-        if (profile?.role === "owner") localStorage.removeItem("tijarah:2fa:owner");
+        if (profile?.id) {
+          localStorage.removeItem(`tijarah:2fa_verified:${profile.id}`);
+          localStorage.removeItem(`tijarah:2fa:${profile.id}`);
+        }
+        if (profile?.email) {
+          localStorage.removeItem(`tijarah:2fa_verified:${profile.email}`);
+          localStorage.removeItem(`tijarah:2fa:${profile.email}`);
+        }
+        if (localStorage.getItem("tijarah:2fa:owner")) localStorage.removeItem("tijarah:2fa:owner");
         if (api?.update && profile?.id) {
           api.update("profiles", profile.id, { two_factor_enabled: false }).catch(() => {});
         }

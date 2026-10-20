@@ -26,9 +26,10 @@ export default function ResetPinModal({ open, onClose, user, api, onSuccess }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
 
-  const targetEmail = user?.email || "owner@tijarah.id";
-  const targetPhone = user?.phone || user?.whatsapp_owner || "+62 811-0000-0001";
-  const userName = user?.name || user?.full_name || "Pemilik Bisnis";
+  const targetEmail = user?.email || "owner@demo.tijarah.id";
+  const defaultHermesPhone = (typeof import.meta !== "undefined" && import.meta.env?.VITE_HERMES_DEFAULT_PHONE) || "6285256739684";
+  const targetPhone = user?.phone || user?.whatsapp_owner || defaultHermesPhone;
+  const userName = user?.full_name || user?.name || user?.email?.split("@")[0] || "Pemilik Akun";
 
   // Hitung mundur resend OTP
   useEffect(() => {
@@ -78,7 +79,6 @@ export default function ResetPinModal({ open, onClose, user, api, onSuccess }) {
       setNotice({
         type: "ok",
         msg: res.message,
-        code: otpCode,
         channel: selectedChannel,
         target: targetDestination
       });
@@ -107,7 +107,7 @@ export default function ResetPinModal({ open, onClose, user, api, onSuccess }) {
     }
 
     if (cleanInputOtp !== generatedOtp.toUpperCase()) {
-      setError("Kode OTP salah. Pastikan format sesuai (Contoh: " + generatedOtp + ").");
+      setError("Kode OTP salah atau tidak cocok. Silakan periksa kembali pesan masuk pada " + (channel === "email" ? "Email Resmi Anda." : "Hermes WhatsApp Anda."));
       return;
     }
 
@@ -252,21 +252,16 @@ export default function ResetPinModal({ open, onClose, user, api, onSuccess }) {
       {/* ──────── TAHAP 2: VERIFIKASI OTP & INPUT PIN BARU ──────── */}
       {step === 2 && (
         <div>
-          {/* BANNER NOTIFIKASI DISPATCH OTP DENGAN KODE JELAS */}
+          {/* BANNER NOTIFIKASI DISPATCH OTP (AMAN TANPA MEMBOCORKAN KODE KE LAYAR) */}
           <div className="d-alert d-alert--info" style={{ marginBottom: "1.25rem", textAlign: "left" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.35rem" }}>
-              <i className="fa-solid fa-circle-check" aria-hidden="true" />
-              <strong>Kode OTP Telah Terkirim</strong>
+              <i className="fa-solid fa-circle-check" aria-hidden="true" style={{ color: "var(--brand-emerald)" }} />
+              <strong>Kode OTP Berhasil Dikirimkan</strong>
             </div>
-            <p style={{ margin: "0 0 0.5rem", fontSize: "0.82rem" }}>
-              Kode verifikasi telah dikirimkan ke <strong>{channel === "email" ? "Email Resmi" : "Hermes WhatsApp"}</strong> ({notice?.target}).
+            <p style={{ margin: "0", fontSize: "0.84rem", lineHeight: 1.5 }}>
+              Kode verifikasi rahasia telah dikirimkan ke <strong>{channel === "email" ? "Email Resmi" : "Hermes WhatsApp"}</strong> ({notice?.target}).
+              Silakan periksa pesan masuk Anda dan masukkan kode OTP pada kolom di bawah.
             </p>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
-              <span style={{ fontSize: "0.78rem", color: "var(--color-muted)" }}>Kode OTP Anda:</span>
-              <code style={{ fontSize: "1.05rem", fontWeight: 700, letterSpacing: "1.5px", background: "rgba(11, 93, 75, 0.12)", color: "var(--brand-emerald)", padding: "0.2rem 0.6rem", borderRadius: "4px" }}>
-                {generatedOtp}
-              </code>
-            </div>
           </div>
 
           {error && (

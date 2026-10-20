@@ -165,18 +165,15 @@ export default function Wallet() {
     setGateError(null);
     setVerifyingGate(true);
 
-    const isOwnerTarget = user?.role === "owner" || user?.email === "ksanihtest@gmail.com";
     const secret = user?.two_factor_secret ||
       user?.totp_secret ||
       (user?.id && localStorage.getItem(`tijarah:2fa_secret:${user.id}`)) ||
       (user?.email && localStorage.getItem(`tijarah:2fa_secret:${user.email}`)) ||
-      (isOwnerTarget ? localStorage.getItem("tijarah:2fa_secret:owner") : "") ||
       "";
     const backupPin = user?.transaction_pin ||
       user?.pin ||
       (user?.id && localStorage.getItem(`tijarah:pin:${user.id}`)) ||
       (user?.email && localStorage.getItem(`tijarah:pin:${user.email}`)) ||
-      (isOwnerTarget ? localStorage.getItem("tijarah:pin:owner") : "") ||
       "";
 
     const res = await verifyTotpChallenge(totpInput, secret, backupPin);

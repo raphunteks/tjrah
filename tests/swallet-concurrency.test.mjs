@@ -9,7 +9,9 @@ import {
   generateAlphanumericOtp,
   verifyTotpChallenge,
   executeP2PTransfer,
-  requestBankWithdrawal
+  requestBankWithdrawal,
+  isUserTwoFactorActive,
+  sendPinResetOtp
 } from "../src/api/swallet.js";
 
 // ───────── 1. UJI SIMULASI KONKURENSI & ANTI-CHEAT DOUBLE-SPENDING ─────────
@@ -234,5 +236,28 @@ test("S-Wallet: Transfer dan penarikan bank diblokir jika PIN transaksi belum di
   });
   assert.equal(resWdNoPin.ok, false, "Penarikan harus gagal jika pengguna belum set PIN");
   assert.match(resWdNoPin.error, /PIN Transaksi belum dibuat/i);
+});
+
+// ───────── 9. UJI STATUS 2FA TANPA BACKDOOR OWNER ─────────
+test("S-Wallet: isUserTwoFactorActive menolak jika belum diverifikasi dan menerima jika valid", () => {
+  // Pengguna tanpa 2FA aktif
+  assert.equal(isUserTwoFactorActive({ id: "user-1", email: "unverified@demo.id" }), false);
+  assert.equal(isUserTwoFactorActive({ id: "user-2", role: "owner" }), false);
+
+  // Pengguna dengan 2FA aktif dari database
+  assert.equal(isUserTwoFactorActive({ id: "user-3", two_factor_enabled: true }), true);
+});
+
+// ───────── 10. UJI SANITASI PESAN STATUS RESET PIN (ANTI-LEAK OTP) ─────────
+test("S-Wallet: sendPinResetOtp tidak membocorkan kode OTP pada string pesan balik", async () => {
+  const otpCode = "SW-998877";
+  const res = await sendPinResetOtp({
+    channel: "email",
+    target: "test@example.com",
+    otpCode,
+    userName: "Test User"
+  });
+  assert.equal(res.ok, true);
+  assert.equal(res.message.includes(otpCode), false, "Pesan status dilarang keras memuat kode OTP mentah");
 });
 
