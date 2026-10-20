@@ -132,7 +132,7 @@ export const api = {
   async getProfile(uid) {
     const res = await supabase
       .from("profiles")
-      .select("id, tenant_id, branch_id, role, full_name, email, tenant:tenants(id, name, slug, pillar)")
+      .select("id, tenant_id, branch_id, role, full_name, email, phone, two_factor_enabled, two_factor_secret, two_factor_backup_codes, tenant:tenants(id, name, slug, pillar)")
       .eq("id", uid)
       .single();
     const data = ok(res);

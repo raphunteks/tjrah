@@ -24,7 +24,7 @@ const BACKUP_CODES = [
 ];
 
 export default function Security() {
-  const { profile, api } = useAuth();
+  const { profile, api, refreshProfile } = useAuth();
   const { t } = useAccountLang();
 
   const userEmail = profile?.email || "owner@demo.tijarah.id";
@@ -101,12 +101,12 @@ export default function Security() {
       if (localStorage.getItem("tijarah:2fa:owner")) localStorage.removeItem("tijarah:2fa:owner");
     } catch {}
 
-    const isDbEnabled = profile?.two_factor_enabled === true;
+    const isDbEnabled = profile?.two_factor_enabled != null ? Boolean(profile.two_factor_enabled) : null;
     const isLocalVerified = Boolean(
       (profile.id && localStorage.getItem(`tijarah:2fa_verified:${profile.id}`) === "true") ||
       (profile.email && localStorage.getItem(`tijarah:2fa_verified:${profile.email}`) === "true")
     );
-    const isActive = isDbEnabled || isLocalVerified;
+    const isActive = isDbEnabled !== null ? isDbEnabled : isLocalVerified;
 
     const secret = profile?.two_factor_secret ||
       (profile.id && localStorage.getItem(`tijarah:2fa_secret:${profile.id}`)) ||
@@ -120,7 +120,23 @@ export default function Security() {
       if (profile.id) localStorage.setItem(`tijarah:2fa_secret:${profile.id}`, secret);
       if (profile.email) localStorage.setItem(`tijarah:2fa_secret:${profile.email}`, secret);
     } catch {}
-  }, [profile]);
+
+    // Failsafe: Jika pada saat mount awal profile.two_factor_enabled masih undefined, fetch profil langsung dari API
+    if (profile.two_factor_enabled == null && profile.id && api?.getProfile) {
+      api.getProfile(profile.id).then((fresh) => {
+        if (fresh && fresh.two_factor_enabled != null) {
+          setTwoFactorActive(Boolean(fresh.two_factor_enabled));
+          if (fresh.two_factor_secret) {
+            setSecretKey(fresh.two_factor_secret);
+            try {
+              if (profile.id) localStorage.setItem(`tijarah:2fa_secret:${profile.id}`, fresh.two_factor_secret);
+              if (profile.email) localStorage.setItem(`tijarah:2fa_secret:${profile.email}`, fresh.two_factor_secret);
+            } catch {}
+          }
+        }
+      }).catch(() => {});
+    }
+  }, [profile, api]);
 
   // Live TOTP Clock & Countdown (Pembaruan Real-Time Tiap Detik)
   const [countdown, setCountdown] = useState(getRemainingSeconds());
@@ -193,10 +209,13 @@ export default function Security() {
         if (localStorage.getItem("tijarah:2fa:owner")) localStorage.removeItem("tijarah:2fa:owner");
 
         if (api?.update && profile?.id) {
-          api.update("profiles", profile.id, {
+          await api.update("profiles", profile.id, {
             two_factor_enabled: true,
             two_factor_secret: secretKey
           }).catch(() => {});
+        }
+        if (refreshProfile) {
+          await refreshProfile().catch(() => {});
         }
       } catch {}
 
@@ -219,7 +238,7 @@ export default function Security() {
     }
   };
 
-  const handleDisable2Fa = () => {
+  const handleDisable2Fa = async () => {
     if (confirm("Apakah Anda yakin ingin menonaktifkan Autentikasi Dua Faktor (2FA)? Akun Anda akan lebih rentan.")) {
       setTwoFactorActive(false);
       try {
@@ -233,7 +252,10 @@ export default function Security() {
         }
         if (localStorage.getItem("tijarah:2fa:owner")) localStorage.removeItem("tijarah:2fa:owner");
         if (api?.update && profile?.id) {
-          api.update("profiles", profile.id, { two_factor_enabled: false }).catch(() => {});
+          await api.update("profiles", profile.id, { two_factor_enabled: false }).catch(() => {});
+        }
+        if (refreshProfile) {
+          await refreshProfile().catch(() => {});
         }
       } catch {}
 

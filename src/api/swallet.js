@@ -101,6 +101,7 @@ export async function verifyTotpChallenge(token, secretKey = "", backupPin = "")
 export function isUserTwoFactorActive(user) {
   if (!user || (!user.id && !user.email)) return false;
   if (user?.two_factor_enabled === true) return true;
+  if (user?.two_factor_enabled === false) return false;
   try {
     // Bersihkan sisa legacy dummy flag jika ada di browser
     if (localStorage.getItem("tijarah:2fa:owner")) {

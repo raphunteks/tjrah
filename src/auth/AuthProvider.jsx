@@ -258,6 +258,13 @@ export function AuthProvider({ children }) {
           throw signInErr;
         }
       },
+      refreshProfile: async () => {
+        const uid = profile?.id || (await apiRef.current?.getSessionUserId?.());
+        if (uid && syncRef.current) {
+          return await syncRef.current(uid);
+        }
+        return null;
+      },
       signOut: async () => {
         setViewTenant(null);
         remember(null);
@@ -294,6 +301,7 @@ export const useAuth = () => {
     viewTenant: null,
     chooseTenant: () => {},
     signIn: async () => {},
-    signOut: async () => {}
+    signOut: async () => {},
+    refreshProfile: async () => null
   };
 };
