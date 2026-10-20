@@ -97,21 +97,21 @@ Subtab S-Wallet dirancang sebagai pusat kendali finansial mandiri dengan 7 modul
 ```
 
 ### 3.1 Fitur 1: Dasbor Brankas & Saldo Real-Time
-1. **Saldo Tersedia (Available Balance)**: Dana likuid yang siap ditransfer, dibelanjakan di kasir, atau ditarik.
-2. **Saldo Tertahan (Locked / Escrow Balance)**: Dana yang dialokasikan untuk transaksi pesanan berjalan atau proses penarikan yang menunggu penyelesaian kliring bank.
-3. **Nomor Rekening S-Wallet Unik**: Format terstandar internasional `SW-YYYYMM-XXXXXXXX` yang dapat dijadikan tujuan transfer instan tanpa membagikan nomor rekening bank pribadi.
-4. **My QR Code S-Wallet**: Menampilkan kode QR personal pengguna yang dapat dipindai oleh sesama pengguna atau kasir untuk pengiriman dana kilat.
+1. **Saldo Tersedia (Available Balance)**: Dana likuid riil yang siap digunakan untuk transfer, belanja di kasir, atau ditarik.
+2. **Saldo Tertahan (Locked / Escrow Balance)**: Dana yang dialokasikan sementara saat ada pesanan yang sedang diproses atau penarikan dana yang menunggu kliring perbankan.
+3. **Nomor Rekening S-Wallet Unik**: Format terstandarisasi perbankan `SW-YYYYMM-XXXXXXXX` (bisa disalin dengan 1-klik untuk menerima transfer tanpa harus menyebarkan nomor rekening bank pribadi).
+4. **My QR Code S-Wallet**: Kode QR personal berstempel resmi Tijarah yang bisa langsung dipindai oleh sesama pengguna atau kasir untuk pengiriman dana seketika.
 
 ---
 
 ### 3.2 Fitur 2: Top-Up Saldo Instan Terintegrasi Gateway Pakasir API v2
-Pengguna dapat mengisi saldo S-Wallet kapan saja melalui gerbang pembayaran resmi Pakasir yang telah terkonfigurasi pada sistem Tijarah:
-1. **Metode Pembayaran Lengkap**:
-   - **QRIS Dinamis**: Tampil otomatis di layar, dapat dipindai melalui BCA Mobile, Livin Mandiri, BRImo, BNI Mobile, GoPay, OVO, ShopeePay, DANA, LinkAja.
-   - **Virtual Account 24/7**: 9 Bank nasional (BRI, BNI, CIMB Niaga, Maybank, Danamon, Neo Commerce, BSI, Bank Muamalat, Bank OCBC).
+Pengguna dapat mengisi ulang kantong S-Wallet mereka kapan saja dengan verifikasi otomatis tanpa perlu konfirmasi manual admin:
+1. **Kanal Pembayaran Otomatis**:
+   - **QRIS Dinamis**: Tampil instan di layar, dapat dipindai oleh semua aplikasi m-Banking (BCA, Mandiri Livin, BRImo, BNI) dan e-Wallet (GoPay, OVO, ShopeePay, DANA, LinkAja).
+   - **Virtual Account 24 Jam**: Mendukung 9 bank nasional (BRI, BNI, CIMB Niaga, Maybank, Danamon, Neo Commerce, BSI, Muamalat, OCBC) dengan verifikasi otomatis 24/7.
    - **Payment Link**: Pembayaran kartu debit atau tautan *checkout* instan.
-2. **Kalkulator Nominal Cepat**: Tombol nominal instan (Rp 50.000, Rp 100.000, Rp 250.000, Rp 500.000, Rp 1.000.000, Rp 2.500.000) atau input bebas (minimal Rp 10.000).
-3. **Penyelesaian Otomatis (< 2 Detik)**: Begitu pembayaran diterima oleh Pakasir, webhook serverless (`/api/webhook/pakasir`) secara otomatis memicu stored procedure `process_pakasir_wallet_topup` untuk mengkreditkan saldo ke S-Wallet pengguna tanpa intervensi manual superadmin.
+2. **Kalkulator Nominal Cepat**: Pilihan nominal instan (Rp 50rb, Rp 100rb, Rp 250rb, Rp 500rb, Rp 1jt, Rp 2,5jt) atau bebas input nominal kustom (minimal Rp 10.000).
+3. **Penyelesaian Otomatis (< 2 Detik)**: Begitu pembayaran selesai di Pakasir, webhook serverless (`/api/webhook/pakasir`) secara otomatis memicu stored procedure `process_pakasir_wallet_topup` untuk mengkreditkan saldo ke S-Wallet pengguna secara *real-time*.
 
 ---
 
@@ -122,7 +122,7 @@ Memungkinkan perpindahan saldo instan antar pengguna Tijarah (Superadmin, Owner,
    - Alamat Email Terdaftar
    - Nomor WhatsApp / Handphone Terverifikasi
 2. **Kartu Validasi Identitas Penerima**: Sebelum dana terkirim, sistem memunculkan pop-up konfirmasi yang menampilkan Foto Avatar, Nama Lengkap, Peran Akun, dan Nama Merchant/Cabang penerima guna mencegah salah kirim.
-3. **Bebas Biaya Admin (Rp 0)**: Pengiriman saldo antar kantong Tijarah 100% gratis.
+3. **Bebas Biaya Admin (Rp 0)**: Seluruh transfer internal antar kantong S-Wallet bebas biaya administrasi.
 4. **Catatan Transaksi**: Pengirim dapat menyertakan pesan (contoh: *"Bagi hasil shift pagi"*, *"Uang muka pesanan katering"*, *"Pelunasan invoice"*).
 5. **Otorisasi Eksekusi**: Wajib memasukkan **PIN Transaksi 6-Digit** pengirim untuk mencegah eksekusi sepihak.
 
@@ -156,13 +156,13 @@ S-Wallet terhubung langsung ke seluruh alur belanja dan operasional bisnis:
    - Pada metode pembayaran kasir, tersedia opsi **"S-Wallet Tijarah"**.
    - Pelanggan/Member menunjukkan kode bayar dinamis atau memindai QR Kasir.
    - Saldo berpindah seketika ke dompet merchant, struk kasir tercetak dengan rincian non-tunai.
-2. **Belanja Mandiri di Pesanan Online & Portal Member (`/m`)**:
+2. **Belanja Mandiri di Pesanan Online & Portal Member (`/m` / `src/app/pages/ops/Online.jsx`)**:
    - Member yang memesan menu atau obat klinik dapat langsung memilih metode bayar S-Wallet dengan pemotongan saldo seketika tanpa perlu unggah struk transfer bank manual.
-3. **Pembayaran Langganan SaaS & Kuota Copilot AI**:
-   - Merchant Owner dapat memperpanjang paket aplikasi Tijarah OS atau menambah kuota AI Copilot langsung menggunakan saldo S-Wallet hasil penjualan toko.
-4. **Otomatisasi Bagi Hasil Dokter & Terapis Klinik**:
+3. **Pembayaran Langganan SaaS & Kuota Copilot AI (`src/app/pages/growth/Subscription.jsx`)**:
+   - Merchant Owner dapat memperpanjang paket aplikasi Tijarah OS atau menambah kuota AI Copilot langsung menggunakan saldo S-Wallet hasil penjualan toko mereka.
+4. **Otomatisasi Bagi Hasil Dokter & Terapis Klinik (`src/app/pages/service/Team.jsx`)**:
    - Setiap invoice tindakan medis gigi/umum yang diselesaikan di kasir secara otomatis membagi dana: komisi dokter (misal 30%) langsung masuk ke S-Wallet pribadi dokter, dan sisanya (70%) masuk ke S-Wallet klinik secara *real-time*.
-5. **Payroll & Kas Bon Staf Terintegrasi**:
+5. **Payroll & Kas Bon Staf Terintegrasi (`src/app/pages/service/Payroll.jsx`)**:
    - Owner dapat mendistribusikan gaji bulanan ke seluruh S-Wallet staf secara massal (*1-Click Bulk Payroll Disbursement*), dan staf dapat mengajukan kas bon yang dicairkan langsung ke S-Wallet mereka setelah disetujui GM.
 
 ---
@@ -202,11 +202,197 @@ Kelemahan terbesar operasional toko fisik konvensional adalah kebocoran uang tun
 
 ---
 
-## 4. SKEMA BASIS DATA LENGKAP (POSTGRESQL / SUPABASE)
+## 4. PERSPEKTIF FITUR TIAP PERAN (ROLE-BASED POV MATRIKS RBAC)
 
-Berikut adalah struktur tabel basis data relasional untuk mendukung seluruh ekosistem S-Wallet:
+Sesuai dengan matriks RBAC resmi Tijarah OS (BAB IV Blueprint: 20 Fitur x 5 Peran + Member L5), setiap tingkatan peran memiliki wewenang, batasan fungsional, dan perspektif antarmuka yang presisi:
 
-### 4.1 Tabel Rekening Dompet (`public.wallets`)
+```
++----------------------------------------------------------------------------------------------------+
+| MATRIKS HAK AKSES FINANSIAL S-WALLET BERDASARKAN TINGKATAN PERAN (RBAC)                           |
++----------------------------------------------------------------------------------------------------+
+| Peran (Level)       | Top-Up | P2P Transfer  | Belanja POS | Tarik Bank | Bulk Payroll | Freeze/God |
++---------------------+--------+---------------+-------------+------------+--------------+------------+
+| Superadmin (L0)     | CRUD   | Global Bebas  | -           | Approval   | Platform     | OVERPOWER  |
+| Owner Merchant (L1) | CRUD   | Antar Akun    | Merchant In | CRUD       | Eksekusi Full| Tenant Ctr |
+| General Mgr (L2)    | RU     | Cabang & Staf | Merchant In | RU (Limit) | Verifikasi   | Kas Cabang |
+| Cashier/Staff (L3)  | R      | Kasir & Owner | Input Bayar | -          | Terima Gaji  | -          |
+| Dokter/Medis (L4)   | R      | Terima Komisi | -           | Mandiri    | Terima Share | -          |
+| Member (L5)         | CRUD   | Sesama Member | 1-Klik Bayar| Saldo Sisa | -            | -          |
++----------------------------------------------------------------------------------------------------+
+```
+
+### 4.1 POV 1: Superadmin / Developer (Level L0 - Platform God-Mode)
+- **Perspektif**: Pengawas moneter platform tertinggi, memantau total likuiditas sistem, perputaran uang antar tenant, dan rekonsiliasi gateway.
+- **Wewenang Spesifik**:
+  - Membuka konsol **Master Financial Control Center** (seluruh transaksi platform terpantau dalam 1 tab).
+  - Melakukan audit investigasi terhadap rekening dompet manapun tanpa batasan tenant.
+  - Membekukan (*Freeze*) dompet yang terindikasi *fraud*, *money laundering*, atau sengketa pembayaran.
+  - Melakukan penyesuaian saldo sistemik (*System Balance Correction / Emergency Inject/Deduct*) dengan alasan audit resmi yang tercatat di *immutable ledger*.
+  - Menyetujui atau menolak permohonan penarikan dana berskala besar (*High-Volume Payout Approval*).
+
+### 4.2 POV 2: Owner Merchant (Level L1 - Master Business Wallet)
+- **Perspektif**: Pemilik modal dan pengendali kas bisnis merchant.
+- **Wewenang Spesifik**:
+  - Rekening penampung utama seluruh omset masuk dari penjualan kasir POS seluruh cabang dan pesanan daring.
+  - Eksekusi pembayaran langganan paket SaaS Tijarah OS (Starter, Growth, Enterprise) & top-up kuota token AI Copilot.
+  - Melakukan transfer alokasi kas operasional cabang ke GM.
+  - Eksekusi penggajian bulanan staf (*Bulk 1-Click Salary Disbursement*) ke seluruh S-Wallet karyawan.
+  - Mengajukan penarikan dana omset usaha (*Withdrawal*) ke rekening bank perusahaan/pribadi.
+  - Menyetujui permohonan kas bon staf yang diajukan oleh GM.
+
+### 4.3 POV 3: General Manager / GM (Level L2 - Operational Branch Wallet)
+- **Perspektif**: Manajer operasional harian cabang toko atau klinik.
+- **Wewenang Spesifik**:
+  - Menerima alokasi dana operasional cabang (*Petty Cash*) dari Owner ke S-Wallet operasional cabang.
+  - Mendistribusikan kas kecil awal (*Float Cash*) ke kasir pada awal shift pagi/sore.
+  - Memeriksa dan memverifikasi setoran kasir saat penutupan shift (*Shift Settlement Reconcile*).
+  - Menerima pengajuan kas bon staf, memeriksa sisa limit, dan meneruskannya ke Owner dengan rekomendasi persetujuan.
+  - Otorisasi *Void/Refund* transaksi kasir menggunakan PIN Supervisor.
+
+### 4.4 POV 4: Cashier / Staf Operasional (Level L3 - Register & Personal Wallet)
+- **Perspektif**: Petugas kasir garis depan yang memproses penjualan tanpa menyentuh uang tunai berisiko.
+- **Wewenang Spesifik**:
+  - Menerima input kode bayar dinamis (OTP 60s) dari pelanggan di mesin POS.
+  - Memiliki kantong dompet pribadi untuk menerima pencairan gaji bulanan, bonus penjualan, dan tip digital langsung dari pelanggan.
+  - Melakukan transfer setoran hasil kasir ke dompet GM/Owner saat penutupan register.
+  - Mengajukan kas bon darurat ke GM langsung dari dasbor akun staf.
+  - Tidak memiliki akses untuk mentransfer dana operasional toko ke luar merchant tanpa otorisasi GM.
+
+### 4.5 POV 5: Dokter / Tenaga Medis Klinik (Level L4 - Professional Commission Wallet)
+- **Perspektif**: Praktisi medis yang berhak atas pembagian jasa medis secara transparan.
+- **Wewenang Spesifik**:
+  - Menerima otomatisasi bagi hasil (*Automated Split Revenue*) setiap kali billing pasien odontogram/tindakan medis lunas di kasir klinik (misal: 30% jasa medis dokter langsung masuk detik itu juga).
+  - Memantau rincian pembagian hasil per pasien, per tindakan medis, dan per tanggal.
+  - Mentransfer saldo hasil jasa medis ke rekening bank pribadi dokter kapan pun diinginkan tanpa harus menunggu rekap manual bulanan staf akunting.
+
+### 4.6 POV 6: Member Pelanggan / Pasien (Level L5 - Customer Loyalty & Shopping Wallet)
+- **Perspektif**: Konsumen yang berbelanja produk makanan/minuman, retail, atau perawatan klinik.
+- **Wewenang Spesifik**:
+  - Mengisi saldo (*Top-Up*) mandiri melalui QRIS/VA Pakasir di portal pelanggan `/m`.
+  - Menerbitkan **Kode Bayar 60 Detik** saat berada di depan meja kasir toko untuk transaksi nirsentuh.
+  - Melakukan *Checkout 1-Klik* pesanan online di web portal tanpa perlu konfirmasi manual WhatsApp.
+  - Mengirim saldo ke sesama teman/keluarga pengguna Tijarah (contoh: patungan belanja / *split bill*).
+  - Menerima pengembalian dana (*instant refund*) secara utuh detik itu juga jika pesanan dibatalkan.
+
+---
+
+## 5. INTER-ROLE FINANCIAL WORKFLOWS (ALUR KERJA FINANSIAL ANTAR PERAN)
+
+S-Wallet menyatukan operasional multi-peran ke dalam alur kerja finansial yang terhubung otomatis:
+
+### 5.1 Alur 1: Pembayaran Belanja Kasir POS & Split Bagi Hasil Dokter Real-Time
+```
+[ Pasien / Member ] --(Tunjukkan Kode Bayar 60s)--> [ Kasir POS ]
+                                                          |
+                                           [ Eksekusi RPC di Database ]
+                                                          |
+                      +-----------------------------------+-----------------------------------+
+                      |                                                                       |
+                      v (70% Omset Toko/Klinik)                                               v (30% Jasa Medis)
+          [ S-Wallet Owner Merchant ]                                             [ S-Wallet Dokter Medis ]
+        Tercatat di Omset Hari Ini                                              Tercatat di Komisi Tindakan
+```
+
+### 5.2 Alur 2: Alokasi Kas Operasional Cabang & Setoran Tutup Kasir
+```
+[ Owner Merchant ] --(Alokasi Petty Cash Bulanan Rp 5jt)--> [ General Manager (GM) ]
+                                                                     |
+                                                       (Kas Awal Shift Rp 300rb)
+                                                                     v
+                                                             [ Kasir / Staf ]
+                                                                     |
+                                                         (Penjualan Seharian)
+                                                                     v
+[ Owner Merchant ] <--(Setoran Hasil Shift via Transfer S-Wallet)-- [ Tutup Kasir ]
+```
+
+### 5.3 Alur 3: Penggajian Karyawan (Payroll) & Pengajuan Kas Bon
+```
+1. Alur Payroll Massal Akhir Bulan:
+[ Owner Merchant ] --(1-Klik Payroll Massal Rp 45jt)--> [ Terbagi Otomatis ke 15 S-Wallet Staf ]
+
+2. Alur Kas Bon Darurat Staf:
+[ Staf / Kasir ] --(Ajukan Kas Bon Rp 500rb)--> [ GM: Verifikasi Sisa Gaji ]
+                                                         |
+                                                  (Rekomendasikan)
+                                                         v
+[ Staf: Saldo S-Wallet Bertambah ] <--(Approve & Cairkan Langsung)-- [ Owner Merchant ]
+```
+
+### 5.4 Alur 4: Pembatalan Pesanan Kasir (Anti-Fake Void Auto-Refund)
+```
+[ Kasir Ajukan Void Nota #1024 ] ---> [ GM Masukkan PIN Otorisasi Supervisor ]
+                                                        |
+                                                 (Void Disetujui)
+                                                        v
+                                          [ Sistem Eksekusi Auto-Refund ]
+                                                        |
+         +----------------------------------------------+----------------------------------------------+
+         |                                                                                             |
+         v                                                                                             v
+[ Saldo S-Wallet Toko Berkurang ]                                                   [ Saldo Member Kembali Utuh ]
+Tercatat di Audit Log Void                                                          Kasir TIDAK Terima Uang Tunai
+```
+
+---
+
+## 6. KONSOL PUSAT KENDALI SUPERADMIN / DEV (GOD-MODE FINANCIAL CONTROL CENTER)
+
+Bagi peran **Superadmin / Developer**, disediakan konsol terpadu (*All-in-One Command Center*) pada panel Superadmin yang memantau, mengaudit, dan mengendalikan seluruh sistem moneter platform dalam **satu layar kendali**:
+
+```
++------------------------------------------------------------------------------------------------------+
+| SUPERADMIN / DEV: MASTER FINANCIAL COMMAND CENTER (/app/paket > Subtab S-Wallet Master)              |
++------------------------------------------------------------------------------------------------------+
+| [ RADAR LIKUIDITAS GLOBAL PLATFORM ]                                                                 |
+|   Total Uang Beredar: Rp 482.940.000     Cadangan Riil Pakasir: Rp 482.940.000     Selisih: Rp 0     |
+|   Dompet Owner: Rp 310.200.000           Dompet GM: Rp 42.100.000                  Dompet Staf: Rp 18jt|
+|   Dompet Dokter: Rp 38.400.000           Dompet Member: Rp 74.240.000              Status: 100% Klop |
++------------------------------------------------------------------------------------------------------+
+| [ TOMBOL DARURAT & CIRCUIT BREAKER ]                                                                 |
+|   [!] GLOBAL CIRCUIT BREAKER: [ NORMAL / BERJALAN ]  (Klik untuk bekukan transfer platform darurat)  |
+|   [ Radar Deteksi Anomali AI: AKTIF (0 Ancaman Terdeteksi) ]     [ Rekonsiliasi Gateway Real-Time ] |
++------------------------------------------------------------------------------------------------------+
+| [ TABEL MONITORING OMNI-WALLET & SEARCH ]                                                            |
+|   Cari Dompet Pengguna: [ Masukkan Nama / Email / No SW / Tenant... ]       Filter: [ Semua Role v ] |
+|   -------------------------------------------------------------------------------------------------  |
+|   No SW            Nama Akun           Role       Tenant          Saldo Aktif     Status     Aksi    |
+|   SW-2026-001928   Budi Santoso        Owner      Kopi Harumin    Rp 45.200.000   Normal     [Kelola]|
+|   SW-2026-004812   drg. Siti Sarah     Dokter     Klinik Gigi     Rp 12.800.000   Normal     [Kelola]|
+|   SW-2026-009182   Rian Kasir          Staff      Kopi Harumin    Rp 1.450.000    Normal     [Kelola]|
+|   SW-2026-011248   Ahmad (Member)      Member     Kopi Harumin    Rp 340.000      Normal     [Kelola]|
++------------------------------------------------------------------------------------------------------+
+| [ LIVE ACTIVITY FEED - TRANSAKSI REAL-TIME DETIK DEMI DETIK ]                                       |
+|   12:35:10 - TRF-20261020-A819: Ahmad (Member) bayar POS Kasir Kopi Harumin -> Rp 45.000 [Sukses]   |
+|   12:34:55 - TOP-20261020-0012: Top-Up QRIS Pakasir drg. Siti Sarah -> Rp 500.000 [Settled]        |
+|   12:32:18 - TRF-20261020-9941: Owner Harumin transfer petty cash GM -> Rp 2.000.000 [Sukses]       |
++------------------------------------------------------------------------------------------------------+
+```
+
+### 6.1 Fitur Unggulan Konsol Superadmin / Dev
+1. **Radar Likuiditas & Reserve Gateway Pakasir (100% Sinkron)**:
+   - Menghitung secara agregat total saldo seluruh dompet di database dan membandingkannya dengan dana riil yang masuk di akun merchant Pakasir.
+   - Menampilkan indikator selisih (*reconciliation gap*). Jika ada selisih sekecil Rp 1, radar menyala merah memberi peringatan.
+2. **Omni-Wallet Explorer & Inspector**:
+   - Superadmin dapat mencari dompet milik akun manapun di seluruh cabang dan tenant.
+   - Dapat menginspeksi buku besar (*ledger inspection*), histori transfer, serta mendeteksi IP address dan perangkat yang digunakan pengguna.
+3. **Instrumen Intervensi God-Mode**:
+   - **One-Click Freeze / Unfreeze**: Membekukan dompet tertentu jika terindikasi pembajakan akun atau transaksi mencurigakan. Dompet yang dibekukan tidak dapat melakukan transaksi keluar apa pun.
+   - **Koreksi Saldo Sistemik (Balance Adjustment)**: Superadmin dapat melakukan penyesuaian saldo resmi (debit/kredit darurat) jika terjadi koreksi manual sengketa perbankan. Setiap koreksi **wajib menyertakan Berita Acara / Catatan Alasan Audit** yang tersimpan di buku besar superadmin.
+   - **Global Circuit Breaker (Tombol Darurat Finansial)**: Saklar pengaman darurat yang dapat menghentikan seluruh fungsi transfer platform dalam hitungan detik jika sistem mendeteksi percobaan peretasan atau serangan DDoS terdistribusi.
+4. **Radar Deteksi Anomali Anti-Fraud AI**:
+   - Mendeteksi pola transaksi ganjil:
+     - Transfer berulang dalam rentang waktu di bawah 10 detik.
+     - Penarikan saldo dalam nominal di atas Rp 20.000.000 di luar jam operasional normal.
+     - Akun yang mengalami kegagalan verifikasi OTP 2FA lebih dari 5 kali berturut-turut.
+5. **Live Activity Ticker (Streaming Mutasi Real-Time)**:
+   - Panel bawah menampilkan siaran langsung setiap pergerakan dana di seluruh platform detik demi detik tanpa perlu memuat ulang halaman.
+
+---
+
+## 7. SKEMA BASIS DATA & STORED PROCEDURES KRUSIAL (POSTGRESQL / SUPABASE)
+
+### 7.1 Tabel Rekening Dompet (`public.wallets`)
 ```sql
 create table public.wallets (
   id uuid primary key default gen_random_uuid(),
@@ -218,22 +404,23 @@ create table public.wallets (
   currency varchar(3) not null default 'IDR',
   daily_transfer_limit bigint not null default 25000000, -- Limit Rp 25jt/hari
   is_frozen boolean not null default false,
+  frozen_reason text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
 create index idx_wallets_user on public.wallets(user_id);
 create index idx_wallets_number on public.wallets(wallet_number);
+create index idx_wallets_tenant on public.wallets(tenant_id);
 ```
 
-### 4.2 Tabel Token Pembayaran Dinamis Kasir (`public.wallet_payment_tokens`)
-Mendukung fitur Zero Fraud di POS:
+### 7.2 Tabel Token Pembayaran Dinamis Kasir POS (`public.wallet_payment_tokens`)
 ```sql
 create table public.wallet_payment_tokens (
   id uuid primary key default gen_random_uuid(),
   wallet_id uuid not null references public.wallets(id) on delete cascade,
   token_code varchar(6) not null,
-  amount_limit bigint, -- Opsional, jika token dibatasi nominal tertentu
+  amount_limit bigint,
   is_used boolean not null default false,
   used_at timestamptz,
   used_order_id text,
@@ -244,7 +431,7 @@ create table public.wallet_payment_tokens (
 create index idx_pay_tokens_lookup on public.wallet_payment_tokens(token_code, is_used, expires_at);
 ```
 
-### 4.3 Tabel Transaksi Utama (`public.wallet_transactions`)
+### 7.3 Tabel Transaksi Finansial (`public.wallet_transactions`)
 ```sql
 create type public.wallet_txn_category as enum (
   'p2p_transfer',
@@ -256,12 +443,13 @@ create type public.wallet_txn_category as enum (
   'bank_withdrawal',
   'clinic_doctor_split',
   'payroll_salary',
-  'pos_refund'
+  'pos_refund',
+  'admin_adjustment'
 );
 
 create table public.wallet_transactions (
   id uuid primary key default gen_random_uuid(),
-  reference_no varchar(36) not null unique, -- TRF-20261020-XXXX, POS-..., TOP-...
+  reference_no varchar(36) not null unique,
   idempotency_key varchar(64) not null unique,
   sender_wallet_id uuid references public.wallets(id),
   receiver_wallet_id uuid references public.wallets(id),
@@ -271,7 +459,7 @@ create table public.wallet_transactions (
   category public.wallet_txn_category not null,
   status varchar(20) not null default 'completed', -- completed, pending, failed, reversed
   notes text,
-  metadata jsonb default '{}'::jsonb, -- detail order_id, invoice_id, pos_terminal
+  metadata jsonb default '{}'::jsonb,
   created_at timestamptz not null default now()
 );
 
@@ -281,7 +469,7 @@ create index idx_wallet_txns_cat on public.wallet_transactions(category);
 create index idx_wallet_txns_created on public.wallet_transactions(created_at desc);
 ```
 
-### 4.4 Tabel Buku Besar Ganda (`public.wallet_ledger`)
+### 7.4 Tabel Buku Besar Ganda (`public.wallet_ledger`)
 ```sql
 create table public.wallet_ledger (
   id uuid primary key default gen_random_uuid(),
@@ -300,10 +488,9 @@ create index idx_wallet_ledger_txn on public.wallet_ledger(txn_id);
 
 ---
 
-## 5. STORED PROCEDURES ATOMIK KRUSIAL (POSTGRESQL / SUPABASE)
+## 8. STORED PROCEDURES ATOMIK TERINTEGRASI
 
-### 5.1 Prosedur Pembayaran Kasir POS Tanpa Fraud (`execute_pos_wallet_payment`)
-Memproses pembayaran di mesin kasir dengan kode bayar dinamis 60 detik:
+### 8.1 Prosedur Pembayaran Kasir POS Tanpa Fraud (`execute_pos_wallet_payment`)
 ```sql
 create or replace function public.execute_pos_wallet_payment(
   p_cashier_user_id uuid,
@@ -346,7 +533,7 @@ begin
     raise exception 'Saldo S-Wallet pelanggan tidak mencukupi untuk pembayaran ini.';
   end if;
 
-  -- 3. Cari dompet merchant (Owner dari tenant tempat kasir bekerja)
+  -- 3. Cari dompet merchant (Owner dari tenant tempat kasir bertugas)
   select p.id into v_merchant_user_id
   from public.profiles cashier
   join public.profiles p on p.tenant_id = cashier.tenant_id and p.role = 'owner'
@@ -399,92 +586,100 @@ $$;
 
 ---
 
-### 5.2 Prosedur Webhook Top-Up Otomatis dari Pakasir (`process_pakasir_wallet_topup`)
-Dipanggil secara aman saat serverless webhook Pakasir menerima pembayaran:
+### 8.2 Prosedur Intervensi Superadmin Koreksi Saldo Berimbang (`admin_adjust_wallet_balance`)
 ```sql
-create or replace function public.process_pakasir_wallet_topup(
-  p_order_id text,
-  p_txn_id text,
-  p_amount bigint,
-  p_user_id uuid
+create or replace function public.admin_adjust_wallet_balance(
+  p_admin_user_id uuid,
+  p_target_wallet_id uuid,
+  p_amount bigint, -- positif untuk inject saldo, negatif untuk potong saldo
+  p_reason text
 )
 returns jsonb
 language plpgsql
 security definer
 as $$
 declare
-  v_wallet public.wallets%rowtype;
+  v_target_wallet public.wallets%rowtype;
   v_ref_no varchar(36);
-  v_txn_uuid uuid;
+  v_txn_id uuid;
 begin
-  -- Kunci baris dompet penerima
-  select * into v_wallet
-  from public.wallets
-  where user_id = p_user_id
-  for update;
-
-  if not found then
-    raise exception 'Dompet pengguna tidak ditemukan untuk top-up.';
+  -- Verifikasi pemanggil adalah Superadmin
+  if not exists (select 1 from public.profiles where id = p_admin_user_id and role = 'superadmin') then
+    raise exception 'Unauthorized: Hanya Superadmin yang berhak melakukan penyesuaian saldo sistem.';
   end if;
 
-  -- Tambahkan saldo
+  if trim(p_reason) = '' or p_reason is null then
+    raise exception 'Alasan audit penyesuaian saldo wajib dicantumkan.';
+  end if;
+
+  select * into v_target_wallet
+  from public.wallets
+  where id = p_target_wallet_id
+  for update;
+
+  if (v_target_wallet.balance + p_amount) < 0 then
+    raise exception 'Penyesuaian saldo ditolak: Saldo dompet target tidak boleh menjadi negatif.';
+  end if;
+
   update public.wallets
   set balance = balance + p_amount, updated_at = now()
-  where id = v_wallet.id;
+  where id = v_target_wallet.id;
 
-  v_ref_no := 'TOP-' || to_char(now(), 'YYYYMMDD') || '-' || p_txn_id;
+  v_ref_no := 'ADJ-' || to_char(now(), 'YYYYMMDD') || '-' || upper(substring(gen_random_uuid()::text from 1 for 8));
 
   insert into public.wallet_transactions (
     reference_no, idempotency_key, sender_wallet_id, receiver_wallet_id,
     amount, fee, total_deducted, category, status, notes, metadata
   ) values (
-    v_ref_no, 'pakasir_' || p_txn_id, null, v_wallet.id,
-    p_amount, 0, p_amount, 'topup_pakasir', 'completed',
-    'Top-Up Saldo S-Wallet via Pakasir Gateway',
-    jsonb_build_object('order_id', p_order_id, 'pakasir_txn_id', p_txn_id)
-  ) returning id into v_txn_uuid;
+    v_ref_no, 'adj_' || gen_random_uuid()::text, null, v_target_wallet.id,
+    abs(p_amount), 0, abs(p_amount), 'admin_adjustment', 'completed',
+    'Penyesuaian Saldo oleh Superadmin: ' || p_reason,
+    jsonb_build_object('admin_id', p_admin_user_id, 'direction', case when p_amount > 0 then 'INJECT' else 'DEDUCT' end)
+  ) returning id into v_txn_id;
 
   insert into public.wallet_ledger (txn_id, wallet_id, entry_type, amount, balance_before, balance_after)
-  values (v_txn_uuid, v_wallet.id, 'CREDIT', p_amount, v_wallet.balance, v_wallet.balance + p_amount);
+  values (
+    v_txn_id, v_target_wallet.id,
+    case when p_amount > 0 then 'CREDIT' else 'DEBIT' end,
+    abs(p_amount), v_target_wallet.balance, v_target_wallet.balance + p_amount
+  );
 
-  return jsonb_build_object('ok', true, 'new_balance', v_wallet.balance + p_amount);
+  return jsonb_build_object(
+    'ok', true,
+    'reference_no', v_ref_no,
+    'new_balance', v_target_wallet.balance + p_amount
+  );
 end;
 $$;
 ```
 
 ---
 
-## 6. MATRIKS PERLINDUNGAN & PENCEGAHAN FRAUD DI KASIR
-
-| Bentuk Modus Fraud Konvensional | Dampak pada Usaha | Cara S-Wallet Membasmi Fraud Hingga 0% |
-|:---|:---|:---|
-| **Pencurian Uang Kasir (Cash Pocketing)** | Kasir menerima uang cash pelanggan tapi tidak memasukkan ke sistem. | **Eliminasi Uang Tunai**: Pelanggan membayar via S-Wallet, saldo berpindah di database langsung ke akun Owner. Kasir tidak memegang uang fisik. |
-| **Nota Fiktif / Fake Void** | Kasir membatalkan nota setelah pelanggan pergi untuk mengambil uang kas. | **Otomatisasi Refund**: Jika void dilakukan, saldo S-Wallet langsung kembali ke akun pelanggan secara digital. Kasir tidak mendapatkan uang sepeser pun. |
-| **Pencurian Kode Pembayaran Pelanggan** | Kasir mencatat nomor kartu/PIN pelanggan untuk disalahgunakan nanti. | **Dynamic OTP 60 Detik**: Kode bayar yang ditunjukkan pelanggan otomatis hangus dalam 60 detik dan hanya berlaku sekali pakai. |
-| **Double Spending / Lag Transaksi** | Pelanggan menekan transfer berkali-kali untuk membingungkan kasir. | **Kunci Idempotensi & Row-Level Locking**: Basis data PostgreSQL mengunci baris dompet (`FOR UPDATE`), memblokir mutasi ganda pada milidetik yang sama. |
-| **Manipulasi Nilai di Layar (Inspect Element)** | Pengguna mengubah tampilan saldo lokal di browser. | **Server-Side Enforcement**: Seluruh perhitungan saldo dan transfer divalidasi oleh fungsi RPC `SECURITY DEFINER` di Supabase, mengabaikan manipulasi frontend. |
-
----
-
-## 7. ROADMAP INTEGRASI KODE & IMPLEMENTASI SISTEM
+## 9. ROADMAP INTEGRASI KODE & IMPLEMENTASI SISTEM
 
 1. **Fase 1: Registrasi Skema Basis Data & RPC (Database Layer)**
    - Jalankan migrasi `public.wallets`, `public.wallet_transactions`, `public.wallet_ledger`, dan `public.wallet_payment_tokens`.
-   - Menerapkan fungsi stored procedure `execute_wallet_transfer` dan `execute_pos_wallet_payment`.
+   - Terapkan stored procedure `execute_wallet_transfer`, `execute_pos_wallet_payment`, `process_pakasir_wallet_topup`, dan `admin_adjust_wallet_balance`.
 2. **Fase 2: Registrasi Rute & Navigasi Bento (Routing Layer)**
    - Daftarkan rute `/app/akun/wallet` di `src/app/pages.js`.
    - Tambahkan kartu navigasi S-Wallet pada komponen `src/app/pages/account/AccountTabs.jsx`.
+   - Daftarkan subtab master S-Wallet pada konsol Superadmin `/app/paket` atau `/app/platform`.
 3. **Fase 3: Pembuatan Komponen UI Dasbor S-Wallet (Frontend Layer)**
    - Buat berkas `src/app/pages/account/Wallet.jsx`:
-     - Tampilan Gerbang Keamanan TOTP 2FA Step-Up Challenge (Layar Kunci).
+     - Tampilan Gerbang Keamanan TOTP 2FA Step-Up Challenge (Layar Kunci 6-Digit).
      - Dasbor Saldo Utama & Kartu Bento Info Rekening.
      - Modal Top-Up Saldo terhubung langsung ke Pakasir Gateway.
      - Modal Kirim Saldo Antar Pengguna P2P dengan verifikasi profil penerima & PIN transaksi.
      - Generator Kode Bayar Dinamis Kasir (60 detik).
      - Tabel Mutasi Buku Besar & Resi Digital siap cetak.
-4. **Fase 4: Integrasi Modul Kasir POS & Pembelanjaan Website (Ecosystem Layer)**
+4. **Fase 4: Pembuatan Konsol Master Superadmin / Dev (Overpower Control Center)**
+   - Buat komponen `src/app/pages/superadmin/WalletMaster.jsx`:
+     - Radar Total Likuiditas Platform vs Saldo Gateway Pakasir.
+     - Tabel Omni-Wallet Explorer dengan fitur 1-klik Freeze/Unfreeze dan Emergency Balance Correction.
+     - Streaming ticker transaksi real-time seluruh tenant.
+5. **Fase 5: Integrasi Modul Kasir POS & Pembelanjaan Website (Ecosystem Layer)**
    - Tambahkan tombol opsi pembayaran *"S-Wallet"* di `src/app/pages/ops/Pos.jsx`.
    - Sambungkan checkout pesanan online portal member `/m` dengan pemotongan saldo S-Wallet.
-5. **Fase 5: Validasi, Audit Keamanan, & Stress Test**
+6. **Fase 6: Validasi, Audit Keamanan, & Stress Test**
    - Jalankan `npm run secret:scan` dan unit testing `npm test`.
    - Uji simulasi transfer antar peran akun demo dan pengetesan anti-fraud di kasir.
