@@ -50,6 +50,9 @@ export default function ResetPassword() {
             setTokenError(data.error || "Tautan atur ulang tidak valid atau sudah digunakan.");
           }
         } else {
+          if (data.email) {
+            setEmail(data.email);
+          }
           setRemainingSec(data.remainingSeconds || 120);
         }
       } catch (err) {

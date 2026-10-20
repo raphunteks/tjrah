@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {
   cleanPhone,
   isStrongPassword,
-  resetTokens,
+  generatePasswordResetToken,
   RESET_TOKEN_TTL_MS,
   verifyPasswordResetToken
 } from "../src/server/inviteService.js";
@@ -52,41 +52,50 @@ test("Sanitasi No Telp / WhatsApp: Format 62+ otomatis", () => {
   assert.equal(cleanPhone("8123456789"), "628123456789");
 });
 
-test("Reset Password Token: Masa berlaku ketat 2 menit (120 detik)", () => {
-  const dummyToken = "test-token-12345";
+test("Reset Password Token: Stateless HMAC-SHA256 Token & Masa berlaku ketat 2 menit (120 detik)", async () => {
+  const dummyUserId = "usr-test-12345";
   const dummyEmail = "owner@tijarah.id";
 
-  // 1. Simpan token yang masih berlaku (expiresAt = now + 120 detik)
-  resetTokens.set(dummyToken, {
-    token: dummyToken,
-    userId: "usr-1",
+  // 1. Buat token yang masih berlaku (120 detik)
+  const { token } = generatePasswordResetToken({
+    userId: dummyUserId,
     email: dummyEmail,
-    expiresAt: Date.now() + RESET_TOKEN_TTL_MS,
-    used: false
+    expiresInMs: RESET_TOKEN_TTL_MS
   });
 
-  const validRes = verifyPasswordResetToken({ token: dummyToken, email: dummyEmail });
+  assert.equal(typeof token, "string");
+  assert.equal(token.includes("."), true);
+
+  const validRes = await verifyPasswordResetToken({ token, email: dummyEmail });
   assert.equal(validRes.ok, true);
   assert.equal(validRes.email, dummyEmail);
   assert.equal(validRes.remainingSeconds > 0, true);
 
-  // 2. Token kedaluwarsa (dibuat 3 menit yang lalu)
-  const expiredToken = "expired-token-67890";
-  resetTokens.set(expiredToken, {
-    token: expiredToken,
-    userId: "usr-2",
+  // Ekstraksi email otomatis tanpa mencocokkan parameter email
+  const autoEmailRes = await verifyPasswordResetToken({ token, email: "" });
+  assert.equal(autoEmailRes.ok, true);
+  assert.equal(autoEmailRes.email, dummyEmail);
+
+  // 2. Token kedaluwarsa (> 2 menit)
+  const { token: expiredToken } = generatePasswordResetToken({
+    userId: dummyUserId,
     email: dummyEmail,
-    expiresAt: Date.now() - 60000, // Lewat 1 menit dari batas
-    used: false
+    expiresInMs: -1000 // Sudah lewat
   });
 
-  const expiredRes = verifyPasswordResetToken({ token: expiredToken, email: dummyEmail });
+  const expiredRes = await verifyPasswordResetToken({ token: expiredToken, email: dummyEmail });
   assert.equal(expiredRes.ok, false);
   assert.equal(expiredRes.expired, true);
   assert.match(expiredRes.error, /kedaluwarsa|2 menit/i);
 
-  // 3. Token salah atau email tidak cocok
-  const mismatchRes = verifyPasswordResetToken({ token: dummyToken, email: "other@tijarah.id" });
+  // 3. Token dimanipulasi (Tamper check)
+  const tamperedToken = token.slice(0, -4) + "XXXX";
+  const tamperedRes = await verifyPasswordResetToken({ token: tamperedToken, email: dummyEmail });
+  assert.equal(tamperedRes.ok, false);
+  assert.match(tamperedRes.error, /tidak sah|dimodifikasi/i);
+
+  // 4. Token salah identitas email
+  const mismatchRes = await verifyPasswordResetToken({ token, email: "other@tijarah.id" });
   assert.equal(mismatchRes.ok, false);
   assert.match(mismatchRes.error, /identitas email/i);
 });

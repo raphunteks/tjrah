@@ -247,9 +247,21 @@ export async function provisionAndSendInvite({
 // Fitur Atur Ulang Kata Sandi (Masa Berlaku Ketat 2 Menit / 120 Detik)
 // -------------------------------------------------------------
 
-// Penyimpanan token reset dalam memori (TTL 2 menit)
-export const resetTokens = new Map();
+// -------------------------------------------------------------
+// Fitur Atur Ulang Kata Sandi (Masa Berlaku Ketat 2 Menit / 120 Detik)
+// Arsitektur: Stateless Cryptographic HMAC-SHA256 Token + Supabase User Metadata Sync
+// -------------------------------------------------------------
+
 export const RESET_TOKEN_TTL_MS = 2 * 60 * 1000; // 2 menit
+
+function getHmacSecret() {
+  return (
+    getEnv("SUPABASE_SERVICE_ROLE_KEY") ||
+    getEnv("VITE_SUPABASE_SERVICE_ROLE_KEY") ||
+    getEnv("VITE_SUPABASE_ANON_KEY") ||
+    "tijarah-security-salt-2026-production"
+  );
+}
 
 export function cleanPhone(phone = "") {
   let p = String(phone || "").replace(/[^0-9]/g, "");
@@ -267,6 +279,25 @@ export function isStrongPassword(password = "") {
     /[0-9]/.test(pwd) &&
     /[~!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pwd)
   );
+}
+
+/**
+ * Pembuatan Token Kriptografis Mandiri (Stateless HMAC-SHA256)
+ */
+export function generatePasswordResetToken({ userId, email, expiresInMs = RESET_TOKEN_TTL_MS }) {
+  const nonce = crypto.randomBytes(16).toString("hex");
+  const expiresAt = Date.now() + expiresInMs;
+  const payloadObj = {
+    userId,
+    email: String(email).trim().toLowerCase(),
+    expiresAt,
+    nonce
+  };
+  const payloadStr = JSON.stringify(payloadObj);
+  const payloadBase64 = Buffer.from(payloadStr).toString("base64url");
+  const signature = crypto.createHmac("sha256", getHmacSecret()).update(payloadBase64).digest("base64url");
+  const token = `${payloadBase64}.${signature}`;
+  return { token, nonce, expiresAt, payload: payloadObj };
 }
 
 /**
@@ -296,18 +327,26 @@ export async function requestPasswordResetToken({ email, origin = "http://localh
     };
   }
 
-  // Buat token kriptografis acak aman
-  const token = crypto.randomBytes(24).toString("hex");
-  const expiresAt = Date.now() + RESET_TOKEN_TTL_MS;
-
-  resetTokens.set(token, {
-    token,
+  // Buat stateless cryptographic HMAC token
+  const { token, nonce, expiresAt } = generatePasswordResetToken({
     userId: targetUser.id,
     email: cleanEmail,
-    fullName: targetUser.user_metadata?.full_name || "",
-    expiresAt,
-    used: false
+    expiresInMs: RESET_TOKEN_TTL_MS
   });
+
+  // Simpan status nonce di Supabase user_metadata untuk mencegah replay
+  try {
+    const existingMeta = targetUser.user_metadata || {};
+    await supabaseAdmin.auth.admin.updateUserById(targetUser.id, {
+      user_metadata: {
+        ...existingMeta,
+        reset_nonce: nonce,
+        reset_expires_at: expiresAt
+      }
+    });
+  } catch (err) {
+    console.warn("[inviteService] Warning: Gagal menyimpan reset_nonce di Supabase:", err.message);
+  }
 
   const cleanOrigin = origin.replace(/\/+$/, "");
   const resetUrl = `${cleanOrigin}/reset-password?token=${token}&email=${encodeURIComponent(cleanEmail)}`;
@@ -349,24 +388,36 @@ export async function requestPasswordResetToken({ email, origin = "http://localh
 }
 
 /**
- * Validasi Masa Berlaku Token Reset Kata Sandi (2 Menit)
+ * Validasi Masa Berlaku Token Reset Kata Sandi (2 Menit, Stateless HMAC + Supabase Replay Guard)
  */
-export function verifyPasswordResetToken({ token, email }) {
-  if (!token) {
-    return { ok: false, error: "Token atur ulang kata sandi tidak ditemukan." };
+export async function verifyPasswordResetToken({ token, email }) {
+  if (!token || typeof token !== "string" || !token.includes(".")) {
+    return { ok: false, error: "Tautan atur ulang kata sandi tidak valid atau rusak." };
   }
 
-  const record = resetTokens.get(token);
-  if (!record || record.used) {
-    return { ok: false, error: "Tautan atur ulang kata sandi tidak valid atau telah digunakan sebelumnya." };
+  const parts = token.split(".");
+  if (parts.length !== 2) {
+    return { ok: false, error: "Format tautan atur ulang kata sandi tidak valid." };
   }
 
-  if (email && record.email.toLowerCase() !== String(email).trim().toLowerCase()) {
-    return { ok: false, error: "Identitas email tidak sesuai dengan token." };
+  const [payloadBase64, providedSig] = parts;
+  const expectedSig = crypto.createHmac("sha256", getHmacSecret()).update(payloadBase64).digest("base64url");
+
+  const expectedBuf = Buffer.from(expectedSig);
+  const providedBuf = Buffer.from(providedSig);
+  if (expectedBuf.length !== providedBuf.length || !crypto.timingSafeEqual(expectedBuf, providedBuf)) {
+    return { ok: false, error: "Tanda tangan keamanan token tidak sah atau telah dimodifikasi." };
   }
 
-  if (Date.now() > record.expiresAt) {
-    resetTokens.delete(token);
+  let payload;
+  try {
+    payload = JSON.parse(Buffer.from(payloadBase64, "base64url").toString("utf8"));
+  } catch {
+    return { ok: false, error: "Data muatan token atur ulang rusak." };
+  }
+
+  const now = Date.now();
+  if (now > payload.expiresAt) {
     return {
       ok: false,
       expired: true,
@@ -374,10 +425,32 @@ export function verifyPasswordResetToken({ token, email }) {
     };
   }
 
-  const remainingSeconds = Math.max(0, Math.round((record.expiresAt - Date.now()) / 1000));
+  if (email && payload.email !== String(email).trim().toLowerCase()) {
+    return { ok: false, error: "Identitas email tidak sesuai dengan token." };
+  }
+
+  // Validasi keaktifan nonce di Supabase Auth user_metadata
+  try {
+    const supabaseAdmin = getSupabaseAdmin();
+    const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(payload.userId);
+    if (!userError && userData?.user) {
+      const activeNonce = userData.user.user_metadata?.reset_nonce;
+      if (!activeNonce || activeNonce !== payload.nonce) {
+        return {
+          ok: false,
+          error: "Tautan atur ulang kata sandi tidak valid atau telah digunakan sebelumnya."
+        };
+      }
+    }
+  } catch (err) {
+    console.warn("[inviteService] Warning: Validasi nonce Supabase:", err.message);
+  }
+
+  const remainingSeconds = Math.max(0, Math.round((payload.expiresAt - now) / 1000));
   return {
     ok: true,
-    email: record.email,
+    userId: payload.userId,
+    email: payload.email,
     remainingSeconds
   };
 }
@@ -393,26 +466,32 @@ export async function executePasswordReset({ token, email, newPassword }) {
     };
   }
 
-  const verification = verifyPasswordResetToken({ token, email });
+  const verification = await verifyPasswordResetToken({ token, email });
   if (!verification.ok) {
     return verification;
   }
 
-  const record = resetTokens.get(token);
   const supabaseAdmin = getSupabaseAdmin();
-
-  const { data, error } = await supabaseAdmin.auth.admin.updateUserById(record.userId, {
-    password: newPassword
-  });
-
-  if (error) {
-    console.error("[inviteService] Gagal memperbarui kata sandi di Supabase:", error);
-    return { ok: false, error: "Gagal memperbarui kata sandi di database: " + error.message };
+  const { data: userData, error: getUserError } = await supabaseAdmin.auth.admin.getUserById(verification.userId);
+  if (getUserError || !userData?.user) {
+    return { ok: false, error: "Akun pengguna tidak ditemukan di database." };
   }
 
-  // Tandai token hangus
-  record.used = true;
-  resetTokens.delete(token);
+  // Bersihkan reset_nonce agar token langsung hangus (One-Time Use)
+  const existingMeta = userData.user.user_metadata || {};
+  const updatedMeta = { ...existingMeta };
+  delete updatedMeta.reset_nonce;
+  delete updatedMeta.reset_expires_at;
+
+  const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(verification.userId, {
+    password: newPassword,
+    user_metadata: updatedMeta
+  });
+
+  if (updateError) {
+    console.error("[inviteService] Gagal memperbarui kata sandi di Supabase:", updateError);
+    return { ok: false, error: "Gagal memperbarui kata sandi di database: " + updateError.message };
+  }
 
   return {
     ok: true,

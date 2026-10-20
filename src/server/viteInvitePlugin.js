@@ -296,7 +296,7 @@ export function inviteSmtpPlugin() {
         if (url === "/api/verify-reset-token" && req.method === "POST") {
           try {
             const body = await parseJsonBody(req);
-            const result = verifyPasswordResetToken(body);
+            const result = await verifyPasswordResetToken(body);
             return sendJson(res, result.ok ? 200 : 400, result);
           } catch (err) {
             console.error("[viteInvitePlugin] Error /api/verify-reset-token:", err);

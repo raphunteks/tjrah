@@ -1,7 +1,7 @@
 // Vercel Serverless Function: Validasi Token Reset Kata Sandi (2 Menit)
 import { verifyPasswordResetToken } from "../src/server/inviteService.js";
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -16,7 +16,7 @@ export default function handler(req, res) {
 
   try {
     const { token, email } = req.body || {};
-    const result = verifyPasswordResetToken({ token, email });
+    const result = await verifyPasswordResetToken({ token, email });
     return res.status(result.ok ? 200 : 400).json(result);
   } catch (err) {
     console.error("[api/verify-reset-token] Error:", err);
