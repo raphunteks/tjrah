@@ -7,7 +7,8 @@ import {
   renderRecaptchaCheckbox,
   resetRecaptchaCheckbox,
   getRecaptchaV3Token,
-  verifyRecaptchaServer
+  verifyRecaptchaServer,
+  RECAPTCHA_V2_SITE_KEY
 } from "../lib/recaptcha.js";
 import "../styles/dashboard.css";
 
@@ -309,7 +310,7 @@ export default function Login() {
             </p>
           )}
           {/* Widget Checkbox Resmi Google reCAPTCHA v2 */}
-          {import.meta.env.VITE_RECAPTCHA_V2_SITE_KEY && (
+          {Boolean(RECAPTCHA_V2_SITE_KEY) && (
             <div
               style={{
                 display: "flex",
