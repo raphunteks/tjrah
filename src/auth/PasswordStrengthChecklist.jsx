@@ -17,17 +17,17 @@ export default function PasswordStrengthChecklist({ password = "" }) {
     { id: "upper", label: "Huruf besar", met: hasUpperCase },
     { id: "lower", label: "Huruf kecil", met: hasLowerCase },
     { id: "number", label: "Angka", met: hasNumber },
-    { id: "symbol", label: "Simbol (~!@#$%^&*)", met: hasSymbol }
+    { id: "symbol", label: "Simbol (~!@#$%^&*)", met: hasSymbol, fullSpan: true }
   ];
 
   return (
-    <div style={{ marginTop: "0.75rem", marginBottom: "1rem" }}>
+    <div style={{ marginTop: "0.5rem", marginBottom: "0.85rem" }}>
       <p
         style={{
-          fontSize: "0.82rem",
+          fontSize: "0.8rem",
           fontWeight: 600,
           color: "var(--color-ink-muted, #64748b)",
-          marginBottom: "0.5rem"
+          marginBottom: "0.4rem"
         }}
       >
         Harus berisi kombinasi dari
@@ -36,8 +36,8 @@ export default function PasswordStrengthChecklist({ password = "" }) {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-          gap: "0.45rem 1rem"
+          gridTemplateColumns: "1fr 1fr",
+          gap: "0.35rem 0.65rem"
         }}
       >
         {criteria.map((item) => (
@@ -46,8 +46,9 @@ export default function PasswordStrengthChecklist({ password = "" }) {
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "0.45rem",
-              fontSize: "0.8rem",
+              gap: "0.4rem",
+              fontSize: "0.78rem",
+              gridColumn: item.fullSpan ? "1 / -1" : "auto",
               color: item.met
                 ? "var(--color-ink, #0f172a)"
                 : "var(--color-ink-muted, #94a3b8)",
@@ -92,7 +93,7 @@ export default function PasswordStrengthChecklist({ password = "" }) {
                 </svg>
               )}
             </span>
-            <span>{item.label}</span>
+            <span style={{ lineHeight: 1.25 }}>{item.label}</span>
           </div>
         ))}
       </div>

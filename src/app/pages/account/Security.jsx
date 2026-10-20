@@ -424,8 +424,8 @@ export default function Security() {
 
           {twoFactorActive ? (
             <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-              {/* Baris 1: Badge Status & Tombol Kode Cadangan */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
+              {/* Baris 1: Badge Status & Tombol Kode Cadangan (Responsif Mobile) */}
+              <div className="sec-2fa-actions" style={{ justifyContent: "space-between" }}>
                 <Badge tone="ok">{t.twoFactorActiveBadge}</Badge>
                 <button
                   type="button"
@@ -455,19 +455,26 @@ export default function Security() {
               </button>
             </div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem" }}>
-                <Badge tone="warn">{t.twoFactorInactiveBadge}</Badge>
+            <div className="sec-2fa-inactive-card">
+              <div className="sec-2fa-inactive-icon">
+                <i className="fa-solid fa-shield-halved" aria-hidden="true" />
               </div>
-              <button
-                type="button"
-                className="d-btn d-btn--primary d-btn--sm"
-                onClick={() => { setTwoFactorModal(true); setOtpError(""); }}
-                style={{ width: "100%", justifyContent: "center", padding: "0.6rem 1rem", fontWeight: 600 }}
-              >
-                <i className="fa-solid fa-shield-halved" aria-hidden="true" style={{ marginRight: "0.4rem" }} />
-                {t.enable2Fa}
-              </button>
+              <h4 className="sec-2fa-inactive-title">
+                {t.twoFactorInactiveTitle || "Autentikasi 2FA Belum Aktif"}
+              </h4>
+              <p className="sec-2fa-inactive-desc">
+                {t.twoFactorInactiveDesc || "Untuk melindungi saldo, keamanan akun, dan membuka hak akses transaksi moneter S-Wallet Digital, akun Anda wajib mengaktifkan Autentikasi Dua Faktor terlebih dahulu."}
+              </p>
+              <div className="sec-2fa-inactive-btn-row">
+                <button
+                  type="button"
+                  className="d-btn d-btn--primary"
+                  onClick={() => { setTwoFactorModal(true); setOtpError(""); }}
+                >
+                  <i className="fa-solid fa-shield-halved" aria-hidden="true" style={{ marginRight: "0.4rem" }} />
+                  {t.enable2Fa || "Aktifkan 2FA Sekarang"}
+                </button>
+              </div>
             </div>
           )}
         </Panel>

@@ -277,9 +277,6 @@ export default function ResetPassword() {
                 />
               </div>
 
-              {/* Live Password Checklist Dinamis (Gambar 2) */}
-              <PasswordStrengthChecklist password={newPassword} />
-
               <div className="d-field">
                 <label htmlFor="r-conf">Konfirmasi Kata Sandi Baru</label>
                 <input
@@ -291,6 +288,9 @@ export default function ResetPassword() {
                   required
                 />
               </div>
+
+              {/* Format Horizontal 2 2 1 Berada di Bawah Form Konfirmasi Kata Sandi Baru */}
+              <PasswordStrengthChecklist password={newPassword} />
 
               {error && <p className="d-field__error" role="alert">{error}</p>}
 

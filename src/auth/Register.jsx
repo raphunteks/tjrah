@@ -16,6 +16,7 @@ export default function Register() {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
   const [showReferral, setShowReferral] = useState(false);
@@ -94,6 +95,11 @@ export default function Register() {
     const { isValid } = checkPasswordCriteria(password);
     if (!isValid) {
       setError("Kata sandi belum memenuhi seluruh 5 kriteria kombinasi.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Konfirmasi kata sandi tidak cocok dengan kata sandi.");
       return;
     }
 
@@ -228,7 +234,20 @@ export default function Register() {
               />
             </div>
 
-            {/* Live Password Checklist Dinamis Sesuai Gambar 2 */}
+            <div className="d-field">
+              <label htmlFor="reg-conf">Konfirmasi Kata Sandi</label>
+              <input
+                id="reg-conf"
+                type={showPassword ? "text" : "password"}
+                autoComplete="new-password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Ketik ulang kata sandi..."
+                required
+              />
+            </div>
+
+            {/* Live Password Checklist Dinamis Format 2 2 1 di Bawah Konfirmasi Kata Sandi */}
             <PasswordStrengthChecklist password={password} />
 
             {/* Punya Kode Referral? */}

@@ -529,7 +529,7 @@ export default function Wallet() {
       <AccountKpiGrid>
         <AccountKpiCard
           label="Status Proteksi 2FA"
-          value="RFC 6238 Aktif"
+          value="2FA Aktif Terlindungi"
           sub="Sesi Brankas Terverifikasi"
           tone="emerald"
           icon="fa-shield-halved"

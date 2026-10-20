@@ -17,7 +17,7 @@ export const DICTIONARY = {
     navProfileBadge: "Biodata & Bank",
 
     navSecurityTitle: "Keamanan & 2FA",
-    navSecurityDesc: "Autentikasi sandi, TOTP 2FA, PIN 6-digit S-Wallet, dan manajemen sesi perangkat aktif.",
+    navSecurityDesc: "Autentikasi sandi, verifikasi 2FA, PIN 6-digit S-Wallet, dan manajemen sesi perangkat aktif.",
     navSecurityBadge: "Proteksi Sandi & PIN",
 
     navAppearanceTitle: "Tampilan & Bahasa",
@@ -75,7 +75,7 @@ export const DICTIONARY = {
 
     // Keamanan Page
     securityTitle: "Keamanan & Kredensial",
-    securityDesc: "Ubah kata sandi, aktivasi TOTP 2FA, kelola PIN transaksi S-Wallet, dan pantau sesi perangkat aktif.",
+    securityDesc: "Ubah kata sandi, aktivasi autentikasi 2FA, kelola PIN transaksi S-Wallet, dan pantau sesi perangkat aktif.",
     passwordTitle: "Autentikasi Kata Sandi",
     oldPasswordLabel: "Kata Sandi Saat Ini",
     newPasswordLabel: "Kata Sandi Baru",
@@ -220,7 +220,7 @@ export const DICTIONARY = {
     navProfileBadge: "Profile & Bank",
 
     navSecurityTitle: "Security & 2FA",
-    navSecurityDesc: "Password authentication, TOTP 2FA, 6-digit S-Wallet PIN, and active device sessions.",
+    navSecurityDesc: "Password authentication, 2FA verification, 6-digit S-Wallet PIN, and active device sessions.",
     navSecurityBadge: "Password & PIN",
 
     navAppearanceTitle: "Display & Language",
@@ -278,7 +278,7 @@ export const DICTIONARY = {
 
     // Keamanan Page
     securityTitle: "Security & Credentials",
-    securityDesc: "Update password, activate TOTP 2FA, manage 6-digit S-Wallet transaction PIN, and monitor active device sessions.",
+    securityDesc: "Update password, activate 2FA authentication, manage 6-digit S-Wallet transaction PIN, and monitor active device sessions.",
     passwordTitle: "Password Authentication",
     oldPasswordLabel: "Current Password",
     newPasswordLabel: "New Password",
