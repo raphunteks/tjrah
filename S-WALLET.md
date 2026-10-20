@@ -85,8 +85,8 @@ Subtab S-Wallet dirancang sebagai pusat kendali finansial mandiri dengan 7 modul
 |                                    PUSAT KENDALI S-WALLET                                       |
 +--------------------------------------------------------------------------------------------------+
 | [ KARTU BRANKAS UTAMA ]                                                                          |
-|   Saldo Aktif: Rp 12.850.000       Nomor Rekening: SW-2026-8809124      [ Salin ] [ Tampilkan QR ]|
-|   Saldo Tertahan: Rp 250.000       Status Akun: Terverifikasi 2FA Aktif                          |
+|   Saldo Aktif: {rupiah(wallet.balance)}          Nomor Rekening: {wallet.wallet_number}  [Salin] [QR]|
+|   Saldo Tertahan: {rupiah(wallet.locked_balance)} Status Keamanan: [ 2FA Aktif (RFC 6238) ]      |
 +--------------------------------------------------------------------------------------------------+
 | [ AKSI CEPAT ]                                                                                   |
 |   [+ Top-Up Saldo Gateway]   [-> Transfer Sesama User]   [QR Bayar Kasir]   [<- Tarik Dana Bank] |
@@ -295,9 +295,9 @@ S-Wallet menyatukan operasional multi-peran ke dalam alur kerja finansial yang t
 
 ### 5.2 Alur 2: Alokasi Kas Operasional Cabang & Setoran Tutup Kasir
 ```
-[ Owner Merchant ] --(Alokasi Petty Cash Bulanan Rp 5jt)--> [ General Manager (GM) ]
+[ Owner Merchant ] --(Alokasi Kas Operasional Cabang)--> [ General Manager (GM) ]
                                                                      |
-                                                       (Kas Awal Shift Rp 300rb)
+                                                       (Kas Awal Shift Kasir)
                                                                      v
                                                              [ Kasir / Staf ]
                                                                      |
@@ -309,19 +309,19 @@ S-Wallet menyatukan operasional multi-peran ke dalam alur kerja finansial yang t
 ### 5.3 Alur 3: Penggajian Karyawan (Payroll) & Pengajuan Kas Bon
 ```
 1. Alur Payroll Massal Akhir Bulan:
-[ Owner Merchant ] --(1-Klik Payroll Massal Rp 45jt)--> [ Terbagi Otomatis ke 15 S-Wallet Staf ]
+[ Owner Merchant ] --(1-Klik Payroll Massal: sum(take_home_pay))--> [ Terdistribusi ke S-Wallet Staf ]
 
 2. Alur Kas Bon Darurat Staf:
-[ Staf / Kasir ] --(Ajukan Kas Bon Rp 500rb)--> [ GM: Verifikasi Sisa Gaji ]
+[ Staf / Kasir ] --(Ajukan Nominal Kas Bon)--> [ GM: Verifikasi Sisa Limit Gaji ]
                                                          |
                                                   (Rekomendasikan)
                                                          v
-[ Staf: Saldo S-Wallet Bertambah ] <--(Approve & Cairkan Langsung)-- [ Owner Merchant ]
+[ Staf: Saldo S-Wallet Bertambah ] <--(Disetujui & Dicairkan Langsung)-- [ Owner Merchant ]
 ```
 
 ### 5.4 Alur 4: Pembatalan Pesanan Kasir (Anti-Fake Void Auto-Refund)
 ```
-[ Kasir Ajukan Void Nota #1024 ] ---> [ GM Masukkan PIN Otorisasi Supervisor ]
+[ Kasir Ajukan Void Nota ] ---> [ GM Masukkan PIN Otorisasi Supervisor ]
                                                         |
                                                  (Void Disetujui)
                                                         v
@@ -345,27 +345,25 @@ Bagi peran **Superadmin / Developer**, disediakan konsol terpadu (*All-in-One Co
 | SUPERADMIN / DEV: MASTER FINANCIAL COMMAND CENTER (/app/paket > Subtab S-Wallet Master)              |
 +------------------------------------------------------------------------------------------------------+
 | [ RADAR LIKUIDITAS GLOBAL PLATFORM ]                                                                 |
-|   Total Uang Beredar: Rp 482.940.000     Cadangan Riil Pakasir: Rp 482.940.000     Selisih: Rp 0     |
-|   Dompet Owner: Rp 310.200.000           Dompet GM: Rp 42.100.000                  Dompet Staf: Rp 18jt|
-|   Dompet Dokter: Rp 38.400.000           Dompet Member: Rp 74.240.000              Status: 100% Klop |
+|   Total Saldo Beredar : {sum(wallets.balance)}      Cadangan Riil Pakasir : {gateway.balance}        |
+|   Selisih Moneter     : Rp 0 (100% Klop: Delta Saldo = Debit - Kredit = 0)                           |
+|   Breakdown Saldo Peran:                                                                             |
+|   - Dompet Owner  : {sum(owner.balance)}            - Dompet GM     : {sum(gm.balance)}              |
+|   - Dompet Staf   : {sum(staff.balance)}            - Dompet Dokter : {sum(dokter.balance)}          |
+|   - Dompet Member : {sum(member.balance)}           - Brankas Platform: {sum(platform.revenue)}      |
 +------------------------------------------------------------------------------------------------------+
 | [ TOMBOL DARURAT & CIRCUIT BREAKER ]                                                                 |
 |   [!] GLOBAL CIRCUIT BREAKER: [ NORMAL / BERJALAN ]  (Klik untuk bekukan transfer platform darurat)  |
-|   [ Radar Deteksi Anomali AI: AKTIF (0 Ancaman Terdeteksi) ]     [ Rekonsiliasi Gateway Real-Time ] |
+|   [ Radar Deteksi Anomali AI: AKTIF (0 Ancaman Terdeteksi) ]     [ Rekonsiliasi Gateway Real-Time ]  |
 +------------------------------------------------------------------------------------------------------+
 | [ TABEL MONITORING OMNI-WALLET & SEARCH ]                                                            |
 |   Cari Dompet Pengguna: [ Masukkan Nama / Email / No SW / Tenant... ]       Filter: [ Semua Role v ] |
 |   -------------------------------------------------------------------------------------------------  |
-|   No SW            Nama Akun           Role       Tenant          Saldo Aktif     Status     Aksi    |
-|   SW-2026-001928   Budi Santoso        Owner      Kopi Harumin    Rp 45.200.000   Normal     [Kelola]|
-|   SW-2026-004812   drg. Siti Sarah     Dokter     Klinik Gigi     Rp 12.800.000   Normal     [Kelola]|
-|   SW-2026-009182   Rian Kasir          Staff      Kopi Harumin    Rp 1.450.000    Normal     [Kelola]|
-|   SW-2026-011248   Ahmad (Member)      Member     Kopi Harumin    Rp 340.000      Normal     [Kelola]|
+|   Nomor Rekening   Nama Pengguna       Role       Tenant          Saldo Aktif      Status    Aksi    |
+|   {wallet_number}  {profile.full_name} {role}     {tenant.name}   {rupiah(balance)} Normal    [Kelola]|
 +------------------------------------------------------------------------------------------------------+
 | [ LIVE ACTIVITY FEED - TRANSAKSI REAL-TIME DETIK DEMI DETIK ]                                       |
-|   12:35:10 - TRF-20261020-A819: Ahmad (Member) bayar POS Kasir Kopi Harumin -> Rp 45.000 [Sukses]   |
-|   12:34:55 - TOP-20261020-0012: Top-Up QRIS Pakasir drg. Siti Sarah -> Rp 500.000 [Settled]        |
-|   12:32:18 - TRF-20261020-9941: Owner Harumin transfer petty cash GM -> Rp 2.000.000 [Sukses]       |
+|   {timestamp} - {txn.reference_no}: {sender.name} ({role}) -> {receiver.name} [{cat}] -> {amount}   |
 +------------------------------------------------------------------------------------------------------+
 ```
 
@@ -655,34 +653,136 @@ $$;
 
 ---
 
-## 9. ROADMAP INTEGRASI KODE & IMPLEMENTASI SISTEM
+## 9. PANDUAN EKSEKUSI BERTAHAP IMPLEMENTASI PRODUKSI (FASE 1 HINGGA FASE 6)
 
-1. **Fase 1: Registrasi Skema Basis Data & RPC (Database Layer)**
-   - Jalankan migrasi `public.wallets`, `public.wallet_transactions`, `public.wallet_ledger`, dan `public.wallet_payment_tokens`.
-   - Terapkan stored procedure `execute_wallet_transfer`, `execute_pos_wallet_payment`, `process_pakasir_wallet_topup`, dan `admin_adjust_wallet_balance`.
-2. **Fase 2: Registrasi Rute & Navigasi Bento (Routing Layer)**
-   - Daftarkan rute `/app/akun/wallet` di `src/app/pages.js`.
-   - Tambahkan kartu navigasi S-Wallet pada komponen `src/app/pages/account/AccountTabs.jsx`.
-   - Daftarkan subtab master S-Wallet pada konsol Superadmin `/app/paket` atau `/app/platform`.
-3. **Fase 3: Pembuatan Komponen UI Dasbor S-Wallet (Frontend Layer)**
-   - Buat berkas `src/app/pages/account/Wallet.jsx`:
-     - Tampilan Gerbang Keamanan TOTP 2FA Step-Up Challenge (Layar Kunci 6-Digit).
-     - Dasbor Saldo Utama & Kartu Bento Info Rekening.
-     - Modal Top-Up Saldo terhubung langsung ke Pakasir Gateway.
-     - Modal Kirim Saldo Antar Pengguna P2P dengan verifikasi profil penerima & PIN transaksi.
-     - Generator Kode Bayar Dinamis Kasir (60 detik).
-     - Tabel Mutasi Buku Besar & Resi Digital siap cetak.
-4. **Fase 4: Pembuatan Konsol Master Superadmin / Dev (Overpower Control Center)**
-   - Buat komponen `src/app/pages/superadmin/WalletMaster.jsx`:
-     - Radar Total Likuiditas Platform vs Saldo Gateway Pakasir.
-     - Tabel Omni-Wallet Explorer dengan fitur 1-klik Freeze/Unfreeze dan Emergency Balance Correction.
-     - Streaming ticker transaksi real-time seluruh tenant.
-5. **Fase 5: Integrasi Modul Kasir POS & Pembelanjaan Website (Ecosystem Layer)**
-   - Tambahkan tombol opsi pembayaran "S-Wallet" di `src/app/pages/ops/Pos.jsx`.
-   - Sambungkan checkout pesanan online portal member `/m` dengan pemotongan saldo S-Wallet.
-6. **Fase 6: Validasi, Audit Keamanan, & Stress Test**
-   - Jalankan `npm run secret:scan` dan unit testing `npm test`.
-   - Uji simulasi transfer antar peran akun demo dan pengetesan anti-fraud di kasir.
+Untuk memastikan implementasi berjalan sistematis, aman, teruji, dan tanpa menimbulkan tumpang tindih logika, seluruh pekerjaan dibagi menjadi **6 Fase Berjenjang**:
+
+```
+[ FASE 1: Basis Data & RPC Atomik ]
+                 |
+                 v
+[ FASE 2: Routing, RBAC & Bento Dock ]
+                 |
+                 v
+[ FASE 3: Frontend S-Wallet & 2FA Gate ]
+                 |
+                 v
+[ FASE 4: Superadmin Command Center & Profit Engine ]
+                 |
+                 v
+[ FASE 5: Ekosistem Touchpoints Integrasi (8 Modul) ]
+                 |
+                 v
+[ FASE 6: Audit Keamanan, Stress Test & Produksi ]
+```
+
+---
+
+### 9.1 FASE 1: REGISTRASI SKEMA BASIS DATA & STORED PROCEDURES ATOMIK (DATABASE LAYER)
+* **Tujuan**: Membangun fondasi moneter perbankan yang kokoh, atomik, anti-cheat, dan anti-minus pada level PostgreSQL.
+* **Berkas Target**: `supabase/migrations/20261020_swallet_core.sql`
+* **Logika yang Ditegakkan**:
+  1. Tabel `public.wallets`: Rekening dompet per pengguna dengan kolom `balance`, `locked_balance`, `wallet_number` (format `SW-YYYYMM-XXXXXXXX`), `is_frozen`.
+  2. Database Invariant Constraints: `CHECK (balance >= 0)` dan `CHECK (locked_balance >= 0)`.
+  3. Tabel `public.wallet_transactions`: Riwayat transaksi keuangan dengan `reference_no` dan `idempotency_key` unik (mencegah *network retry duplicate*).
+  4. Tabel `public.wallet_ledger`: Pembukuan berpasangan (*double-entry bookkeeping*) mencatat `balance_before` dan `balance_after` untuk setiap mutasi debit/kredit.
+  5. Tabel `public.wallet_payment_tokens`: Penyimpanan token pembayaran dinamis kasir POS (6 digit, masa kedaluwarsa 60 detik, satu kali pakai).
+  6. Tabel `public.wallet_withdrawals`: Antrean penarikan dana ke rekening bank beserta pencatatan split biaya pokok Pakasir dan margin keuntungan platform.
+  7. Tabel `public.wallet_platform_settings`: Konfigurasi tarif penarikan otomatis per tier dan margin profit yang dapat diubah oleh Superadmin.
+  8. Stored Procedures Atomik dengan Penguncian Baris (`SELECT ... FOR UPDATE`):
+     - `execute_wallet_transfer`: Pemindahan saldo antar pengguna P2P.
+     - `execute_pos_wallet_payment`: Validasi kode bayar 60 detik kasir POS dan transfer dana ke dompet toko.
+     - `request_wallet_withdrawal`: Isolasi saldo dari `balance` ke `locked_balance` dengan validasi jam kerja (Senin-Sabtu 09.00-16.00 WIB).
+     - `execute_approved_payout`: Pemotongan permanen `locked_balance` dan kredit otomatis profit platform ke dompet Superadmin `SW-PLATFORM-REVENUE`.
+     - `admin_adjust_wallet_balance`: Intervensi saldo darurat oleh Superadmin dengan berita acara audit resmi.
+* **Kriteria Selesai (Definition of Done)**: Skrip migrasi tervalidasi sintaks SQL-nya, constraint anti-minus terpasang, dan stored procedures siap dieksekusi via RPC Supabase.
+
+---
+
+### 9.2 FASE 2: REGISTRASI RUTE, RBAC GUARD & NAVIGASI BENTO DOCK (ROUTING LAYER)
+* **Tujuan**: Mendaftarkan jalur navigasi pengguna dan hak akses peran berstandar RBAC Tijarah OS.
+* **Berkas Target**:
+  - `src/app/pages.js`
+  - `src/app/pages/account/AccountTabs.jsx`
+  - `src/member/MemberShell.jsx`
+  - `src/app/pages/superadmin/Plans.jsx`
+* **Logika yang Ditegakkan**:
+  1. Daftarkan rute `/app/akun/wallet` di `src/app/pages.js` dengan guard yang mengizinkan seluruh pengguna berotentikasi (Superadmin L0, Owner L1, GM L2, Staf L3, Dokter L4).
+  2. Tambahkan kartu navigasi bento ke-8 pada dock akun di `src/app/pages/account/AccountTabs.jsx` dengan ikon `fa-wallet`, warna tema `#0d9488`, judul *"S-Wallet Digital"*, dan deskripsi *"Brankas Saldo, Top-Up & Transfer"*.
+  3. Daftarkan rute `/m/wallet` pada portal mandiri Member L5 di `src/member/MemberShell.jsx`.
+  4. Daftarkan subtab *"S-Wallet Master Command Center"* pada konsol Superadmin di `src/app/pages/superadmin/Plans.jsx` (khusus peran Superadmin L0).
+* **Kriteria Selesai (Definition of Done)**: Navigasi bento tampil elegan, rute terlindungi oleh guard RBAC, dan `npm test` lulus 100% tanpa pelanggaran matriks izin.
+
+---
+
+### 9.3 FASE 3: FRONTEND CORE S-WALLET & 2FA SECURITY LAYER (CLIENT & UI LAYER)
+* **Tujuan**: Membangun modul klien engine dan antarmuka brankas pengguna yang modern, aman, dan intuitif.
+* **Berkas Target**:
+  - `src/api/swallet.js`
+  - `src/app/pages/account/Wallet.jsx`
+* **Logika yang Ditegakkan**:
+  1. Klien API `src/api/swallet.js`:
+     - Fungsi `getWalletProfile`, `verifyTotpChallenge`, `generatePaymentToken`, `executeP2PTransfer`, `requestBankWithdrawal`, `getPayoutPricingConfig`.
+     - Terintegrasi dengan mesin RFC 6238 TOTP di `src/lib/totp.js` dan Pakasir Gateway di `src/api/pakasir.js`.
+  2. Komponen UI `src/app/pages/account/Wallet.jsx`:
+     - **Gerbang Keamanan 2FA (Step-Up Challenge)**: Jika pengguna belum membuka brankas dalam 15 menit terakhir, sistem menampilkan layar tantangan kode 6-digit OTP authenticator. Tiket sesi disimpan aman di `sessionStorage` (kedaluwarsa otomatis dalam 15 menit).
+     - **Kartu Brankas Bento Dinamis**: Menampilkan saldo aktif, saldo tertahan (*locked balance*), nomor rekening unik `SW-YYYYMM-XXXXXXXX`, tombol salin, dan kode QR personal.
+     - **Modal Top-Up Saldo Gateway**: Pemilihan nominal cepat atau input bebas, terhubung langsung ke kalkulator fee dinamis Pakasir API v2 (QRIS Dinamis & Virtual Account 9 bank).
+     - **Modal Transfer P2P**: Validasi penerima (menampilkan kartu identitas nama, peran, dan foto untuk mencegah salah kirim) serta otorisasi PIN 6-digit.
+     - **Modal Tarik Dana Bank (Withdrawal)**: Pilihan rekening bank terdaftar, validasi KYC, kalkulasi biaya admin (Pakasir + Profit Platform), pengecekan jam kerja (Senin-Sabtu 09.00-16.00 WIB), otorisasi ganda TOTP 2FA + PIN transaksi.
+     - **Generator Kode Bayar Dinamis Kasir**: Tampilan hitung mundur visual 60 detik dengan tombol salin angka OTP sekali pakai.
+     - **Tabel Mutasi Buku Besar**: Filter riwayat lengkap (Top-up, Belanja POS, Bagi Hasil, Transfer, Penarikan) dan tombol cetak resi digital resmi Tijarah OS.
+* **Kriteria Selesai (Definition of Done)**: Seluruh aksi finansial pengguna berjalan lancar, brankas terkunci otomatis setelah 15 menit, dan tidak ada data fiktif statis.
+
+---
+
+### 9.4 FASE 4: SUPERADMIN COMMAND CENTER & MONETIZATION PROFIT ENGINE (GOVERNANCE LAYER)
+* **Tujuan**: Memberikan kendali moneter mutlak dan instrumen monetisasi keuntungan platform bagi Superadmin/Developer.
+* **Berkas Target**: `src/app/pages/superadmin/WalletMaster.jsx`
+* **Logika yang Ditegakkan**:
+  1. **Pengatur Tarif & Margin Keuntungan Website**:
+     - Form dinamis untuk mengatur tarif penarikan pengguna pada Tier 1, Tier 2, dan Tier 3.
+     - Penghitungan otomatis margin keuntungan platform: `Profit Platform = Biaya Ditagihkan ke User - Biaya Modal Pokok Pakasir`.
+     - Akumulasi profit platform langsung dialirkan ke kantong `SW-PLATFORM-REVENUE`.
+  2. **Radar Likuiditas Platform Terpusat**:
+     - Agregat moneter real-time: `Total Saldo Sistem = Dompet Owner + Dompet GM + Dompet Staf + Dompet Dokter + Dompet Member + Brankas Revenue Platform`.
+     - Validasi sinkronisasi dengan mutasi saldo masuk akun Pakasir (indikator selisih Rp 0).
+  3. **Antrean Eksekusi Penarikan Dana (*Payout Processing Queue*)**:
+     - Daftar permohonan penarikan dana berstatus `pending` atau `scheduled`.
+     - Penanda jam kerja resmi (Senin-Sabtu 09.00-16.00 WIB).
+     - Tombol aksi: `[Eksekusi Payout & Masukkan Ref Bank]` atau `[Tolak & Auto-Reversal Saldo]`.
+  4. **Omni-Wallet Explorer**:
+     - Pencarian menyeluruh semua dompet pengguna lintas tenant.
+     - Tombol 1-klik `[Freeze / Bekukan]` untuk mengunci dompet bermasalah dan `[Unfreeze]`.
+     - Tombol intervensi darurat `[Koreksi Saldo Sistem]` dengan kolom wajib berita acara audit resmi.
+  5. **Global Circuit Breaker**:
+     - Saklar darurat satu tombol untuk menghentikan seluruh aktivitas transfer platform seketika jika terdeteksi ancaman keamanan.
+* **Kriteria Selesai (Definition of Done)**: Superadmin dapat mengubah tarif penarikan kapan saja, profit platform terhitung akurat, dan kontrol darurat berfungsi 100%.
+
+---
+
+### 9.5 FASE 5: INTEGRASI WORKFLOWS EKOSISTEM TIJARAH (8 TOUCHPOINTS LENGKAP)
+* **Tujuan**: Menghubungkan S-Wallet ke seluruh proses bisnis toko, restoran, klinik, dan administrasi tanpa duplikasi logika.
+* **Berkas Target**:
+  - `src/app/pages/ops/Payment.jsx` & `Pos.jsx`: Menambahkan opsi bayar `["swallet", "S-Wallet"]` pada modal pembayaran kasir. Kasir memvalidasi 6-digit OTP dinamis pelanggan. Auto-refund seketika jika transaksi di-void (Zero Fraud Kasir).
+  - `src/member/pages/Wallet.jsx` & `Order.jsx`: Dompet mandiri member portal `/m` untuk memunculkan kode bayar kasir dan belanja pesanan online 1-klik tanpa input kartu manual.
+  - `src/app/pages/growth/PaymentModal.jsx`: Menambahkan kanal S-Wallet untuk pembayaran tagihan langganan SaaS (Starter, Growth, Enterprise) dan pembelian kuota token AI Copilot.
+  - `src/app/pages/ops/Payroll.jsx` & `MyPay.jsx`: Tombol pencairan gaji massal (*1-Click Bulk Payroll Disbursement*) dari S-Wallet Owner ke S-Wallet staf, serta pencairan kas bon staf langsung ke dompet setelah disetujui GM/Owner.
+  - `src/app/pages/clinic/Billing.jsx`: Auto-split revenue jasa medis dokter klinik (30% jasa medis dokter langsung cair detik itu juga ke dompet dokter saat tagihan tindakan odontogram lunas).
+  - `src/app/pages/ops/Recon.jsx` & `Journal.jsx`: Penambahan kanal *S-Wallet Digital Settlement* pada rekonsiliasi kas kasir (selisih kas Rp 0) dan pencatatan otomatis jurnal akuntansi berpasangan berimbang.
+* **Kriteria Selesai (Definition of Done)**: 8 titik sentuh integrasi berfungsi mulus menggunakan RPC yang sama tanpa ada logika perhitungan ganda.
+
+---
+
+### 9.6 FASE 6: VALIDASI KEAMANAN, STRESS TEST & PERSIAPAN PRODUKSI (PRODUCTION READINESS)
+* **Tujuan**: Memastikan sistem 100% bebas celah keamanan, bebas kebocoran rahasia, dan siap melayani transaksi riil pengguna.
+* **Prosedur Validasi**:
+  1. **Pemindaian Rahasia Lingkungan**: Jalankan `npm run secret:scan` untuk memastikan tidak ada API key, token rahasia, atau kredensial yang bocor di kode sumber.
+  2. **Pengujian Unit RBAC & Integritas Matriks**: Jalankan `npm test` untuk memverifikasi seluruh pembatas peran RBAC tetap patuh pada matriks resmi 20 fitur x 5 peran.
+  3. **Uji Konkurensi & Anti-Cheat (Race Condition Simulation)**: Menjalankan skrip simulasi multi-request penarikan dan transfer serentak untuk membuktikan bahwa database lock `FOR UPDATE` berhasil menggagalkan upaya *double-spending*.
+  4. **Uji Alur Jam Kerja Penarikan**: Menguji pengajuan penarikan pada jam operasional (09.00-16.00 WIB) vs di luar jam operasional (masuk antrean terjadwal).
+  5. **Verifikasi Struk POS & Jurnal Akuntansi**: Memastikan setiap transaksi S-Wallet mencetak struk dengan nomor referensi unik dan membukukan jurnal debet-kredit yang seimbang.
+* **Kriteria Selesai (Definition of Done)**: Zero warning, zero secret leak, 100% test passing, dan sistem siap diluncurkan ke lingkungan produksi (*Production Ready*).
 
 ---
 
