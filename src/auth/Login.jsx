@@ -239,7 +239,7 @@ export default function Login() {
             <p id="dev-title" className="d-eyebrow">Dev · Supabase asli (1-Klik Masuk)</p>
             <ul>
               {DEV_ACCOUNTS.map(([em, r, label]) => {
-                const demoPass = import.meta.env.VITE_DEMO_PASSWORD || "axaxyz999";
+                const demoPass = import.meta.env.VITE_DEMO_PASSWORD || "";
                 const isLoggingIn = busyEmail === em;
                 return (
                   <li key={em}>

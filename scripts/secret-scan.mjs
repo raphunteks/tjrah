@@ -51,6 +51,10 @@ const RULES = [
   ["Kunci pribadi", /-----BEGIN (?:RSA |EC |OPENSSH |)PRIVATE KEY-----/g, () => true],
   ["Nilai KEY/TOKEN/SECRET/PASSWORD panjang", /\b[A-Z][A-Z0-9_]*(?:KEY|TOKEN|SECRET|PASSWORD|PASSWD)[A-Z0-9_]*\s*[=:]\s*["']?([A-Za-z0-9+/_\-.=]{20,})["']?/g,
     (m) => !PLACEHOLDER.test(m[0]) && !/^(true|false|null)$/i.test(m[1]) && !/^[a-z][a-z0-9._:-]*$/.test(m[1])],
+  ["Kunci API atau Rahasia Gateway", /(?:apiKey|api_key|webhookSecret|webhook_secret)\s*[:=]\s*["']([A-Za-z0-9_-]{20,})["']/g,
+    (m) => !PLACEHOLDER.test(m[0])],
+  ["Fallback rahasia langsung pada process.env", /process\.env\.[A-Z0-9_]*(?:SECRET|KEY|PASSWORD|TOKEN)\s*\|\|\s*["']([^"']{8,})["']/g,
+    (m) => !PLACEHOLDER.test(m[0])],
 ];
 
 const findings = [];

@@ -27,17 +27,37 @@ function emitFeesUpdated(payload) {
 }
 
 export function getPakasirConfig() {
+  const envSlug = (typeof import.meta !== "undefined" && import.meta.env?.VITE_PAKASIR_SLUG) || "harumin";
+  const envApiKey = (typeof import.meta !== "undefined" && import.meta.env?.VITE_PAKASIR_API_KEY) || "";
+  const envWebhookSecret = (typeof import.meta !== "undefined" && import.meta.env?.VITE_PAKASIR_WEBHOOK_SECRET) || "";
+  const envApiBase = (typeof import.meta !== "undefined" && import.meta.env?.VITE_PAKASIR_API_BASE) || "https://app.pakasir.com/api/v2";
+  const envWebhookUrl = (typeof import.meta !== "undefined" && import.meta.env?.VITE_PAKASIR_WEBHOOK_URL) || "https://www.harumin.my.id/api/webhook/pakasir";
+  const envSandbox = (typeof import.meta !== "undefined" && import.meta.env?.VITE_PAKASIR_SANDBOX === "true") || false;
+
   try {
     const raw = localStorage.getItem(STORAGE_KEY_CONFIG);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return {
+        slug: parsed.slug || envSlug,
+        apiKey: parsed.apiKey || envApiKey,
+        webhookSecret: parsed.webhookSecret || envWebhookSecret,
+        apiBase: parsed.apiBase || envApiBase,
+        webhookUrl: parsed.webhookUrl || envWebhookUrl,
+        isSandbox: parsed.isSandbox != null ? parsed.isSandbox : envSandbox,
+        useDynamicFee: parsed.useDynamicFee != null ? parsed.useDynamicFee : true,
+        feePayer: parsed.feePayer || "customer",
+      };
+    }
   } catch {}
+
   return {
-    slug: "harumin",
-    apiKey: "gVfIdQPwjwPNC85atM4sK4uUEfpTIgAJ",
-    webhookSecret: "c16bb67cd5cef9dde0722e7a4c9fed6a",
-    apiBase: "https://app.pakasir.com/api/v2",
-    webhookUrl: "https://www.harumin.my.id/api/webhook/pakasir",
-    isSandbox: false,
+    slug: envSlug,
+    apiKey: envApiKey,
+    webhookSecret: envWebhookSecret,
+    apiBase: envApiBase,
+    webhookUrl: envWebhookUrl,
+    isSandbox: envSandbox,
     useDynamicFee: true, // true = API /payment-fee, false = custom fee
     feePayer: "customer", // "customer" (dibebankan ke pelanggan), "merchant" (ditanggung platform), "split" (bagi 50:50)
   };

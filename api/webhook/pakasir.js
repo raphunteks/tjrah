@@ -1,6 +1,6 @@
 // Webhook Handler Resmi Pakasir Payment Gateway untuk Tijarah OS
 // Endpoint: https://www.harumin.my.id/api/webhook/pakasir (atau https://tijaarah.vercel.app/api/webhook/pakasir)
-// Header verifikasi: X-Secret: c16bb67cd5cef9dde0722e7a4c9fed6a
+// Header verifikasi: X-Secret diambil dari process.env.PAKASIR_WEBHOOK_SECRET (.env.local)
 
 export default async function handler(req, res) {
   // Hanya menerima metode POST
@@ -10,8 +10,13 @@ export default async function handler(req, res) {
   }
 
   // Verifikasi Webhook Secret dari header X-Secret
-  const expectedSecret = process.env.PAKASIR_WEBHOOK_SECRET || "c16bb67cd5cef9dde0722e7a4c9fed6a";
+  const expectedSecret = process.env.PAKASIR_WEBHOOK_SECRET;
   const incomingSecret = req.headers["x-secret"] || req.headers["X-Secret"];
+
+  if (!expectedSecret) {
+    console.error("[Pakasir Webhook] Variabel lingkungan PAKASIR_WEBHOOK_SECRET belum dikonfigurasi.");
+    return res.status(500).json({ error: "Server configuration error: Webhook secret not configured." });
+  }
 
   if (!incomingSecret || incomingSecret !== expectedSecret) {
     console.warn("[Pakasir Webhook] Header X-Secret tidak valid atau tidak cocok.");
