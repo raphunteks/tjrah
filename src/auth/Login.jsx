@@ -1,8 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useAuth } from "./AuthProvider.jsx";
 import { Link, useRouter } from "../lib/router.jsx";
 import { ROLE_LABEL, ROLE_LEVEL } from "../lib/rbac-matrix.js";
-import { executeRecaptchaVerification } from "../lib/recaptcha.js";
+import {
+  loadRecaptchaScript,
+  renderRecaptchaCheckbox,
+  resetRecaptchaCheckbox,
+  getRecaptchaV3Token,
+  verifyRecaptchaServer
+} from "../lib/recaptcha.js";
 import "../styles/dashboard.css";
 
 // Hanya tampil saat `npm run dev` dengan Supabase asli (dibuang dari build produksi). Email tetap; kata sandi = DEMO_PASSWORD di .env.local.
@@ -26,6 +32,49 @@ export default function Login() {
   const [err, setErr] = useState(null);
   const [busy, setBusy] = useState(false);
   const [hashNotice, setHashNotice] = useState(null);
+  const recaptchaContainerRef = useRef(null);
+  const [recaptchaWidgetId, setRecaptchaWidgetId] = useState(null);
+  const [recaptchaV2Token, setRecaptchaV2Token] = useState(null);
+
+  // Inisialisasi Google reCAPTCHA: Tampilkan floating badge v3 di kanan bawah & render Checkbox v2
+  useEffect(() => {
+    let isMounted = true;
+
+    async function initRecaptcha() {
+      try {
+        await loadRecaptchaScript();
+        if (!isMounted) return;
+
+        if (recaptchaContainerRef.current) {
+          const wId = await renderRecaptchaCheckbox(
+            recaptchaContainerRef.current,
+            (token) => {
+              if (isMounted) {
+                setRecaptchaV2Token(token);
+                setErr(null);
+              }
+            },
+            () => {
+              if (isMounted) {
+                setRecaptchaV2Token(null);
+              }
+            }
+          );
+          if (isMounted && wId !== null) {
+            setRecaptchaWidgetId(wId);
+          }
+        }
+      } catch (e) {
+        console.warn("[reCAPTCHA Init Notice]:", e);
+      }
+    }
+
+    initRecaptcha();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Tangkap error dari fragment URL hash (misal jika user klik link aktivasi Supabase lama yang expired)
   useEffect(() => {
@@ -66,11 +115,32 @@ export default function Login() {
     setBusy(true);
     setErr(null);
     try {
-      // Verifikasi keamanan Google reCAPTCHA v3 untuk submit formulir manual
-      if (!creds && api?.mode !== "demo") {
-        const recaptchaRes = await executeRecaptchaVerification("login");
-        if (!recaptchaRes.ok) {
-          throw new Error(recaptchaRes.error || "Verifikasi keamanan (reCAPTCHA) gagal. Silakan coba kembali.");
+      // Validasi keamanan Google reCAPTCHA (v2 Checkbox atau v3 fallback)
+      if (!creds && api?.mode !== "demo" && import.meta.env.VITE_RECAPTCHA_ENABLED !== "false") {
+        const hasV2Config = Boolean(import.meta.env.VITE_RECAPTCHA_V2_SITE_KEY);
+        let tokenToVerify = recaptchaV2Token;
+        let tokenVersion = "v2";
+
+        if (hasV2Config && !tokenToVerify) {
+          throw new Error("Silakan centang verifikasi 'Saya bukan robot' terlebih dahulu.");
+        }
+
+        if (!tokenToVerify) {
+          const v3Res = await getRecaptchaV3Token("login");
+          if (!v3Res.ok && !v3Res.bypassed) {
+            throw new Error(v3Res.error || "Gagal memperoleh verifikasi keamanan reCAPTCHA.");
+          }
+          tokenToVerify = v3Res.token;
+          tokenVersion = "v3";
+        }
+
+        if (tokenToVerify) {
+          const verifyRes = await verifyRecaptchaServer(tokenToVerify, "login", tokenVersion);
+          if (!verifyRes.ok && !verifyRes.bypassed) {
+            resetRecaptchaCheckbox(recaptchaWidgetId);
+            setRecaptchaV2Token(null);
+            throw new Error(verifyRes.error || "Verifikasi keamanan (reCAPTCHA) gagal. Silakan coba kembali.");
+          }
         }
       }
 
@@ -238,11 +308,25 @@ export default function Login() {
               <strong>Akses ditolak.</strong> {blocked} Hubungi pemilik bisnis Anda atau dukungan Tijarah.
             </p>
           )}
+          {/* Widget Checkbox Resmi Google reCAPTCHA v2 */}
+          {import.meta.env.VITE_RECAPTCHA_V2_SITE_KEY && (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                margin: "1.25rem 0 1rem",
+                minHeight: "78px"
+              }}
+            >
+              <div ref={recaptchaContainerRef} id="recaptcha-v2-container"></div>
+            </div>
+          )}
+
           <button type="submit" className="d-btn d-btn--primary d-btn--block" disabled={busy || !api}>
             {busy ? "Memeriksa…" : "Masuk"}
           </button>
           <div style={{ marginTop: "1rem", textAlign: "center", fontSize: "0.72rem", color: "var(--color-ink-muted, #94a3b8)", lineHeight: "1.4" }}>
-            <span>Situs ini dilindungi oleh Google reCAPTCHA v3. </span>
+            <span>Situs ini dilindungi oleh Google reCAPTCHA. </span>
             <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" style={{ color: "var(--color-ink-muted, #94a3b8)", textDecoration: "underline" }}>Privasi</a>
             <span> &amp; </span>
             <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer" style={{ color: "var(--color-ink-muted, #94a3b8)", textDecoration: "underline" }}>Persyaratan</a>

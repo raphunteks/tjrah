@@ -114,3 +114,36 @@ test("reCAPTCHA Rate Limiter: Menolak IP yang mengirim lebih dari 5 request per 
 
   assert.equal(lastStatus, 429, "Percobaan ke-6 dari IP yang sama wajib mengembalikan HTTP 429 Too Many Requests");
 });
+
+test("reCAPTCHA Serverless: Handler mendukung parameter versi v2 dan v3", async () => {
+  const prevKeyV2 = process.env.RECAPTCHA_V2_SECRET_KEY;
+  process.env.RECAPTCHA_V2_SECRET_KEY = "example_mock_recaptcha_v2_secret_xxxx";
+
+  try {
+    const { default: handler } = await import("../api/verify-recaptcha.js");
+    let statusCode = 0;
+    let responseData = null;
+    const req = {
+      method: "POST",
+      headers: { "x-forwarded-for": "198.51.100.22" },
+      body: { action: "login", version: "v2" } // Tanpa token
+    };
+    const res = {
+      setHeader() {},
+      status(code) {
+        statusCode = code;
+        return {
+          json(data) {
+            responseData = data;
+          }
+        };
+      }
+    };
+
+    await handler(req, res);
+    assert.equal(statusCode, 400, "Request v2 tanpa token wajib ditolak dengan HTTP 400");
+    assert.equal(responseData.ok, false);
+  } finally {
+    process.env.RECAPTCHA_V2_SECRET_KEY = prevKeyV2;
+  }
+});

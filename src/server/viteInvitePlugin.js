@@ -65,7 +65,7 @@ export function inviteSmtpPlugin() {
           return res.end();
         }
 
-        // Endpoint: Verifikasi Google reCAPTCHA v3 Server-Side dengan Rate Limiting
+        // Endpoint: Verifikasi Google reCAPTCHA v2 (Checkbox) & v3 Server-Side dengan Rate Limiting
         if (url === "/api/verify-recaptcha" && req.method === "POST") {
           const clientIp = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket?.remoteAddress || "127.0.0.1";
           if (checkRecaptchaRateLimit(clientIp)) {
@@ -77,11 +77,12 @@ export function inviteSmtpPlugin() {
 
           try {
             const body = await parseJsonBody(req);
-            const { token, action } = body || {};
-            const secretKey = (process.env.RECAPTCHA_SECRET_KEY || "").replace(/^['"](.*)['"]$/, "$1");
+            const { token, action, version } = body || {};
+            const secretKeyV3 = (process.env.RECAPTCHA_SECRET_KEY || "").replace(/^['"](.*)['"]$/, "$1");
+            const secretKeyV2 = (process.env.RECAPTCHA_V2_SECRET_KEY || process.env.SECRET_KEY_RECAPTCHAV2 || "").replace(/^['"](.*)['"]$/, "$1");
             const enabled = process.env.VITE_RECAPTCHA_ENABLED !== "false";
 
-            if (!enabled || !secretKey) {
+            if (!enabled || (!secretKeyV3 && !secretKeyV2)) {
               return sendJson(res, 200, { ok: true, score: 1.0, bypassed: true });
             }
 
@@ -89,26 +90,39 @@ export function inviteSmtpPlugin() {
               return sendJson(res, 400, { ok: false, error: "Token verifikasi reCAPTCHA wajib disertakan." });
             }
 
-            const params = new URLSearchParams();
-            params.append("secret", secretKey);
-            params.append("response", token);
-            if (clientIp) params.append("remoteip", clientIp);
+            const primaryKey = (version === "v2" && secretKeyV2) ? secretKeyV2 : (secretKeyV3 || secretKeyV2);
 
-            const googleRes = await fetch("https://www.google.com/recaptcha/api/siteverify", {
-              method: "POST",
-              headers: { "Content-Type": "application/x-www-form-urlencoded" },
-              body: params.toString()
-            });
+            const verifyGoogle = async (secKey) => {
+              const params = new URLSearchParams();
+              params.append("secret", secKey);
+              params.append("response", token);
+              if (clientIp) params.append("remoteip", clientIp);
 
-            if (!googleRes.ok) {
-              throw new Error(`Google reCAPTCHA HTTP ${googleRes.status}`);
+              const gRes = await fetch("https://www.google.com/recaptcha/api/siteverify", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: params.toString()
+              });
+              if (!gRes.ok) throw new Error(`Google reCAPTCHA HTTP ${gRes.status}`);
+              return await gRes.json();
+            };
+
+            let data = await verifyGoogle(primaryKey);
+            if (!data.success && secretKeyV2 && secretKeyV3) {
+              const altKey = primaryKey === secretKeyV2 ? secretKeyV3 : secretKeyV2;
+              try {
+                const altData = await verifyGoogle(altKey);
+                if (altData.success) data = altData;
+              } catch (e) {
+                // Ignore fallback error
+              }
             }
 
-            const data = await googleRes.json();
             if (data.success && (data.score === undefined || data.score >= 0.5)) {
               return sendJson(res, 200, {
                 ok: true,
                 score: data.score ?? 1.0,
+                version: data.score !== undefined ? "v3" : "v2",
                 action: data.action || action,
                 hostname: data.hostname
               });

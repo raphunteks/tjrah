@@ -1,4 +1,4 @@
-// Vercel Serverless Function: Verifikasi Google reCAPTCHA v3 Server-Side dengan In-Memory IP Rate Limiting
+// Vercel Serverless Function: Verifikasi Google reCAPTCHA v2 (Checkbox) & v3 Server-Side
 // Endpoint: https://www.harumin.my.id/api/verify-recaptcha
 
 const rateLimitMap = new Map();
@@ -19,6 +19,27 @@ function isRateLimited(ip) {
   validHistory.push(now);
   rateLimitMap.set(ip, validHistory);
   return false;
+}
+
+async function verifyWithGoogle(secretKey, token, clientIp) {
+  const params = new URLSearchParams();
+  params.append("secret", secretKey);
+  params.append("response", token);
+  if (clientIp) {
+    params.append("remoteip", clientIp);
+  }
+
+  const res = await fetch("https://www.google.com/recaptcha/api/siteverify", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: params.toString()
+  });
+
+  if (!res.ok) {
+    throw new Error(`Google reCAPTCHA HTTP ${res.status}`);
+  }
+
+  return await res.json();
 }
 
 export default async function handler(req, res) {
@@ -47,13 +68,14 @@ export default async function handler(req, res) {
 
   try {
     const payload = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
-    const { token, action } = payload || {};
+    const { token, action, version } = payload || {};
 
-    const secretKey = process.env.RECAPTCHA_SECRET_KEY;
+    const secretKeyV3 = process.env.RECAPTCHA_SECRET_KEY;
+    const secretKeyV2 = process.env.RECAPTCHA_V2_SECRET_KEY || process.env.SECRET_KEY_RECAPTCHAV2;
     const enabled = process.env.VITE_RECAPTCHA_ENABLED !== "false";
 
-    // Jika fitur dinonaktifkan atau secret key belum terkonfigurasi, izinkan akses secara aman
-    if (!enabled || !secretKey) {
+    // Jika fitur dinonaktifkan atau kedua kunci belum dikonfigurasi, izinkan akses secara aman
+    if (!enabled || (!secretKeyV3 && !secretKeyV2)) {
       return res.status(200).json({ ok: true, score: 1.0, bypassed: true });
     }
 
@@ -61,41 +83,40 @@ export default async function handler(req, res) {
       return res.status(400).json({ ok: false, error: "Token verifikasi reCAPTCHA wajib disertakan." });
     }
 
-    const params = new URLSearchParams();
-    params.append("secret", secretKey);
-    params.append("response", token);
-    if (clientIp) {
-      params.append("remoteip", clientIp);
+    // Pilih kunci utama sesuai versi
+    const primaryKey = (version === "v2" && secretKeyV2) ? secretKeyV2 : (secretKeyV3 || secretKeyV2);
+    let googleRes = await verifyWithGoogle(primaryKey, token, clientIp);
+
+    // Fallback: Jika gagal dengan primaryKey dan versi lain tersedia, uji kunci alternatif
+    if (!googleRes.success && secretKeyV2 && secretKeyV3) {
+      const alternateKey = primaryKey === secretKeyV2 ? secretKeyV3 : secretKeyV2;
+      try {
+        const fallbackRes = await verifyWithGoogle(alternateKey, token, clientIp);
+        if (fallbackRes.success) {
+          googleRes = fallbackRes;
+        }
+      } catch (e) {
+        // Abaikan error fallback
+      }
     }
 
-    const googleRes = await fetch("https://www.google.com/recaptcha/api/siteverify", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: params.toString()
-    });
-
-    if (!googleRes.ok) {
-      throw new Error(`Google reCAPTCHA HTTP ${googleRes.status}`);
-    }
-
-    const data = await googleRes.json();
-
-    // Untuk reCAPTCHA v3, score berkisar 0.0 (bot) sampai 1.0 (manusia)
-    // Ambang batas aman standar: >= 0.5
-    if (data.success && (data.score === undefined || data.score >= 0.5)) {
+    // Untuk v2, Google mengembalikan { success: true }.
+    // Untuk v3, Google mengembalikan { success: true, score: 0.9 }.
+    if (googleRes.success && (googleRes.score === undefined || googleRes.score >= 0.5)) {
       return res.status(200).json({
         ok: true,
-        score: data.score ?? 1.0,
-        action: data.action || action,
-        hostname: data.hostname
+        score: googleRes.score ?? 1.0,
+        version: googleRes.score !== undefined ? "v3" : "v2",
+        action: googleRes.action || action,
+        hostname: googleRes.hostname
       });
     }
 
     return res.status(403).json({
       ok: false,
       error: "Verifikasi reCAPTCHA mendeteksi aktivitas mencurigakan atau skor risiko tinggi.",
-      score: data.score ?? 0,
-      codes: data["error-codes"] || []
+      score: googleRes.score ?? 0,
+      codes: googleRes["error-codes"] || []
     });
   } catch (err) {
     console.error("[reCAPTCHA Serverless Error]", err);
