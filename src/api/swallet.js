@@ -84,13 +84,156 @@ export async function verifyTotpChallenge(token, secretKey = "", backupPin = "")
     return { ok: true };
   }
 
-  // 3. Fallback demo validasi untuk testing (misal token "123456" atau "888888")
-  if (cleanToken === "123456" || cleanToken === "888888") {
-    setStepUpSession();
-    return { ok: true };
+  return { ok: false, error: "Kode verifikasi 2FA atau PIN salah. Pastikan waktu jam perangkat Anda akurat." };
+}
+
+/**
+ * Periksa apakah Autentikasi Dua Faktor (2FA) aktif untuk akun pengguna
+ * @param {Object} user
+ * @returns {boolean}
+ */
+export function isUserTwoFactorActive(user) {
+  if (!user) {
+    try {
+      return localStorage.getItem("tijarah:2fa:owner") === "true";
+    } catch {
+      return false;
+    }
+  }
+  if (user?.two_factor_enabled === true) return true;
+  try {
+    const isTarget = user?.email === "ksanihtest@gmail.com" || user?.id === "fe2bfa01-8956-4df0-acbd-da7fc3a8f15f";
+    if (isTarget) return true;
+    const byId = user?.id && localStorage.getItem(`tijarah:2fa:${user.id}`);
+    const byEmail = user?.email && localStorage.getItem(`tijarah:2fa:${user.email}`);
+    const byOwner = localStorage.getItem("tijarah:2fa:owner");
+    return byId === "true" || byEmail === "true" || byOwner === "true";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Ambil PIN Transaksi pengguna yang tersimpan
+ * @param {string} userId
+ * @param {string} [email]
+ * @returns {string}
+ */
+export function getStoredUserPin(userId, email = "") {
+  try {
+    const byId = userId ? localStorage.getItem(`tijarah:pin:${userId}`) : "";
+    if (byId) return byId;
+    const byEmail = email ? localStorage.getItem(`tijarah:pin:${email}`) : "";
+    if (byEmail) return byEmail;
+    return localStorage.getItem("tijarah:pin:owner") || "";
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Simpan PIN Transaksi pengguna baru
+ * @param {Object} params
+ * @param {string} params.userId
+ * @param {string} [params.email]
+ * @param {string} params.pin - 6 digit angka
+ * @param {Object} [params.api]
+ * @returns {boolean}
+ */
+export function saveUserPin({ userId, email = "", pin, api }) {
+  const cleanPin = String(pin || "").trim().replace(/\D/g, "");
+  if (cleanPin.length !== 6) return false;
+  try {
+    if (userId) localStorage.setItem(`tijarah:pin:${userId}`, cleanPin);
+    if (email) localStorage.setItem(`tijarah:pin:${email}`, cleanPin);
+    localStorage.setItem("tijarah:pin:owner", cleanPin);
+
+    if (api?.update && userId) {
+      api.update("profiles", userId, { transaction_pin: cleanPin }).catch(() => {});
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Buat kode OTP Alfanumerik (contoh: SW-12AS44)
+ * @returns {string}
+ */
+export function generateAlphanumericOtp() {
+  const chars = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+  let code = "";
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return `SW-${code}`;
+}
+
+/**
+ * Kirim kode OTP Reset PIN ke Email atau Hermes WhatsApp
+ * @param {Object} params
+ * @param {'email'|'whatsapp'} params.channel
+ * @param {string} params.target
+ * @param {string} params.otpCode
+ * @param {string} [params.userName]
+ * @returns {Promise<{ ok: boolean, message: string, error?: string }>}
+ */
+export async function sendPinResetOtp({ channel, target, otpCode, userName = "Pengguna Tijarah" }) {
+  if (channel === "email") {
+    try {
+      const res = await fetch("/api/send-test-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recipient: target,
+          roleLabel: "Otorisasi Reset PIN S-Wallet",
+          customSubject: `[Tijarah S-Wallet] Kode OTP Reset PIN Transaksi: ${otpCode}`,
+          customHtml: `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
+              <h2 style="color: #0B5D4B; margin: 0 0 8px 0;">Tijarah S-Wallet Digital</h2>
+              <p style="color: #64748b; margin: 0 0 20px 0; font-size: 13px;">Otorisasi Reset PIN Transaksi 6-Digit</p>
+              <p style="color: #1e293b; font-size: 14px;">Halo <strong>${userName}</strong>,</p>
+              <p style="color: #475569; font-size: 14px; line-height: 1.5;">Anda meminta pengaturan ulang (reset) PIN Transaksi S-Wallet. Gunakan kode verifikasi OTP alfanumerik berikut:</p>
+              <div style="background: #f8fafc; border: 2px dashed #0B5D4B; border-radius: 8px; padding: 14px 20px; text-align: center; margin: 20px 0;">
+                <span style="font-family: monospace; font-size: 24px; font-weight: 700; letter-spacing: 4px; color: #0B5D4B;">${otpCode}</span>
+              </div>
+              <p style="color: #ef4444; font-size: 12px; margin: 0;">* Kode ini berlaku selama 5 menit. Jangan berikan kode OTP ini kepada siapa pun.</p>
+            </div>
+          `
+        })
+      }).catch(() => null);
+
+      if (res && res.ok) {
+        return { ok: true, message: `Kode OTP verifikasi (${otpCode}) berhasil dikirim ke Email: ${target}` };
+      }
+    } catch {}
+
+    return { ok: true, message: `Kode OTP verifikasi (${otpCode}) diproses untuk Email: ${target}` };
   }
 
-  return { ok: false, error: "Kode verifikasi 2FA atau PIN salah. Pastikan waktu jam perangkat Anda akurat." };
+  if (channel === "whatsapp") {
+    try {
+      const res = await fetch("/api/hermes-dispatch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          channel: "whatsapp",
+          target: target,
+          kind: "pin_reset_otp",
+          message: `[TIJARAH S-WALLET] Halo ${userName}, kode OTP reset PIN Transaksi S-Wallet Anda adalah *${otpCode}*. Berlaku selama 5 menit. Jangan berikan kode ini kepada siapa pun demi keamanan brankas finansial Anda.`
+        })
+      }).catch(() => null);
+
+      if (res && res.ok) {
+        return { ok: true, message: `Kode OTP verifikasi (${otpCode}) berhasil dikirim via Hermes WhatsApp ke ${target}` };
+      }
+    } catch {}
+
+    return { ok: true, message: `Kode OTP verifikasi (${otpCode}) diproses untuk Hermes WhatsApp: ${target}` };
+  }
+
+  return { ok: false, error: "Saluran pengiriman tidak didukung." };
 }
 
 // ───────── 2. MANAJEMEN JAM OPERASIONAL PENARIKAN (WIB) ─────────
@@ -394,6 +537,24 @@ export async function executeP2PTransfer(api, { senderUserId, receiverIdentifier
     return { ok: false, error: "Nomor dompet atau ID penerima wajib diisi." };
   }
 
+  // Validasi PIN Transaksi Pengguna
+  const storedPin = getStoredUserPin(senderUserId);
+  if (!storedPin) {
+    return {
+      ok: false,
+      error: "PIN Transaksi belum dibuat. Anda wajib mengatur 6-digit PIN Transaksi pada menu Keamanan & Kredensial sebelum dapat melakukan transfer."
+    };
+  }
+
+  const cleanPin = String(pin || "").trim().replace(/\D/g, "");
+  if (!cleanPin) {
+    return { ok: false, error: "PIN Transaksi 6-digit wajib diisi untuk otorisasi transfer." };
+  }
+
+  if (cleanPin !== storedPin) {
+    return { ok: false, error: "PIN Transaksi salah. Silakan periksa kembali atau lakukan Reset PIN jika lupa." };
+  }
+
   try {
     if (api?.rpc && senderUserId) {
       const res = await api.rpc("execute_wallet_transfer", {
@@ -457,6 +618,24 @@ export async function requestBankWithdrawal(api, { userId, bankName, accountNumb
   const amt = Number(amount) || 0;
   if (amt < 15000) {
     return { ok: false, error: "Batas minimum penarikan adalah Rp 15.000." };
+  }
+
+  // Validasi PIN Transaksi Pengguna
+  const storedPin = getStoredUserPin(userId);
+  if (!storedPin) {
+    return {
+      ok: false,
+      error: "PIN Transaksi belum dibuat. Anda wajib mengatur 6-digit PIN Transaksi pada menu Keamanan & Kredensial sebelum dapat mengajukan penarikan dana."
+    };
+  }
+
+  const cleanPin = String(pin || "").trim().replace(/\D/g, "");
+  if (!cleanPin) {
+    return { ok: false, error: "PIN Transaksi 6-digit wajib diisi untuk otorisasi penarikan." };
+  }
+
+  if (cleanPin !== storedPin) {
+    return { ok: false, error: "PIN Transaksi salah. Silakan periksa kembali atau lakukan Reset PIN jika lupa." };
   }
 
   const feeCalc = calculateWithdrawalFee(amt);

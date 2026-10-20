@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "../../../lib/router.jsx";
 import { useAuth } from "../../../auth/AuthProvider.jsx";
 import { ROLE_LABEL, ROLE_LEVEL } from "../../../lib/rbac-matrix.js";
 import { rupiah, dateTime } from "../../../lib/format.js";
@@ -6,6 +7,7 @@ import { PageHead, Panel, Badge, Modal, Empty, Loading, ErrorNote } from "../../
 import AccountTabs from "./AccountTabs.jsx";
 import { AccountKpiGrid, AccountKpiCard } from "./AccountKpiGrid.jsx";
 import { useAccountLang } from "./i18n.js";
+import ResetPinModal from "./ResetPinModal.jsx";
 import {
   getStepUpSession,
   verifyTotpChallenge,
@@ -19,7 +21,9 @@ import {
   calculateWithdrawalFee,
   isOperatingHours,
   getPayoutPricingConfig,
-  purgeAllDummyWalletData
+  purgeAllDummyWalletData,
+  isUserTwoFactorActive,
+  getStoredUserPin
 } from "../../../api/swallet.js";
 
 const QUICK_AMOUNTS = [50000, 100000, 250000, 500000, 1000000, 2500000];
@@ -36,8 +40,11 @@ const BANK_OPTIONS = [
 ];
 
 export default function Wallet() {
+  const { navigate } = useRouter();
   const { role, user, api } = useAuth();
   const { t } = useAccountLang();
+  const [showResetPinModal, setShowResetPinModal] = useState(false);
+  const storedUserPin = getStoredUserPin(user?.id, user?.email);
 
   // 1. Status Gerbang 2FA Step-Up (15 Menit)
   const [isUnlocked, setIsUnlocked] = useState(getStepUpSession);
@@ -286,6 +293,57 @@ export default function Wallet() {
     return transactions.filter((t) => t.type === txnFilter);
   }, [transactions, txnFilter]);
 
+  // ───────── TAMPILAN STATE 0: 2FA BELUM DIAKTIFKAN PADA AKUN ─────────
+  const is2FaActive = isUserTwoFactorActive(user);
+  if (!is2FaActive) {
+    return (
+      <>
+        <PageHead
+          eyebrow={t.eyebrow}
+          title={t.walletTitle}
+          desc="Aktivasi Autentikasi Dua Faktor (2FA) Diperlukan"
+        />
+
+        <div className="swallet-gate-wrapper">
+          <div className="swallet-gate-card">
+            <div className="swallet-gate-icon" style={{ background: "rgba(225, 29, 72, 0.1)", color: "#e11d48" }}>
+              <i className="fa-solid fa-shield-halved" aria-hidden="true" />
+            </div>
+
+            <h2 className="swallet-gate-title">Autentikasi 2FA Belum Aktif</h2>
+            <p className="swallet-gate-desc">
+              Untuk melindungi saldo dan hak akses transaksi moneter, subtab <strong>S-Wallet Digital</strong> mewajibkan akun Anda mengaktifkan <strong>Autentikasi Dua Faktor (TOTP 2FA)</strong> terlebih dahulu pada subtab Keamanan &amp; Kredensial.
+            </p>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+              <button
+                type="button"
+                className="tjr-pay-btn-primary"
+                style={{ width: "100%", justifyContent: "center" }}
+                onClick={() => navigate("/app/akun/keamanan")}
+              >
+                <i className="fa-solid fa-shield-halved" aria-hidden="true" style={{ marginRight: "0.5rem" }} />
+                Aktifkan 2FA di Keamanan &amp; Kredensial
+              </button>
+
+              <button
+                type="button"
+                className="d-btn d-btn--ghost"
+                style={{ width: "100%", justifyContent: "center" }}
+                onClick={() => navigate("/app/akun/profil")}
+              >
+                Kembali ke Profil Saya
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* ──────── DOCK NAVIGASI AKUN BAWAH ──────── */}
+        <AccountTabs />
+      </>
+    );
+  }
+
   // ───────── TAMPILAN STATE 1: GERBANG KEAMANAN 2FA TERKUNCI ─────────
   if (!isUnlocked) {
     return (
@@ -304,7 +362,7 @@ export default function Wallet() {
 
             <h2 className="swallet-gate-title">Brankas Finansial Terlindungi</h2>
             <p className="swallet-gate-desc">
-              Untuk melindungi saldo dan hak akses transaksi moneter, masukkan <strong>6 digit kode otorisasi</strong> dari aplikasi Authenticator atau PIN transaksi akun Anda.
+              Untuk melindungi saldo dan hak akses transaksi moneter, masukkan <strong>6 digit kode otorisasi</strong> dari aplikasi Authenticator akun Anda.
             </p>
 
             {gateError && (
@@ -340,9 +398,6 @@ export default function Wallet() {
             <div style={{ marginTop: "1.25rem", fontSize: "0.78rem", color: "var(--color-muted)", lineHeight: 1.4 }}>
               <i className="fa-solid fa-clock" aria-hidden="true" style={{ marginRight: "0.3rem" }} />
               Tiket sesi berlaku selama <strong>15 menit</strong> dan akan mengunci otomatis saat tidak ada aktivitas.
-              <p style={{ marginTop: "0.4rem", fontSize: "0.72rem", color: "#94a3b8" }}>
-                (Petunjuk Pengujian: Masukkan kode <code>123456</code> atau <code>888888</code>)
-              </p>
             </div>
           </div>
         </div>
@@ -904,22 +959,55 @@ export default function Wallet() {
             />
           </div>
 
-          <div style={{ marginBottom: "1.25rem" }}>
-            <label className="d-label" htmlFor="sw-trf-pin">PIN Transaksi 6-Digit</label>
-            <input
-              id="sw-trf-pin"
-              type="password"
-              maxLength={6}
-              className="d-input font-mono"
-              placeholder="******"
-              value={transferPin}
-              onChange={(e) => setTransferPin(e.target.value.replace(/\D/g, ""))}
-              required
-            />
-            <span className="d-muted" style={{ fontSize: "0.75rem" }}>
-              Otorisasi keamanan finansial untuk mencegah transaksi tidak sah.
-            </span>
-          </div>
+          {!storedUserPin ? (
+            <div className="d-alert d-alert--warn" style={{ marginBottom: "1.25rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <i className="fa-solid fa-triangle-exclamation" aria-hidden="true" />
+                <strong>PIN Transaksi Belum Dibuat</strong>
+              </div>
+              <p style={{ margin: 0, fontSize: "0.82rem" }}>
+                Untuk melakukan transfer saldo S-Wallet, Anda wajib mengatur 6-digit PIN Transaksi terlebih dahulu pada subtab Keamanan &amp; Kredensial.
+              </p>
+              <button
+                type="button"
+                className="d-btn d-btn--sm d-btn--primary"
+                style={{ alignSelf: "flex-start", marginTop: "0.25rem" }}
+                onClick={() => {
+                  setShowTransferModal(false);
+                  navigate("/app/akun/keamanan");
+                }}
+              >
+                <i className="fa-solid fa-key" aria-hidden="true" style={{ marginRight: "0.3rem" }} />
+                Atur PIN Transaksi Sekarang
+              </button>
+            </div>
+          ) : (
+            <div style={{ marginBottom: "1.25rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.35rem" }}>
+                <label className="d-label" htmlFor="sw-trf-pin" style={{ margin: 0 }}>PIN Transaksi 6-Digit</label>
+                <button
+                  type="button"
+                  className="swallet-link-btn"
+                  onClick={() => setShowResetPinModal(true)}
+                >
+                  Lupa PIN? Reset via OTP
+                </button>
+              </div>
+              <input
+                id="sw-trf-pin"
+                type="password"
+                maxLength={6}
+                className="d-input font-mono"
+                placeholder="••••••"
+                value={transferPin}
+                onChange={(e) => setTransferPin(e.target.value.replace(/\D/g, ""))}
+                required
+              />
+              <span className="d-muted" style={{ fontSize: "0.75rem" }}>
+                Otorisasi keamanan finansial untuk mencegah transaksi tidak sah.
+              </span>
+            </div>
+          )}
 
           <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem" }}>
             <button
@@ -932,7 +1020,7 @@ export default function Wallet() {
             <button
               type="submit"
               className="tjr-pay-btn-primary"
-              disabled={transferProcessing || !transferTarget || !transferAmount}
+              disabled={transferProcessing || !transferTarget || !transferAmount || !storedUserPin || transferPin.length !== 6}
             >
               <i className="fa-solid fa-paper-plane" aria-hidden="true" style={{ marginRight: "0.4rem" }} />
               {transferProcessing ? "Mengirim Saldo..." : "Konfirmasi & Kirim Saldo"}
@@ -1044,19 +1132,52 @@ export default function Wallet() {
             </div>
           )}
 
-          <div style={{ marginBottom: "1.25rem" }}>
-            <label className="d-label" htmlFor="sw-wd-pin">PIN Transaksi 6-Digit</label>
-            <input
-              id="sw-wd-pin"
-              type="password"
-              maxLength={6}
-              className="d-input font-mono"
-              placeholder="******"
-              value={withdrawPin}
-              onChange={(e) => setWithdrawPin(e.target.value.replace(/\D/g, ""))}
-              required
-            />
-          </div>
+          {!storedUserPin ? (
+            <div className="d-alert d-alert--warn" style={{ marginBottom: "1.25rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <i className="fa-solid fa-triangle-exclamation" aria-hidden="true" />
+                <strong>PIN Transaksi Belum Dibuat</strong>
+              </div>
+              <p style={{ margin: 0, fontSize: "0.82rem" }}>
+                Untuk mencairkan saldo S-Wallet ke rekening bank, Anda wajib mengatur 6-digit PIN Transaksi terlebih dahulu pada subtab Keamanan &amp; Kredensial.
+              </p>
+              <button
+                type="button"
+                className="d-btn d-btn--sm d-btn--primary"
+                style={{ alignSelf: "flex-start", marginTop: "0.25rem" }}
+                onClick={() => {
+                  setShowWithdrawModal(false);
+                  navigate("/app/akun/keamanan");
+                }}
+              >
+                <i className="fa-solid fa-key" aria-hidden="true" style={{ marginRight: "0.3rem" }} />
+                Atur PIN Transaksi Sekarang
+              </button>
+            </div>
+          ) : (
+            <div style={{ marginBottom: "1.25rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.35rem" }}>
+                <label className="d-label" htmlFor="sw-wd-pin" style={{ margin: 0 }}>PIN Transaksi 6-Digit</label>
+                <button
+                  type="button"
+                  className="swallet-link-btn"
+                  onClick={() => setShowResetPinModal(true)}
+                >
+                  Lupa PIN? Reset via OTP
+                </button>
+              </div>
+              <input
+                id="sw-wd-pin"
+                type="password"
+                maxLength={6}
+                className="d-input font-mono"
+                placeholder="••••••"
+                value={withdrawPin}
+                onChange={(e) => setWithdrawPin(e.target.value.replace(/\D/g, ""))}
+                required
+              />
+            </div>
+          )}
 
           <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem" }}>
             <button
@@ -1069,7 +1190,7 @@ export default function Wallet() {
             <button
               type="submit"
               className="tjr-pay-btn-primary"
-              disabled={withdrawProcessing || !withdrawAmount || Number(withdrawAmount) < 15000}
+              disabled={withdrawProcessing || !withdrawAmount || Number(withdrawAmount) < 15000 || !storedUserPin || withdrawPin.length !== 6}
             >
               <i className="fa-solid fa-building-columns" aria-hidden="true" style={{ marginRight: "0.4rem" }} />
               {withdrawProcessing ? "Mengajukan Penarikan..." : "Ajukan Penarikan Sekarang"}
@@ -1154,6 +1275,18 @@ export default function Wallet() {
 
       {/* ──────── 9. PUSAT NAVIGASI AKUN & TATA KELOLA SISTEM (DOCK BAWAH) ──────── */}
       <AccountTabs />
+
+      {/* ──────── 10. MODAL RESET PIN TRANSAKSI VIA OTP ──────── */}
+      <ResetPinModal
+        open={showResetPinModal}
+        onClose={() => setShowResetPinModal(false)}
+        user={user}
+        api={api}
+        onSuccess={(newPinVal) => {
+          setTransferPin(newPinVal);
+          setWithdrawPin(newPinVal);
+        }}
+      />
     </>
   );
 }

@@ -5,6 +5,8 @@ import AccountTabs from "./AccountTabs.jsx";
 import { AccountKpiGrid, AccountKpiCard } from "./AccountKpiGrid.jsx";
 import { useAccountLang } from "./i18n.js";
 import { qrSvg } from "../../../lib/qr.js";
+import ResetPinModal from "./ResetPinModal.jsx";
+import { saveUserPin } from "../../../api/swallet.js";
 import {
   formatSecretKey,
   buildOtpauthUri,
@@ -231,6 +233,7 @@ export default function Security() {
   const [newPin, setNewPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
   const [pinNotice, setPinNotice] = useState(null);
+  const [showResetPinModal, setShowResetPinModal] = useState(false);
 
   const handlePinSubmit = (e) => {
     e.preventDefault();
@@ -243,11 +246,12 @@ export default function Security() {
       return;
     }
     setPin(newPin);
-    try {
-      if (profile?.id) localStorage.setItem(`tijarah:pin:${profile.id}`, newPin);
-      if (profile?.email) localStorage.setItem(`tijarah:pin:${profile.email}`, newPin);
-      localStorage.setItem("tijarah:pin:owner", newPin);
-    } catch {}
+    saveUserPin({
+      userId: profile?.id,
+      email: profile?.email,
+      pin: newPin,
+      api
+    });
     setPinNotice({ type: "ok", msg: "PIN Transaksi 6-Digit berhasil disimpan untuk perlindungan S-Wallet." });
     setNewPin("");
     setConfirmPin("");
@@ -484,11 +488,22 @@ export default function Security() {
               />
             </div>
 
-            <div style={{ display: "flex", alignItems: "flex-end" }}>
-              <button type="submit" className="d-btn d-btn--ghost">
+            <div style={{ display: "flex", alignItems: "flex-end", gap: "0.5rem", flexWrap: "wrap" }}>
+              <button type="submit" className="d-btn d-btn--primary">
                 <i className="fa-solid fa-lock" aria-hidden="true" style={{ marginRight: "0.4rem" }} />
-                {t.savePin}
+                {pin ? "Perbarui PIN" : t.savePin}
               </button>
+              {pin && (
+                <button
+                  type="button"
+                  className="d-btn d-btn--ghost"
+                  onClick={() => setShowResetPinModal(true)}
+                  title="Reset PIN Transaksi via kode OTP Email atau Hermes WhatsApp"
+                >
+                  <i className="fa-solid fa-key" aria-hidden="true" style={{ marginRight: "0.4rem" }} />
+                  Lupa / Reset PIN via OTP
+                </button>
+              )}
             </div>
           </form>
         </Panel>
@@ -662,6 +677,21 @@ export default function Security() {
           </div>
         </div>
       </Modal>
+
+      {/* MODAL 3: RESET PIN TRANSAKSI VIA OTP */}
+      <ResetPinModal
+        open={showResetPinModal}
+        onClose={() => setShowResetPinModal(false)}
+        user={profile}
+        api={api}
+        onSuccess={(newPinVal) => {
+          setPin(newPinVal);
+          setPinNotice({
+            type: "ok",
+            msg: "PIN Transaksi 6-Digit berhasil direset via verifikasi OTP."
+          });
+        }}
+      />
     </>
   );
 }

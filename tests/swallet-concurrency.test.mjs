@@ -5,7 +5,11 @@ import assert from "node:assert/strict";
 import {
   calculateWithdrawalFee,
   DEFAULT_PRICING_CONFIG,
-  isOperatingHours
+  isOperatingHours,
+  generateAlphanumericOtp,
+  verifyTotpChallenge,
+  executeP2PTransfer,
+  requestBankWithdrawal
 } from "../src/api/swallet.js";
 
 // ───────── 1. UJI SIMULASI KONKURENSI & ANTI-CHEAT DOUBLE-SPENDING ─────────
@@ -187,3 +191,48 @@ test("S-Wallet: Seluruh mutasi finansial wajib membukukan Debit == Kredit (Selis
 
   assert.equal(clinicDebit, clinicCredit, "Auto-split dokter wajib seimbang debet dan kredit");
 });
+
+// ───────── 6. UJI FORMAT KODE OTP ALFANUMERIK (RESET PIN) ─────────
+test("S-Wallet: generateAlphanumericOtp menghasilkan format SW-XXXXXX (kombinasi huruf kapital & angka)", () => {
+  for (let i = 0; i < 20; i++) {
+    const code = generateAlphanumericOtp();
+    assert.match(code, /^SW-[2-9A-Z]{6}$/, `Format OTP harus SW-XXXXXX: ${code}`);
+    assert.equal(code.length, 9, "Panjang kode OTP harus tepat 9 karakter (SW- + 6 karakter)");
+  }
+});
+
+// ───────── 7. UJI ELIMINASI KODE DUMMY / BYPASS TESTING ─────────
+test("S-Wallet: verifyTotpChallenge menolak kode dummy 123456 dan 888888", async () => {
+  // Tanpa secret key yang cocok, token 123456 dan 888888 WAJIB ditolak (tidak ada backdoor testing)
+  const res1 = await verifyTotpChallenge("123456", "JBSWY3DPEHPK3PXP", "");
+  assert.equal(res1.ok, false, "Token dummy 123456 wajib ditolak oleh engine keamanan");
+
+  const res2 = await verifyTotpChallenge("888888", "JBSWY3DPEHPK3PXP", "");
+  assert.equal(res2.ok, false, "Token dummy 888888 wajib ditolak oleh engine keamanan");
+});
+
+// ───────── 8. UJI KEHARUSAN PIN TRANSAKSI PADA TRANSFER & PENARIKAN ─────────
+test("S-Wallet: Transfer dan penarikan bank diblokir jika PIN transaksi belum diset atau salah", async () => {
+  // Test transfer tanpa PIN yang diset
+  const resTrfNoPin = await executeP2PTransfer(null, {
+    senderUserId: "user-without-pin-99",
+    receiverIdentifier: "SW-202610-000000",
+    amount: 50000,
+    pin: "123456"
+  });
+  assert.equal(resTrfNoPin.ok, false, "Transfer harus gagal jika pengguna belum set PIN");
+  assert.match(resTrfNoPin.error, /PIN Transaksi belum dibuat/i);
+
+  // Test penarikan tanpa PIN yang diset
+  const resWdNoPin = await requestBankWithdrawal(null, {
+    userId: "user-without-pin-99",
+    bankName: "BCA",
+    accountNumber: "1234567890",
+    accountHolder: "Test User",
+    amount: 50000,
+    pin: "123456"
+  });
+  assert.equal(resWdNoPin.ok, false, "Penarikan harus gagal jika pengguna belum set PIN");
+  assert.match(resWdNoPin.error, /PIN Transaksi belum dibuat/i);
+});
+
