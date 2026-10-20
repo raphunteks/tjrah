@@ -20,6 +20,7 @@ export default function ResetPinModal({ open, onClose, user, api, onSuccess }) {
   const [notice, setNotice] = useState(null);
   const [error, setError] = useState("");
 
+  const [rawOtp, setRawOtp] = useState("");
   const [inputOtp, setInputOtp] = useState("");
   const [newPin, setNewPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
@@ -46,12 +47,24 @@ export default function ResetPinModal({ open, onClose, user, api, onSuccess }) {
       setStep(1);
       setNotice(null);
       setError("");
+      setRawOtp("");
       setInputOtp("");
       setNewPin("");
       setConfirmPin("");
       setIsSubmitting(false);
     }
   }, [open]);
+
+  // Handler input OTP ketat (hanya 6 karakter alfanumerik kapital, otomatis strip prefix SW-)
+  const handleOtpChange = (e) => {
+    let val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (val.startsWith("SW")) {
+      val = val.slice(2);
+    }
+    val = val.slice(0, 6);
+    setRawOtp(val);
+    setInputOtp(val ? `SW-${val}` : "");
+  };
 
   // Eksekusi pengiriman OTP
   const handleDispatchOtp = async (selectedChannel) => {
@@ -178,7 +191,7 @@ export default function ResetPinModal({ open, onClose, user, api, onSuccess }) {
                 type="submit"
                 form="swallet-reset-pin-form"
                 className="tjr-pay-btn-primary"
-                disabled={isSubmitting || inputOtp.length < 5 || newPin.length !== 6 || confirmPin.length !== 6}
+                disabled={isSubmitting || rawOtp.length !== 6 || newPin.length !== 6 || confirmPin.length !== 6}
               >
                 <i className="fa-solid fa-lock" aria-hidden="true" style={{ marginRight: "0.4rem" }} />
                 {isSubmitting ? "Menyimpan PIN..." : "Simpan PIN Baru"}
@@ -241,11 +254,6 @@ export default function ResetPinModal({ open, onClose, user, api, onSuccess }) {
               </span>
             </button>
           </div>
-
-          <p style={{ margin: "1rem 0 0", fontSize: "0.78rem", color: "var(--color-muted)", lineHeight: 1.5 }}>
-            <i className="fa-solid fa-shield-halved" aria-hidden="true" style={{ marginRight: "0.3rem" }} />
-            Kode OTP berupa alfanumerik kombinasi angka dan huruf kapital (contoh: <code>SW-12AS44</code>) dengan masa berlaku 5 menit.
-          </p>
         </div>
       )}
 
@@ -259,8 +267,7 @@ export default function ResetPinModal({ open, onClose, user, api, onSuccess }) {
               <strong>Kode OTP Berhasil Dikirimkan</strong>
             </div>
             <p style={{ margin: "0", fontSize: "0.84rem", lineHeight: 1.5 }}>
-              Kode verifikasi rahasia telah dikirimkan ke <strong>{channel === "email" ? "Email Resmi" : "Hermes WhatsApp"}</strong> ({notice?.target}).
-              Silakan periksa pesan masuk Anda dan masukkan kode OTP pada kolom di bawah.
+              Kode verifikasi telah dikirimkan ke <strong>{channel === "email" ? "Email Resmi" : "Hermes WhatsApp"}</strong> ({notice?.target}). Berlaku selama 5 menit.
             </p>
           </div>
 
@@ -281,20 +288,47 @@ export default function ResetPinModal({ open, onClose, user, api, onSuccess }) {
           <form id="swallet-reset-pin-form" onSubmit={handleSubmitReset} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
             <div>
               <label htmlFor="otp-input" className="d-label" style={{ display: "block", marginBottom: "0.35rem", fontWeight: 500 }}>
-                Kode OTP Verifikasi (Format: SW-XXXXXX)
+                Kode OTP Verifikasi
               </label>
-              <input
-                id="otp-input"
-                type="text"
-                className="d-input"
-                style={{ fontFamily: "var(--font-mono)", fontSize: "1.1rem", fontWeight: 600, letterSpacing: "2px", textTransform: "uppercase" }}
-                placeholder="SW-12AS44"
-                maxLength={9}
-                value={inputOtp}
-                onChange={(e) => setInputOtp(e.target.value.toUpperCase())}
-                autoFocus
-                required
-              />
+              <div style={{ display: "flex", alignItems: "center" }}>
+                <span style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "0 0.85rem",
+                  height: "40px",
+                  background: "var(--color-bg-subtle, #f8fafc)",
+                  border: "1px solid var(--color-border, #cbd5e1)",
+                  borderRight: "none",
+                  borderRadius: "6px 0 0 6px",
+                  fontFamily: "var(--font-mono)",
+                  fontWeight: 700,
+                  fontSize: "0.95rem",
+                  color: "var(--brand-emerald, #065f46)",
+                  userSelect: "none"
+                }}>
+                  SW-
+                </span>
+                <input
+                  id="otp-input"
+                  type="text"
+                  className="d-input"
+                  style={{
+                    borderRadius: "0 6px 6px 0",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "1.05rem",
+                    fontWeight: 700,
+                    letterSpacing: "2.5px",
+                    textTransform: "uppercase"
+                  }}
+                  placeholder="••••••"
+                  maxLength={6}
+                  value={rawOtp}
+                  onChange={handleOtpChange}
+                  autoFocus
+                  required
+                />
+              </div>
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
