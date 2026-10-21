@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "../../../auth/AuthProvider.jsx";
 import { rupiah } from "../../../lib/format.js";
-import { useBranch, useLive, useNow } from "../../ops.jsx";
+import { useBranch, BranchSelect, useLive, useNow } from "../../ops.jsx";
 import { subscribeCustomerDisplay } from "../../../lib/customerDisplay.js";
 import { qrSvg } from "../../../lib/qr.js";
 
@@ -24,28 +24,31 @@ export default function CustomerDisplay() {
       if (cached) {
         const msg = JSON.parse(cached);
         if (msg && Date.now() - (msg._timestamp || 0) < 15 * 60 * 1000) {
-          if (msg.type === "CART_UPDATE") {
-            if (msg.order) setActiveOrder(msg.order);
-            if (msg.items) setOrderItems(msg.items);
-            setStatusPaid(false);
-          } else if (msg.type === "PAYMENT_START") {
-            setPaymentCharge(msg);
-            setStatusPaid(false);
-          } else if (msg.type === "ORDER_PAID") {
-            setStatusPaid(true);
-            if (msg.order) setActiveOrder(msg.order);
-            setPaymentCharge(null);
-          } else if (msg.type === "RESET") {
-            setActiveOrder(null);
-            setOrderItems([]);
-            setPaymentCharge(null);
-            setStatusPaid(false);
+          if (!msg.branchId || !b.branchId || msg.branchId === b.branchId) {
+            if (msg.type === "CART_UPDATE") {
+              if (msg.order) setActiveOrder(msg.order);
+              if (msg.items) setOrderItems(msg.items);
+              setStatusPaid(false);
+            } else if (msg.type === "PAYMENT_START") {
+              setPaymentCharge(msg);
+              setStatusPaid(false);
+            } else if (msg.type === "ORDER_PAID") {
+              setStatusPaid(true);
+              if (msg.order) setActiveOrder(msg.order);
+              setPaymentCharge(null);
+            } else if (msg.type === "RESET") {
+              setActiveOrder(null);
+              setOrderItems([]);
+              setPaymentCharge(null);
+              setStatusPaid(false);
+            }
           }
         }
       }
     } catch {}
 
     const unsub = subscribeCustomerDisplay((msg) => {
+      if (msg.branchId && b.branchId && msg.branchId !== b.branchId) return;
       if (msg.type === "CART_UPDATE") {
         if (msg.order) setActiveOrder(msg.order);
         if (msg.items) setOrderItems(msg.items);
@@ -65,7 +68,7 @@ export default function CustomerDisplay() {
       }
     });
     return unsub;
-  }, []);
+  }, [b.branchId]);
 
   const fetchDisplayData = async () => {
     if (!api || !b.branchId) return;
@@ -150,6 +153,7 @@ export default function CustomerDisplay() {
           </p>
         </div>
         <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+          <BranchSelect b={b} />
           <button
             type="button"
             onClick={() => window.open("/display/customer", "_blank", "width=1024,height=768")}
@@ -224,44 +228,45 @@ export default function CustomerDisplay() {
         ) : (
           /* Layar Rincian Belanja Aktif */
           <>
-            {/* Kolom Kiri: Daftar Item */}
-            <div style={{ background: "#ffffff", borderRadius: "16px", padding: "1.5rem", border: "1px solid #e2e8f0", boxShadow: "0 4px 16px rgba(0,0,0,0.02)" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f1f5f9", paddingBottom: "1rem", marginBottom: "1rem" }}>
-                <div>
-                  <h2 style={{ fontSize: "1.2rem", fontWeight: 700, margin: 0, color: "#0f172a" }}>
-                    Pesanan Anda
-                  </h2>
-                  <span style={{ fontSize: "0.8rem", color: "#64748b", fontFamily: "var(--font-mono, monospace)" }}>
-                    #{activeOrder.code} · {activeOrder.channel?.toUpperCase()}
-                  </span>
-                </div>
-                <div style={{ background: "#ecfdf5", color: "#065f46", padding: "0.35rem 0.85rem", borderRadius: "999px", fontSize: "0.8rem", fontWeight: 700 }}>
-                  {orderItems.length} Item
-                </div>
-              </div>
-
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", maxHeight: "55vh", overflowY: "auto" }}>
-                {orderItems.map((item) => (
-                  <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "0.75rem", background: "#f8fafc", borderRadius: "8px" }}>
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: "1.05rem", color: "#0f172a" }}>
-                        {item.name}
-                      </div>
-                      <div style={{ fontSize: "0.85rem", color: "#64748b", marginTop: "0.15rem" }}>
-                        <span style={{ fontFamily: "var(--font-mono, monospace)", fontWeight: 600 }}>{item.qty}×</span> @ {rupiah(item.price)}
-                        {item.note && <em style={{ marginLeft: "0.4rem", color: "#059669" }}>({item.note})</em>}
-                      </div>
-                    </div>
-                    <div style={{ fontFamily: "var(--font-mono, monospace)", fontWeight: 700, fontSize: "1.05rem", color: "#0f172a" }}>
-                      {rupiah(item.qty * item.price)}
-                    </div>
+            {/* Kolom Kiri: Daftar Item + Ringkasan Pembayaran di Bawahnya */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+              {/* 1. Kartu Pesanan Anda */}
+              <div style={{ background: "#ffffff", borderRadius: "16px", padding: "1.5rem", border: "1px solid #e2e8f0", boxShadow: "0 4px 16px rgba(0,0,0,0.02)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f1f5f9", paddingBottom: "1rem", marginBottom: "1rem" }}>
+                  <div>
+                    <h2 style={{ fontSize: "1.2rem", fontWeight: 700, margin: 0, color: "#0f172a" }}>
+                      Pesanan Anda
+                    </h2>
+                    <span style={{ fontSize: "0.8rem", color: "#64748b", fontFamily: "var(--font-mono, monospace)" }}>
+                      #{activeOrder.code} · {activeOrder.channel?.toUpperCase()}
+                    </span>
                   </div>
-                ))}
-              </div>
-            </div>
+                  <div style={{ background: "#ecfdf5", color: "#065f46", padding: "0.35rem 0.85rem", borderRadius: "999px", fontSize: "0.8rem", fontWeight: 700 }}>
+                    {orderItems.length} Item
+                  </div>
+                </div>
 
-            {/* Kolom Kanan: Ringkasan Total & Pembayaran */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", maxHeight: "40vh", overflowY: "auto" }}>
+                  {orderItems.map((item) => (
+                    <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "0.75rem", background: "#f8fafc", borderRadius: "8px" }}>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: "1.05rem", color: "#0f172a" }}>
+                          {item.name}
+                        </div>
+                        <div style={{ fontSize: "0.85rem", color: "#64748b", marginTop: "0.15rem" }}>
+                          <span style={{ fontFamily: "var(--font-mono, monospace)", fontWeight: 600 }}>{item.qty}×</span> @ {rupiah(item.price)}
+                          {item.note && <em style={{ marginLeft: "0.4rem", color: "#059669" }}>({item.note})</em>}
+                        </div>
+                      </div>
+                      <div style={{ fontFamily: "var(--font-mono, monospace)", fontWeight: 700, fontSize: "1.05rem", color: "#0f172a" }}>
+                        {rupiah(item.qty * item.price)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 2. Kartu Ringkasan Pembayaran (Berada di Bawah List Pesanan) */}
               <div style={{ background: "#ffffff", borderRadius: "16px", padding: "1.5rem", border: "1px solid #e2e8f0", boxShadow: "0 4px 16px rgba(0,0,0,0.02)" }}>
                 <h3 style={{ fontSize: "1.1rem", fontWeight: 700, margin: "0 0 1rem", color: "#0f172a" }}>
                   Ringkasan Pembayaran
@@ -292,10 +297,12 @@ export default function CustomerDisplay() {
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* Panel Dinamis QRIS / VA jika sedang transaksi */}
-              {paymentCharge && (paymentCharge.method === "qris" || paymentCharge.qr_url || qrPath || paymentCharge.va_number) && (
-                <div style={{ background: "#ffffff", borderRadius: "16px", padding: "1.5rem", border: "2px solid #10b981", textAlign: "center", boxShadow: "0 8px 24px rgba(16, 185, 129, 0.1)" }}>
+            {/* Kolom Kanan: Didedikasikan Penuh untuk QRIS Dinamis / Virtual Account */}
+            <div style={{ position: "sticky", top: "1.5rem" }}>
+              {paymentCharge && (paymentCharge.method === "qris" || paymentCharge.qr_url || qrPath || paymentCharge.va_number) ? (
+                <div style={{ background: "#ffffff", borderRadius: "16px", padding: "1.75rem", border: "2px solid #10b981", textAlign: "center", boxShadow: "0 8px 24px rgba(16, 185, 129, 0.12)" }}>
                   {paymentCharge.va_number ? (
                     <div>
                       <div style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", padding: "0.4rem 0.9rem", background: "#ecfdf5", borderRadius: "999px", color: "#065f46", fontSize: "0.85rem", fontWeight: 700, marginBottom: "1rem" }}>
@@ -315,10 +322,10 @@ export default function CustomerDisplay() {
                     </div>
                   ) : (
                     <div>
-                      <span style={{ fontSize: "0.8rem", fontWeight: 800, color: "#059669", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                      <span style={{ fontSize: "0.85rem", fontWeight: 800, color: "#059669", textTransform: "uppercase", letterSpacing: "0.06em", display: "block" }}>
                         Pindai QRIS Dinamis Untuk Membayar
                       </span>
-                      <div style={{ margin: "1rem auto", width: "280px", height: "280px", background: "#ffffff", padding: "10px", border: "1px solid #e2e8f0", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <div style={{ margin: "1.25rem auto", width: "290px", height: "290px", background: "#ffffff", padding: "12px", border: "1px solid #e2e8f0", borderRadius: "14px", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "inset 0 2px 4px rgba(0,0,0,0.02)" }}>
                         {qrPath ? (
                           <svg viewBox={`0 0 ${qrPath.size} ${qrPath.size}`} style={{ width: "100%", height: "100%" }} shapeRendering="crispEdges">
                             <path d={qrPath.d} fill="#000000" />
@@ -332,6 +339,21 @@ export default function CustomerDisplay() {
                       </p>
                     </div>
                   )}
+                </div>
+              ) : (
+                <div style={{ background: "#ffffff", borderRadius: "16px", padding: "2.5rem 1.5rem", border: "1px dashed #cbd5e1", textAlign: "center", color: "#64748b" }}>
+                  <div style={{ width: "64px", height: "64px", borderRadius: "50%", background: "#f8fafc", border: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1rem", color: "#059669" }}>
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect width="20" height="14" x="2" y="5" rx="2" />
+                      <line x1="2" x2="22" y1="10" y2="10" />
+                    </svg>
+                  </div>
+                  <h4 style={{ margin: "0 0 0.4rem", color: "#0f172a", fontSize: "1.05rem" }}>
+                    Menunggu Pembayaran
+                  </h4>
+                  <p style={{ margin: 0, fontSize: "0.85rem", color: "#94a3b8", lineHeight: 1.5 }}>
+                    QRIS Dinamis atau nomor Virtual Account akan tampil otomatis di sini saat kasir menekan tombol pembayaran.
+                  </p>
                 </div>
               )}
             </div>

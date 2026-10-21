@@ -137,6 +137,7 @@ export function PaymentModal({ open, order, onClose, onPaid }) {
     setReceipt({ ...(o ?? order), change: 0, rows: [] });
     broadcastCustomerDisplay({
       type: "ORDER_PAID",
+      branchId: order.branch_id,
       order: { ...(o ?? order), total: o?.total ?? total, change: 0 },
     });
     // Dispatch notifikasi realtime penjualan kasir (QRIS) ke WhatsApp Owner & GM
@@ -186,6 +187,7 @@ export function PaymentModal({ open, order, onClose, onPaid }) {
       // Broadcast ke Layar Pelanggan bahwa pembayaran lunas
       broadcastCustomerDisplay({
         type: "ORDER_PAID",
+        branchId: order.branch_id,
         order: { ...order, ...r, total, change, paid },
       });
 
@@ -195,7 +197,7 @@ export function PaymentModal({ open, order, onClose, onPaid }) {
     });
 
   const close = () => {
-    broadcastCustomerDisplay({ type: "RESET" });
+    broadcastCustomerDisplay({ type: "RESET", branchId: order?.branch_id });
     setRows([]);
     setDisc("");
     setVo(null);
@@ -337,6 +339,7 @@ export function PaymentModal({ open, order, onClose, onPaid }) {
                             set(i, { vaData: txn });
                             broadcastCustomerDisplay({
                               type: "PAYMENT_START",
+                              branchId: order.branch_id,
                               method: "va",
                               va_number: txn.va_number,
                               bank_name: bankObj?.name || "Bank Virtual Account",
@@ -427,6 +430,7 @@ export function PaymentModal({ open, order, onClose, onPaid }) {
                                   const qrisAmt = Number(r.amount) || remaining || total;
                                   broadcastCustomerDisplay({
                                     type: "PAYMENT_START",
+                                    branchId: order.branch_id,
                                     method: "qris",
                                     qr_string: `https://qris.id/pay/${order.code || "TIJARAH"}?amt=${qrisAmt}`,
                                     amount: qrisAmt,

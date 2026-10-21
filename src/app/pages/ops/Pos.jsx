@@ -108,15 +108,18 @@ export default function Pos() {
 
   const d = data.data;
   const prodIdx = useIndex(d?.products);
+  const tablesList = useMemo(() => (Array.isArray(d?.tables) ? d.tables : []), [d?.tables]);
+  const ordersList = useMemo(() => (Array.isArray(d?.orders) ? d.orders : []), [d?.orders]);
+  const recentList = useMemo(() => (Array.isArray(d?.recent) ? d.recent : []), [d?.recent]);
 
   const order = useMemo(() => {
     if (!d || !sel) return null;
-    if (sel.orderId) return d.orders.find((o) => o.id === sel.orderId) ?? null;
-    if (sel.tableId) return d.orders.find((o) => o.table_id === sel.tableId) ?? null;
+    if (sel.orderId) return ordersList.find((o) => o.id === sel.orderId) ?? null;
+    if (sel.tableId) return ordersList.find((o) => o.table_id === sel.tableId) ?? null;
     return null;
-  }, [d, sel]);
+  }, [d, sel, ordersList]);
 
-  const orderItems = order ? d.items.filter((i) => i.order_id === order.id) : [];
+  const orderItems = order && d?.items ? d.items.filter((i) => i.order_id === order.id) : [];
   const cats = ["Semua", ...new Set((d?.products ?? []).map((p) => p.category))];
   const shown = (d?.products ?? []).filter(
     (p) =>
@@ -232,6 +235,7 @@ export default function Pos() {
       }));
       broadcastCustomerDisplay({
         type: "CART_UPDATE",
+        branchId: b.branchId,
         order: {
           id: order.id,
           code: order.code,
@@ -257,6 +261,7 @@ export default function Pos() {
       });
       broadcastCustomerDisplay({
         type: "CART_UPDATE",
+        branchId: b.branchId,
         order: {
           id: "draft",
           code: "DRAFT",
@@ -272,9 +277,10 @@ export default function Pos() {
     } else {
       broadcastCustomerDisplay({
         type: "RESET",
+        branchId: b.branchId,
       });
     }
-  }, [cart, order?.id, currentSubtotal, computedDiscount, selectedCustomer?.name, serviceMode]);
+  }, [cart, order?.id, currentSubtotal, computedDiscount, selectedCustomer?.name, serviceMode, b.branchId]);
 
   const send = () =>
     a.run(async () => {
@@ -375,6 +381,7 @@ export default function Pos() {
       // Broadcast ke Layar Pelanggan
       broadcastCustomerDisplay({
         type: "ORDER_PAID",
+        branchId: b.branchId,
         order: { ...activeO, ...payRes, total: currentTotal, change: tender - currentTotal, paid: tender },
       });
 
@@ -462,6 +469,51 @@ export default function Pos() {
       data.reload();
     }, "Pesanan berhasil dipindahkan");
 
+  const cancelCurrentDraft = () => {
+    if (!order) return;
+    if (!window.confirm(`Batalkan dan hapus pesanan draft "${order.code}"?`)) return;
+    a.run(async () => {
+      if (order.table_id) {
+        await api.lockTable(b.branchId, order.table_id, "release").catch(() => {});
+        await api.update("tables", order.table_id, { status: "available" }).catch(() => {});
+      }
+      const items = await api.list("order_items", { eq: { order_id: order.id } }).catch(() => []);
+      if (items && items.length > 0) {
+        await api.removeMany("order_items", items.map((it) => it.id)).catch(() => {});
+      }
+      await api.remove("orders", order.id);
+      broadcastCustomerDisplay({ type: "RESET", branchId: b.branchId });
+      setSel({ takeaway: true });
+      setCart([]);
+      data.reload();
+    }, `Pesanan draft ${order.code} berhasil dibatalkan dan dihapus`);
+  };
+
+  const clearAllOpenDrafts = () => {
+    if (!ordersList.length) return;
+    if (!window.confirm(`Yakin ingin membersihkan seluruh ${ordersList.length} pesanan draft terbuka di ${b.branch?.name || "cabang ini"}? Meja terkait akan otomatis dibebaskan.`)) return;
+    a.run(async () => {
+      for (const o of ordersList) {
+        if (o.table_id) {
+          await api.lockTable(b.branchId, o.table_id, "release").catch(() => {});
+          await api.update("tables", o.table_id, { status: "available" }).catch(() => {});
+        }
+      }
+      const orderIds = ordersList.map((o) => o.id);
+      for (const oid of orderIds) {
+        const items = await api.list("order_items", { eq: { order_id: oid } }).catch(() => []);
+        if (items && items.length > 0) {
+          await api.removeMany("order_items", items.map((it) => it.id)).catch(() => {});
+        }
+      }
+      await api.removeMany("orders", orderIds);
+      broadcastCustomerDisplay({ type: "RESET", branchId: b.branchId });
+      setSel({ takeaway: true });
+      setCart([]);
+      data.reload();
+    }, `${ordersList.length} pesanan draft terbuka berhasil dibersihkan`);
+  };
+
   const sendVoid = () =>
     a.run(async () => {
       await api.rpc("request_void", { p_order: voidFor.id, p_reason: voidReason, p_note: voidNote, p_option: voidOption });
@@ -486,7 +538,7 @@ export default function Pos() {
       ? `Drive Thru · ${order.channel.split(":")[1] || ""}`
       : `Takeaway · ${order.code}`
     : sel?.tableId
-    ? `Meja ${d?.tables.find((t) => t.id === sel.tableId)?.label}`
+    ? `Meja ${tablesList.find((t) => t.id === sel.tableId)?.label}`
     : serviceMode === "drive_thru"
     ? `Drive Thru (${licensePlate || "Input Plat"})`
     : "Takeaway Baru";
@@ -496,7 +548,7 @@ export default function Pos() {
       <PageHead eyebrow="Fitur 5 · Register Transaksi POS Visual" title="Kasir POS" actions={<BranchSelect b={b} />} />
 
       {!canSell && <p className="d-note">Peran Anda hanya dapat melihat (R) register transaksi.</p>}
-      {canSell && d && !d.myShift && (
+      {canSell && d && !d?.myShift && (
         <p className="d-note d-note--warn">
           Shift kasir belum dibuka. Pesanan bisa dikirim ke dapur, tetapi pembayaran butuh shift aktif.{" "}
           <Link to="/app/shift">Buka shift kasir</Link>
@@ -593,12 +645,12 @@ export default function Pos() {
 
             {/* 2. PANEL TIKET PESANAN KASIR */}
             <section className="pos-col pos-col--ticket" aria-label="Tiket pesanan">
-              {/* DROPDOWN PESANAN TERBUKA / HOLD JIKA ADA */}
-              {d.orders.length > 0 && (
-                <div style={{ marginBottom: "0.5rem" }}>
+              {/* DROPDOWN PESANAN TERBUKA / HOLD DENGAN KONTROL PENGHAPUSAN/CLEAR DRAFT */}
+              {ordersList.length > 0 && (
+                <div style={{ marginBottom: "0.5rem", display: "flex", gap: "6px", alignItems: "center" }}>
                   <select
                     className="d-input d-input--sm"
-                    style={{ fontSize: "0.8rem", width: "100%", fontFamily: "var(--font-mono)", padding: "4px 8px" }}
+                    style={{ fontSize: "0.8rem", flex: 1, fontFamily: "var(--font-mono)", padding: "4px 8px" }}
                     value={order?.id || ""}
                     onChange={(e) => {
                       if (!e.target.value) {
@@ -611,12 +663,34 @@ export default function Pos() {
                     }}
                   >
                     <option value="">+ Pesanan Baru (Draft Aktif)</option>
-                    {d.orders.map((o) => (
+                    {ordersList.map((o) => (
                       <option key={o.id} value={o.id}>
                         {o.code} {o.table ? `· Meja ${o.table.label}` : `· ${o.channel || "Hold"}`} · {rupiah(o.subtotal)}
                       </option>
                     ))}
                   </select>
+
+                  {order && (
+                    <button
+                      type="button"
+                      className="d-btn d-btn--danger-ghost d-btn--sm"
+                      onClick={cancelCurrentDraft}
+                      title={`Batalkan & hapus draft ${order.code}`}
+                      style={{ padding: "4px 8px", fontSize: "0.78rem", whiteSpace: "nowrap" }}
+                    >
+                      Batal Draft
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    className="d-btn d-btn--ghost d-btn--sm"
+                    onClick={clearAllOpenDrafts}
+                    title="Bersihkan semua pesanan draft terbuka di cabang ini"
+                    style={{ padding: "4px 8px", fontSize: "0.78rem", color: "var(--color-muted)", whiteSpace: "nowrap" }}
+                  >
+                    Clear All
+                  </button>
                 </div>
               )}
 
@@ -665,7 +739,7 @@ export default function Pos() {
               {serviceMode === "dine_in" && (
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem", padding: "6px 10px", background: "var(--color-paper-2)", borderRadius: "6px", fontSize: "0.82rem", border: "1px solid var(--color-rule-2)" }}>
                   <span>
-                    Meja: <strong>{d.tables.find((t) => t.id === (order?.table_id || sel?.tableId))?.label ? `Meja ${d.tables.find((t) => t.id === (order?.table_id || sel?.tableId))?.label}` : "Belum pilih meja"}</strong>
+                    Meja: <strong>{tablesList.find((t) => t.id === (order?.table_id || sel?.tableId))?.label ? `Meja ${tablesList.find((t) => t.id === (order?.table_id || sel?.tableId))?.label}` : "Belum pilih meja"}</strong>
                   </span>
                   <button
                     type="button"
@@ -1053,7 +1127,7 @@ export default function Pos() {
                   <button
                     type="button"
                     className="d-btn d-btn--primary d-btn--block"
-                    disabled={(!order && !cart.length) || a.busy || !d.myShift || isShortTender}
+                    disabled={(!order && !cart.length) || a.busy || !d?.myShift || isShortTender}
                     onClick={payCashDirectly}
                     title="Bayar Tunai & Catat ke Cash Drawer S-Wallet"
                     style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
@@ -1069,7 +1143,7 @@ export default function Pos() {
                     <button
                       type="button"
                       className="d-btn d-btn--ghost d-btn--block"
-                      disabled={(!order && !cart.length) || a.busy || !d.myShift}
+                      disabled={(!order && !cart.length) || a.busy || !d?.myShift}
                       onClick={payDirectly}
                       title="Buka QRIS Dinamis Pakasir atau Virtual Account 9 Bank"
                       style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
@@ -1101,11 +1175,11 @@ export default function Pos() {
                 }}
               />
 
-              {d.recent.length > 0 && can(role, 6, "q") && (
+              {recentList.length > 0 && can(role, 6, "q") && (
                 <details className="pos-recent" style={{ marginTop: "1rem" }}>
                   <summary>Transaksi lunas terakhir</summary>
                   <ul className="d-list">
-                    {d.recent.map((o) => (
+                    {recentList.map((o) => (
                       <li key={o.id}>
                         <div>
                           <p className="d-mono">{o.code}</p>
@@ -1131,31 +1205,39 @@ export default function Pos() {
         <p className="d-text" style={{ marginBottom: "0.75rem", fontSize: "0.85rem", color: "var(--color-muted)" }}>
           Klik salah satu meja untuk menetapkan pesanan Dine In ini:
         </p>
-        <div style={{ display: "grid", gap: "1rem" }}>
-          {[...new Set(d.tables.map((t) => t.area))].map((area) => (
-            <div key={area}>
-              <p className="d-nav__label" style={{ fontWeight: 600, marginBottom: "0.5rem" }}>{area}</p>
-              <ul className="pos-floor pos-floor--wide" style={{ listStyle: "none", padding: 0, display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(85px, 1fr))", gap: "8px" }}>
-                {d.tables
-                  .filter((t) => t.area === area)
-                  .map((t) => (
-                    <li key={t.id}>
-                      <button
-                        type="button"
-                        className={`pos-table st--${t.status}${sel?.tableId === t.id || order?.table_id === t.id ? " is-sel" : ""}`}
-                        onClick={() => pickTable(t)}
-                        style={{ width: "100%", padding: "8px", textAlign: "center", borderRadius: "6px", border: "1px solid var(--color-rule-2)" }}
-                        aria-label={`Meja ${t.label}, ${TABLE_STATUS[t.status]}`}
-                      >
-                        <span className="pos-table__no">{t.label}</span>
-                        <span className="pos-table__st">{TABLE_STATUS[t.status]}</span>
-                      </button>
-                    </li>
-                  ))}
-              </ul>
-            </div>
-          ))}
-        </div>
+        {showTableModal && (
+          <div style={{ display: "grid", gap: "1rem" }}>
+            {tablesList.length === 0 ? (
+              <p className="d-text" style={{ fontStyle: "italic", color: "var(--color-muted)", padding: "1rem", textAlign: "center" }}>
+                Belum ada denah meja yang terdaftar untuk cabang ini.
+              </p>
+            ) : (
+              [...new Set(tablesList.map((t) => t.area))].map((area) => (
+                <div key={area}>
+                  <p className="d-nav__label" style={{ fontWeight: 600, marginBottom: "0.5rem" }}>{area}</p>
+                  <ul className="pos-floor pos-floor--wide" style={{ listStyle: "none", padding: 0, display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(85px, 1fr))", gap: "8px" }}>
+                    {tablesList
+                      .filter((t) => t.area === area)
+                      .map((t) => (
+                        <li key={t.id}>
+                          <button
+                            type="button"
+                            className={`pos-table st--${t.status}${sel?.tableId === t.id || order?.table_id === t.id ? " is-sel" : ""}`}
+                            onClick={() => pickTable(t)}
+                            style={{ width: "100%", padding: "8px", textAlign: "center", borderRadius: "6px", border: "1px solid var(--color-rule-2)" }}
+                            aria-label={`Meja ${t.label}, ${TABLE_STATUS[t.status]}`}
+                          >
+                            <span className="pos-table__no">{t.label}</span>
+                            <span className="pos-table__st">{TABLE_STATUS[t.status]}</span>
+                          </button>
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+              ))
+            )}
+          </div>
+        )}
       </Modal>
 
       {/* DIALOG PEMBAYARAN KASIR MULTI-METODE (TUNAI / QRIS / VA) */}
@@ -1174,7 +1256,7 @@ export default function Pos() {
       <Modal open={moveOpen} title="Pindah atau gabung meja" onClose={() => setMoveOpen(false)}>
         <p className="d-text">Meja kosong: pesanan dipindah. Meja terisi: tagihan digabung ke pesanan meja itu.</p>
         <ul className="pos-floor pos-floor--modal">
-          {(d?.tables ?? [])
+          {tablesList
             .filter((t) => t.id !== order?.table_id)
             .map((t) => (
               <li key={t.id}>
