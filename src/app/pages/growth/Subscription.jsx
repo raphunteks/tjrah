@@ -298,7 +298,7 @@ function Benchmark() {
   const optIn = (v) => a.run(async () => { await api.rpc("set_benchmark_opt_in", { p_on: v }); setOn(v); });
   return (
     <Panel title="Benchmark anonim" meta="Kohort ≥ 5 tenant sejenis">
-      <p className="d-text d-muted">Bandingkan angka Anda dengan median tenant sejenis tanpa membuka identitas siapa pun. Anda hanya bisa melihat setelah ikut berbagi ringkasan bulanan (tanpa nama, tanpa data pelanggan); bisa dicabut kapan saja.</p>
+      <p className="d-text d-muted" style={{ maxWidth: "65ch", lineHeight: 1.6, textWrap: "pretty" }}>Bandingkan angka Anda dengan median tenant sejenis tanpa membuka identitas siapa pun. Anda hanya bisa melihat setelah ikut berbagi ringkasan bulanan (tanpa nama, tanpa data pelanggan); bisa dicabut kapan saja.</p>
       <div className="d-form__actions">
         <button type="button" className="d-btn d-btn--ghost" disabled={a.busy} onClick={() => optIn(true)}>Ikut serta</button>
         <button type="button" className="d-btn d-btn--ghost" disabled={a.busy} onClick={() => optIn(false)}>Berhenti</button>
@@ -321,7 +321,7 @@ function Templates() {
   const t = useAsync(() => api.list("industry_templates"), [api]);
   return (
     <Panel title="Template industri" meta="Terapkan sekali; aman diulang">
-      <p className="d-text d-muted">Menambahkan menu contoh, checklist, dan jadwal laporan yang umum untuk jenis usaha Anda. Tidak menimpa data yang sudah ada.</p>
+      <p className="d-text d-muted" style={{ maxWidth: "65ch", lineHeight: 1.6, textWrap: "pretty" }}>Menambahkan menu contoh, checklist, dan jadwal laporan yang umum untuk jenis usaha Anda. Tidak menimpa data yang sudah ada.</p>
       {t.loading && !t.data ? <Loading /> : t.error ? <ErrorNote error={t.error} /> : (
         <ul className="d-list">{t.data.map((x) => (
           <li key={x.key}><div className="d-list__title">{x.name}</div>

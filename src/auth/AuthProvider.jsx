@@ -163,6 +163,29 @@ export function AuthProvider({ children }) {
   );
 
   const tenantId = profile?.role === "superadmin" ? viewTenant : profile?.tenant_id ?? null;
+  const [tenants, setTenants] = useState([]);
+
+  // Superadmin: Muat daftar tenant resmi untuk filter lintas-tenant di bilah atas & audit bar
+  useEffect(() => {
+    let live = true;
+    if (!api?.listTenants || !ready || profile?.role !== "superadmin") {
+      return;
+    }
+    api.listTenants()
+      .then((ts) => {
+        if (live && Array.isArray(ts)) {
+          setTenants(ts);
+          if (tenantId) {
+            setTenant(ts.find((t) => t.id === tenantId) ?? null);
+          }
+        }
+      })
+      .catch((err) => {
+        console.warn("[AuthProvider] listTenants error:", err);
+      });
+    return () => { live = false; };
+  }, [api, ready, profile?.role, tenantId]);
+
   useEffect(() => {
     let live = true;
     if (!api || !tenantId) { setTenant(null); return; }
@@ -170,9 +193,21 @@ export function AuthProvider({ children }) {
       setTenant(profile.tenant);
       return;
     }
-    api.listTenants().then((ts) => live && setTenant(ts.find((t) => t.id === tenantId) ?? null)).catch(() => live && setTenant(null));
+    if (tenants.length > 0) {
+      const match = tenants.find((t) => t.id === tenantId);
+      if (match) {
+        setTenant(match);
+        return;
+      }
+    }
+    api.listTenants().then((ts) => {
+      if (live) {
+        if (Array.isArray(ts)) setTenants(ts);
+        setTenant(ts?.find((t) => t.id === tenantId) ?? null);
+      }
+    }).catch(() => live && setTenant(null));
     return () => { live = false; };
-  }, [api, tenantId, profile?.tenant]);
+  }, [api, tenantId, profile?.tenant, tenants]);
 
   const currentPillar =
     profile?.pillar ??
@@ -196,6 +231,7 @@ export function AuthProvider({ children }) {
       // Tenant efektif untuk halaman bisnis.
       tenantId,
       tenant,
+      tenants,
       pillar: currentPillar,
       viewTenant,
       chooseTenant,
@@ -282,7 +318,7 @@ export function AuthProvider({ children }) {
         }
       },
     }),
-    [api, ready, profile, blocked, problem, viewTenant, chooseTenant, tenantId, tenant]
+    [api, ready, profile, blocked, problem, viewTenant, chooseTenant, tenantId, tenant, tenants]
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
@@ -294,6 +330,7 @@ export const useAuth = () => {
     profile: null,
     role: null,
     tenant: null,
+    tenants: [],
     tenantId: null,
     ready: false,
     blocked: null,

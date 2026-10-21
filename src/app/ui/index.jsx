@@ -428,18 +428,14 @@ export function Modal({ open, hidden = false, title, onClose, children, footer, 
       aria-labelledby="d-modal-title"
     >
       {open && (
-        <form
-          method="dialog"
-          className="d-modal__inner"
-          onSubmit={(e) => e.preventDefault()}
-        >
+        <div className="d-modal__inner" role="document">
           <header className="d-modal__head">
             <h2 id="d-modal-title">{title ? t(title, lang) : ""}</h2>
             <button type="button" className="d-icon-btn" onClick={onClose} aria-label={lang === "en" ? "Close" : "Tutup"}>×</button>
           </header>
           <div className="d-modal__body">{children}</div>
           {footer && <footer className="d-modal__foot">{footer}</footer>}
-        </form>
+        </div>
       )}
     </dialog>
   );

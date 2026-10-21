@@ -378,6 +378,11 @@ export function calculateWithdrawalFee(amount, customConfig = null) {
 
 // ───────── 4. PROFIL DOMPET & RINGKASAN DASBOR ─────────
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export function isUuid(val) {
+  return typeof val === "string" && UUID_REGEX.test(val);
+}
+
 /**
  * Ambil profil ringkasan dompet pengguna
  * @param {Object} api - Supabase / Demo API client
@@ -385,8 +390,8 @@ export function calculateWithdrawalFee(amount, customConfig = null) {
  * @returns {Promise<Object>}
  */
 export async function getWalletProfile(api, userId) {
-  if (!userId) {
-    return getLocalDemoWallet("default");
+  if (!userId || !isUuid(userId)) {
+    return getLocalDemoWallet(userId || "default");
   }
 
   try {
@@ -396,8 +401,9 @@ export async function getWalletProfile(api, userId) {
         return res;
       }
     }
-  } catch {
-    // Fallback gracefully jika backend offline
+  } catch (err) {
+    // Fallback gracefully jika backend offline atau RPC melempar status non-200
+    console.warn("[swallet] getWalletProfile fallback to local state:", err?.message || err);
   }
 
   return getLocalDemoWallet(userId);

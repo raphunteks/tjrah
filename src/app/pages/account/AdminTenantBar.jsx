@@ -1,19 +1,13 @@
 import { useAuth } from "../../../auth/AuthProvider.jsx";
 import { useAccountLang } from "./i18n.js";
-import { useAsync } from "../../ui/index.jsx";
 
 export default function AdminTenantBar({ onSelectTenant, selectedTenantId }) {
-  const { role, api, viewTenant, chooseTenant } = useAuth();
+  const { role, viewTenant, chooseTenant, tenants = [] } = useAuth();
   const { lang } = useAccountLang();
 
   // Hanya tampil bagi peran Superadmin / Admin platform
   if (role !== "superadmin") return null;
 
-  const tenantsQuery = useAsync(async () => {
-    return (await api.listTenants()) || [];
-  }, [api]);
-
-  const tenants = tenantsQuery.data || [];
   const activeTenantId = selectedTenantId !== undefined ? selectedTenantId : (viewTenant || "");
 
   const handleTenantChange = (e) => {

@@ -16,16 +16,17 @@ import "../styles/clinic.css";
 import "../styles/service.css";
 
 function TenantSwitcher() {
-  const { api, viewTenant, chooseTenant } = useAuth();
+  const { viewTenant, chooseTenant, tenants } = useAuth();
   const { lang } = useAccountLang();
-  const { data } = useAsync(() => api.listTenants(), [api]);
   return (
     <label className="d-switch">
       <span className="d-switch__label">Tenant</span>
       <select value={viewTenant ?? ""} onChange={(e) => chooseTenant(e.target.value || null)}>
-        <option value="">{lang === "en" ? "Select tenant…" : "Pilih tenant…"}</option>
-        {(data ?? []).map((t) => (
-          <option key={t.id} value={t.id}>{t.name}</option>
+        <option value="">{lang === "en" ? "-- Select Tenant / Platform --" : "-- Pilih Tenant / Platform --"}</option>
+        {(tenants ?? []).map((t) => (
+          <option key={t.id} value={t.id}>
+            {t.name} ({t.pillar ? t.pillar.toUpperCase() : "TENANT"})
+          </option>
         ))}
       </select>
     </label>
