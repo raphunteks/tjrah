@@ -21,6 +21,8 @@ test("CSP Header: vercel.json memuat Content-Security-Policy yang lengkap & aman
   assert.match(cspValue, /https:\/\/www\.google\.com\/recaptcha\//, "CSP wajib mengizinkan Google reCAPTCHA");
   assert.match(cspValue, /https:\/\/www\.gstatic\.com\/recaptcha\//, "CSP wajib mengizinkan Google gstatic reCAPTCHA");
   assert.match(cspValue, /https:\/\/qtokrvloisrwjmxtyvzn\.supabase\.co/, "CSP wajib mengizinkan Supabase API");
+  assert.match(cspValue, /https:\/\/nominatim\.openstreetmap\.org/, "CSP wajib mengizinkan OpenStreetMap nominatim geocoding");
+  assert.match(cspValue, /https:\/\/www\.gstatic\.com/, "CSP wajib mengizinkan gstatic resources");
   assert.match(cspValue, /frame-src[^;]*https:\/\/www\.google\.com\/recaptcha\//, "CSP wajib mengizinkan iframe reCAPTCHA");
 
   const hstsHeader = globalHeaders.headers.find((h) => h.key === "Strict-Transport-Security");
@@ -146,4 +148,54 @@ test("reCAPTCHA Serverless: Handler mendukung parameter versi v2 dan v3", async 
   } finally {
     process.env.RECAPTCHA_V2_SECRET_KEY = prevKeyV2;
   }
+});
+
+test("Hermes Dispatch Serverless: Handler menolak method selain POST dengan 405", async () => {
+  const { default: handler } = await import("../api/hermes-dispatch.js");
+  let statusCode = 0;
+  let responseData = null;
+  const req = {
+    method: "GET",
+    headers: {}
+  };
+  const res = {
+    setHeader() {},
+    status(code) {
+      statusCode = code;
+      return {
+        json(data) {
+          responseData = data;
+        }
+      };
+    }
+  };
+
+  await handler(req, res);
+  assert.equal(statusCode, 405, "Method GET wajib mengembalikan HTTP 405 Method Not Allowed");
+  assert.equal(responseData.ok, false);
+});
+
+test("Hermes Dispatch Serverless: Handler merespons preflight OPTIONS dengan 200", async () => {
+  const { default: handler } = await import("../api/hermes-dispatch.js");
+  let statusCode = 0;
+  let ended = false;
+  const req = {
+    method: "OPTIONS",
+    headers: {}
+  };
+  const res = {
+    setHeader() {},
+    status(code) {
+      statusCode = code;
+      return {
+        end() {
+          ended = true;
+        }
+      };
+    }
+  };
+
+  await handler(req, res);
+  assert.equal(statusCode, 200, "Preflight OPTIONS wajib mengembalikan HTTP 200");
+  assert.equal(ended, true);
 });

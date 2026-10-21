@@ -7,7 +7,7 @@ import { AccountKpiGrid, AccountKpiCard } from "./AccountKpiGrid.jsx";
 import { useAccountLang } from "./i18n.js";
 import { qrSvg } from "../../../lib/qr.js";
 import ResetPinModal from "./ResetPinModal.jsx";
-import { saveUserPin, getStoredUserPin } from "../../../api/swallet.js";
+import { saveUserPin, getStoredUserPin, isUserTwoFactorActive } from "../../../api/swallet.js";
 import { dispatchHermesSecurityAlert } from "../../../lib/hermes.js";
 import {
   formatSecretKey,
