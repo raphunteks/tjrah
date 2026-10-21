@@ -182,15 +182,9 @@ export default function CustomerDisplay() {
           <h2 style={{ fontSize: "2rem", fontWeight: 800, color: "var(--color-ink)", margin: "0 0 0.5rem", letterSpacing: "-0.02em" }}>
             Selamat Datang!
           </h2>
-          <p style={{ fontSize: "1.05rem", color: "var(--color-muted)", maxWidth: "520px", margin: "0 auto 1.75rem", lineHeight: 1.6 }}>
+          <p style={{ fontSize: "1.05rem", color: "var(--color-muted)", maxWidth: "520px", margin: "0 auto", lineHeight: 1.6 }}>
             Silakan sebutkan pesanan Anda kepada kasir bertugas. Rincian tagihan akan tampil di layar ini secara otomatis.
           </p>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
-            <span className="d-badge d-badge--ok" style={{ padding: "0.45rem 1rem", fontSize: "0.85rem", fontWeight: 700 }}>
-              <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: "#10b981", marginRight: "6px" }} />
-              Kasir Aktif Siap Melayani
-            </span>
-          </div>
         </section>
       ) : (
         /* Status 3: Layar Rincian Pesanan Aktif */
@@ -402,44 +396,6 @@ export default function CustomerDisplay() {
           </div>
         }
       />
-
-      {/* Info Lokasi Cabang & Geofence Aktif dari Backend */}
-      {b.branch && (
-        <div
-          className="d-panel"
-          style={{
-            padding: "0.6rem 1rem",
-            marginBottom: "1.25rem",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            flexWrap: "wrap",
-            gap: "0.5rem",
-            background: "var(--color-paper-2)",
-            border: "1px solid var(--color-rule)",
-            borderRadius: "var(--radius-md, 10px)",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap", fontSize: "0.85rem" }}>
-            <Badge tone="accent">{b.branch.is_warehouse ? "Gudang" : "Outlet POS"}</Badge>
-            <span style={{ fontWeight: 700, color: "var(--color-ink)" }}>{b.branch.name}</span>
-            <span style={{ color: "var(--color-muted)" }}>•</span>
-            <span style={{ color: "var(--color-ink-2)" }}>
-              {b.branch.address || b.branch.city || "Makassar, Sulawesi Selatan"}
-            </span>
-            {b.branch.lat && b.branch.lng && (
-              <span className="d-mono" style={{ fontSize: "0.75rem", color: "var(--color-muted)", background: "var(--color-paper)", padding: "2px 6px", borderRadius: "4px", border: "1px solid var(--color-rule-2)" }}>
-                {Number(b.branch.lat).toFixed(6)}, {Number(b.branch.lng).toFixed(6)} (Radius {b.branch.geofence_m || 50}m)
-              </span>
-            )}
-          </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.8rem", color: "var(--color-accent, #059669)", fontWeight: 600 }}>
-            <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: "#10b981" }} />
-            <span>Terhubung Realtime ke Kasir</span>
-          </div>
-        </div>
-      )}
 
       {/* Rincian Konten CFD */}
       {displayContent}

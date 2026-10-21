@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useAuth } from "../../../auth/AuthProvider.jsx";
 import { rupiah, dateTime } from "../../../lib/format.js";
-import { PageHead, Loading, ErrorNote, Modal, Badge, Empty, useAsync } from "../../ui/index.jsx";
+import { PageHead, Loading, ErrorNote, Modal, Badge, Empty, useAsync, Stat } from "../../ui/index.jsx";
 import { useBranch, BranchSelect, useLive } from "../../ops.jsx";
 import {
   executePrint,
@@ -102,8 +102,9 @@ export default function Transactions() {
       .filter((o) => o.status === "paid")
       .reduce((sum, o) => sum + (Number(o.total) || Number(o.subtotal) || 0), 0);
     const paidCount = filteredOrders.filter((o) => o.status === "paid").length;
+    const pendingCount = filteredOrders.filter((o) => o.status === "open").length;
     const avgBasket = paidCount > 0 ? Math.round(totalRevenue / paidCount) : 0;
-    return { totalRevenue, paidCount, avgBasket };
+    return { totalRevenue, paidCount, pendingCount, avgBasket };
   }, [filteredOrders]);
 
   // Fungsi cetak struk
@@ -191,99 +192,37 @@ export default function Transactions() {
         }
       />
 
-      {/* Indikator Lokasi & Geofence Cabang Aktif dari Backend */}
-      {b.branch && (
-        <div
-          className="d-panel"
-          style={{
-            padding: "0.6rem 1rem",
-            marginBottom: "1.25rem",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            flexWrap: "wrap",
-            gap: "0.5rem",
-            background: "var(--color-paper-2)",
-            border: "1px solid var(--color-rule)",
-            borderRadius: "var(--radius-md, 10px)",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap", fontSize: "0.85rem" }}>
-            <Badge tone="accent">{b.branch.is_warehouse ? "Gudang" : "Outlet POS"}</Badge>
-            <span style={{ fontWeight: 700, color: "var(--color-ink)" }}>{b.branch.name}</span>
-            <span style={{ color: "var(--color-muted)" }}>•</span>
-            <span style={{ color: "var(--color-ink-2)" }}>
-              {b.branch.address || b.branch.city || "Makassar, Sulawesi Selatan"}
-            </span>
-            {b.branch.lat && b.branch.lng && (
-              <span className="d-mono" style={{ fontSize: "0.75rem", color: "var(--color-muted)", background: "var(--color-paper)", padding: "2px 6px", borderRadius: "4px", border: "1px solid var(--color-rule-2)" }}>
-                {Number(b.branch.lat).toFixed(6)}, {Number(b.branch.lng).toFixed(6)} (Radius {b.branch.geofence_m || 50}m)
-              </span>
-            )}
-          </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.8rem", color: "var(--color-accent, #059669)", fontWeight: 600 }}>
-            <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: "#10b981" }} />
-            <span>Terhubung Database Supabase</span>
-          </div>
-        </div>
-      )}
-
-      {printSuccess && (
-        <div style={{ background: "#ecfdf5", border: "1px solid #10b981", color: "#065f46", padding: "0.75rem 1rem", borderRadius: "8px", marginBottom: "1rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-          <span style={{ fontSize: "0.9rem", fontWeight: 600 }}>{printSuccess}</span>
-        </div>
-      )}
-
-      {/* KPI Ringkasan Transaksi dengan Sistem .d-stats--3 Resmi Tijarah */}
-      <div className="d-stats d-stats--3" style={{ marginBottom: "1.25rem" }}>
-        <div className="d-stat d-stat--emerald">
-          <div className="d-stat__header">
-            <span className="d-stat__label">Total Omzet Lunas</span>
-            <div className="d-stat__icon" aria-hidden="true">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="2" x2="12" y2="22" />
-                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-              </svg>
-            </div>
-          </div>
-          <div className="d-stat__value" style={{ color: "var(--color-accent, #059669)" }}>
-            {rupiah(stats.totalRevenue)}
-          </div>
-          <div className="d-stat__sub">Saldo tunai dibukukan ke S-Wallet Kasir</div>
-        </div>
-
-        <div className="d-stat d-stat--sky">
-          <div className="d-stat__header">
-            <span className="d-stat__label">Transaksi Berhasil</span>
-            <div className="d-stat__icon" aria-hidden="true">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-            </div>
-          </div>
-          <div className="d-stat__value">{stats.paidCount}</div>
-          <div className="d-stat__sub">Dari {filteredOrders.length} pesanan tercatat</div>
-        </div>
-
-        <div className="d-stat d-stat--gold">
-          <div className="d-stat__header">
-            <span className="d-stat__label">Rata-rata Tagihan</span>
-            <div className="d-stat__icon" aria-hidden="true">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="9" cy="21" r="1" />
-                <circle cx="20" cy="21" r="1" />
-                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-              </svg>
-            </div>
-          </div>
-          <div className="d-stat__value">{rupiah(stats.avgBasket)}</div>
-          <div className="d-stat__sub">Basket size rata-rata per transaksi</div>
-        </div>
-      </div>
+      {/* 1. KARTU INDIKATOR UI CARD BENTO KPI TRANSAKSI (STANDAR RESMI GBR 3) */}
+      <section className="d-stats" aria-label="Bento KPI Riwayat Transaksi" style={{ marginBottom: "1.25rem" }}>
+        <Stat
+          label="Total Omzet Lunas"
+          value={rupiah(stats.totalRevenue)}
+          sub="Saldo masuk S-Wallet Kasir"
+          tone="emerald"
+          icon={<i className="fa-solid fa-money-bill-wave" />}
+        />
+        <Stat
+          label="Transaksi Lunas"
+          value={stats.paidCount}
+          sub={`Dari ${filteredOrders.length} pesanan tercatat`}
+          tone="purple"
+          icon={<i className="fa-solid fa-receipt" />}
+        />
+        <Stat
+          label="Belum Selesai"
+          value={stats.pendingCount}
+          sub="Status pesanan open"
+          tone={stats.pendingCount > 0 ? "warn" : "slate"}
+          icon={<i className="fa-solid fa-clock" />}
+        />
+        <Stat
+          label="Rata-rata Basket"
+          value={rupiah(stats.avgBasket)}
+          sub="Nilai per transaksi belanja"
+          tone="sky"
+          icon={<i className="fa-solid fa-chart-line" />}
+        />
+      </section>
 
       {/* Filter Toolbar */}
       <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "1.25rem" }}>
