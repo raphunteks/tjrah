@@ -11,7 +11,6 @@ import { getSavedTheme, applyTheme } from "../lib/theme.js";
 import { requestBrowserNotification, isPWAStandalone } from "../lib/notifications.js";
 import { requestDeviceLocation } from "../lib/geo.js";
 import { loadGoogleMaps } from "../lib/googleMaps.js";
-import GoogleTranslateTopBar from "./ui/GoogleTranslateTopBar.jsx";
 import "../styles/dashboard.css";
 import "../styles/clinic.css";
 import "../styles/service.css";
@@ -433,24 +432,6 @@ export default function AppShell() {
     }
   });
 
-  const [translateCollapsed, setTranslateCollapsed] = useState(() => {
-    try {
-      return localStorage.getItem("tijarah:translate_banner_collapsed") === "1";
-    } catch {
-      return false;
-    }
-  });
-
-  const toggleTranslateBar = () => {
-    setTranslateCollapsed((prev) => {
-      const next = !prev;
-      try {
-        localStorage.setItem("tijarah:translate_banner_collapsed", next ? "1" : "0");
-      } catch {}
-      return next;
-    });
-  };
-
   const roleLabel = ROLE_TRANSLATIONS[role]?.[lang] || ROLE_LABEL[role];
 
   const toggleSidebar = () => {
@@ -664,8 +645,7 @@ export default function AppShell() {
       </aside>
       <button type="button" className="d-scrim" aria-label={lang === "en" ? "Close menu" : "Tutup menu"} onClick={() => setNavOpen(false)} tabIndex={navOpen ? 0 : -1} />
 
-      <div className={`d-body${!translateCollapsed ? " has-translate-bar" : ""}`}>
-        <GoogleTranslateTopBar collapsed={translateCollapsed} onToggleCollapsed={toggleTranslateBar} />
+      <div className="d-body">
         <header className="d-top">
           <button
             type="button"
