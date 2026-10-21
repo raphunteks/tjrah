@@ -867,17 +867,6 @@ export function useAccountLang() {
   });
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const url = new URL(window.location.href);
-        const targetCode = lang === "en" ? "en_US" : "in_ID";
-        if (url.searchParams.get("lang") !== targetCode) {
-          url.searchParams.set("lang", targetCode);
-          window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
-        }
-      } catch {}
-    }
-
     const handleStorage = (e) => {
       if (e.key === "tijarah:lang" && (e.newValue === "id" || e.newValue === "en")) {
         setLangState(e.newValue);
@@ -888,48 +877,19 @@ export function useAccountLang() {
         setLangState(e.detail);
       }
     };
-    const handlePopState = () => {
-      try {
-        const params = new URLSearchParams(window.location.search);
-        const urlLang = params.get("lang");
-        if (urlLang === "in_ID" || urlLang === "id" || urlLang === "in" || urlLang === "id_ID") {
-          setLangState("id");
-          localStorage.setItem("tijarah:lang", "id");
-          if (document.documentElement) document.documentElement.lang = "id";
-        } else if (urlLang === "en_US" || urlLang === "en") {
-          setLangState("en");
-          localStorage.setItem("tijarah:lang", "en");
-          if (document.documentElement) document.documentElement.lang = "en";
-        }
-      } catch {}
-    };
 
     window.addEventListener("storage", handleStorage);
     window.addEventListener("tijarah:lang_change", handleCustom);
-    window.addEventListener("popstate", handlePopState);
 
-    if (typeof document !== "undefined" && document.documentElement) {
-      document.documentElement.lang = lang;
-    }
     return () => {
       window.removeEventListener("storage", handleStorage);
       window.removeEventListener("tijarah:lang_change", handleCustom);
-      window.removeEventListener("popstate", handlePopState);
     };
   }, [lang]);
 
   const setLang = (newLang) => {
     try {
       localStorage.setItem("tijarah:lang", newLang);
-      if (typeof document !== "undefined" && document.documentElement) {
-        document.documentElement.lang = newLang;
-      }
-      if (typeof window !== "undefined") {
-        const url = new URL(window.location.href);
-        const targetCode = newLang === "en" ? "en_US" : "in_ID";
-        url.searchParams.set("lang", targetCode);
-        window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
-      }
       window.dispatchEvent(new CustomEvent("tijarah:lang_change", { detail: newLang }));
     } catch {}
     setLangState(newLang);

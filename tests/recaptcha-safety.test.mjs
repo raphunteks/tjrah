@@ -34,9 +34,9 @@ test("CSP Header: vercel.json memuat Content-Security-Policy yang lengkap & aman
   assert.match(hstsHeader.value, /max-age=63072000/, "HSTS wajib memiliki max-age 2 tahun");
 });
 
-test("index.html: Memiliki konfigurasi Google Translate & deklarasi bahasa asal Bahasa Indonesia (ID) yang valid", () => {
+test("index.html: Memiliki konfigurasi Google Translate & deklarasi bahasa internasional yang kompatibel", () => {
   const indexHtml = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
-  assert.match(indexHtml, /<html\s+lang="id">/, "HTML root wajib lang='id' agar Google Translate mendeteksi bahasa asal Bahasa Indonesia (ID)");
+  assert.match(indexHtml, /<html\s+lang="en">/, "HTML root wajib lang='en' agar memicu fitur Omnibox Google Translate");
   assert.match(indexHtml, /<meta name="google" content="translate"/, "Meta google translate harus terpasang");
   assert.ok(!indexHtml.includes('http-equiv="Content-Language"'), "Content-Language tidak boleh membatasi bahasa halaman");
   assert.ok(!indexHtml.includes("translate_a/element.js"), "Script deprecated Google Translate widget tidak boleh ada");
