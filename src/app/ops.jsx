@@ -25,15 +25,30 @@ export function useBranch({ warehouses = false } = {}) {
 
   const list = useAsync(async () => {
     if (!api || !tenantId) return { branches: [], mine: [] };
-    const [branches, mine] = await Promise.all([
-      api.list("branches", { eq: { tenant_id: tenantId }, order: ["name"] }).catch((err) => {
-        console.warn("[useBranch] Gagal memuat daftar cabang:", err.message);
-        return [];
-      }),
-      profile?.id
-        ? api.list("member_branches", { eq: { profile_id: profile.id } }).catch(() => [])
-        : Promise.resolve([]),
-    ]);
+    let branches = [];
+    try {
+      branches = await api.list("branches", { eq: { tenant_id: tenantId }, order: ["name"] });
+    } catch (err) {
+      console.warn("[useBranch] Gagal memuat daftar cabang:", err?.message);
+    }
+    // Failsafe: jika branches kosong, bypass langsung ke api.listBranches atau force query Supabase
+    if (!branches || branches.length === 0) {
+      if (api.listBranches) {
+        try {
+          branches = await api.listBranches(tenantId);
+        } catch (e) {
+          console.warn("[useBranch] listBranches fallback:", e?.message);
+        }
+      }
+      if (!branches || branches.length === 0) {
+        try {
+          branches = await api.list("branches", { eq: { tenant_id: tenantId }, order: ["name"], force: true });
+        } catch {}
+      }
+    }
+    const mine = profile?.id
+      ? await api.list("member_branches", { eq: { profile_id: profile.id } }).catch(() => [])
+      : [];
     return { branches: branches || [], mine: (mine || []).map((m) => m.branch_id) };
   }, [api, tenantId, profile?.id]);
 

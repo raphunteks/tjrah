@@ -240,8 +240,25 @@ export const api = {
 // --------- FASE 2 · akses generik (RLS tetap penjaga utama + Multi-Tier Persistent SWR Caching) ---------
 const DB_CACHE = new Map();
 const IN_FLIGHT_PROMISES = new Map();
-const DB_STORAGE_PREFIX = "tijarah_db_cache:";
+const DB_STORAGE_PREFIX = "tijarah_db_cache_v3:";
 const CACHE_TTL_MS = 120000; // 2 menit cache RAM untuk browsing instan antar subtab
+
+// Bersihkan cache usang (v1 / v2) secara otomatis di browser saat modul dimuat
+if (typeof window !== "undefined") {
+  try {
+    ["localStorage", "sessionStorage"].forEach((store) => {
+      if (!window[store]) return;
+      const toRemove = [];
+      for (let i = 0; i < window[store].length; i++) {
+        const k = window[store].key(i);
+        if (k && (k.startsWith("tijarah_db_cache:") || k.startsWith("tijarah_db_cache_v2:"))) {
+          toRemove.push(k);
+        }
+      }
+      toRemove.forEach((k) => window[store].removeItem(k));
+    });
+  } catch {}
+}
 
 function getDbStorage(key) {
   if (typeof window === "undefined") return null;
@@ -251,7 +268,8 @@ function getDbStorage(key) {
       const raw = sessionStorage.getItem(`${DB_STORAGE_PREFIX}${key}`);
       if (raw) {
         const item = JSON.parse(raw);
-        if (item && item.data && Date.now() - (item.ts || 0) < 300000) {
+        // Validasi: data harus tidak null, BUKAN array kosong, dan masih dalam batas TTL (5 menit)
+        if (item && item.data && (!Array.isArray(item.data) || item.data.length > 0) && Date.now() - (item.ts || 0) < 300000) {
           DB_CACHE.set(key, item);
           return item.data;
         }
@@ -265,7 +283,8 @@ function getDbStorage(key) {
       const raw = localStorage.getItem(`${DB_STORAGE_PREFIX}${key}`);
       if (raw) {
         const item = JSON.parse(raw);
-        if (item && item.data && Date.now() - (item.ts || 0) < 600000) {
+        // Validasi: data harus tidak null, BUKAN array kosong, dan masih dalam batas TTL (10 menit)
+        if (item && item.data && (!Array.isArray(item.data) || item.data.length > 0) && Date.now() - (item.ts || 0) < 600000) {
           DB_CACHE.set(key, item);
           return item.data;
         }
@@ -278,6 +297,8 @@ function getDbStorage(key) {
 
 function setDbStorage(key, data) {
   if (data == null || typeof window === "undefined") return;
+  // JANGAN PERNAH simpan array kosong ke persistent cache, agar kegagalan sementara tidak mengunci UI
+  if (Array.isArray(data) && data.length === 0) return;
   const item = { data, ts: Date.now() };
   DB_CACHE.set(key, item);
   try {
@@ -346,12 +367,12 @@ Object.assign(api, {
     if (!force) {
       if (DB_CACHE.has(cacheKey)) {
         const entry = DB_CACHE.get(cacheKey);
-        if (Date.now() - entry.ts < CACHE_TTL_MS) {
+        if (Date.now() - entry.ts < CACHE_TTL_MS && (!Array.isArray(entry.data) || entry.data.length > 0)) {
           return entry.data;
         }
       }
       const stored = getDbStorage(cacheKey);
-      if (stored) {
+      if (stored && (!Array.isArray(stored) || stored.length > 0)) {
         // Return data cache instan (0ms) untuk kecepatan navigasi antar subtab,
         // dan revalidasi di background tanpa memblokir UI
         if (!IN_FLIGHT_PROMISES.has(cacheKey)) {
@@ -421,7 +442,7 @@ Object.assign(api, {
       } catch (err) {
         // Fallback ke cache lokal jika server lambat atau offline
         const fallback = DB_CACHE.get(cacheKey)?.data || getDbStorage(cacheKey);
-        if (fallback) {
+        if (fallback && (!Array.isArray(fallback) || fallback.length > 0)) {
           return fallback;
         }
         // Failsafe cadangan aman: jika belum ada cache lokal di panggilan pertama, kembalikan array kosong agar UI tidak crash

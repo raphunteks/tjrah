@@ -56,8 +56,16 @@ export default function SdmDashboard() {
   // TIDAK ADA DATA DUMMY / FIKTIF
   // -------------------------------------------------------------
   const q = useAsync(async () => {
-    const rawBranches = await api.list("branches", { eq: { tenant_id: tenantId } }).catch(() => []);
-    const branches = rawBranches.filter((b) => !b.is_warehouse);
+    let rawBranches = await api.list("branches", { eq: { tenant_id: tenantId } }).catch(() => []);
+    if (!rawBranches || rawBranches.length === 0) {
+      if (api.listBranches) {
+        rawBranches = await api.listBranches(tenantId).catch(() => []);
+      }
+      if (!rawBranches || rawBranches.length === 0) {
+        rawBranches = await api.list("branches", { eq: { tenant_id: tenantId }, force: true }).catch(() => []);
+      }
+    }
+    const branches = (rawBranches || []).filter((b) => !b.is_warehouse);
 
     const [profiles, attendance, workShifts, leaveRequests, approvals, payrollRuns] = await Promise.all([
       api.list("profiles", { eq: { tenant_id: tenantId } }).catch(() => []),
