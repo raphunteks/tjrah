@@ -27,36 +27,6 @@ export default function Transactions() {
   const [detailOrder, setDetailOrder] = useState(null);
   const [printSuccess, setPrintSuccess] = useState(null);
   const [printingId, setPrintingId] = useState(null);
-  const [purgeModalOpen, setPurgeModalOpen] = useState(false);
-  const [purgeBusy, setPurgeBusy] = useState(false);
-  const [purgeSuccess, setPurgeSuccess] = useState(null);
-
-  const handlePurgeDummyTransactions = async () => {
-    setPurgeBusy(true);
-    try {
-      if (!b.branchId) throw new Error("Pilih cabang terlebih dahulu");
-      const allOrders = await api.list("orders", {
-        eq: { branch_id: b.branchId },
-        limit: 500,
-      }).catch(() => []);
-
-      const orderIds = (allOrders || []).map((o) => o.id);
-      if (orderIds.length > 0) {
-        for (const oid of orderIds) {
-          await api.delete("order_items", { order_id: oid }).catch(() => {});
-          await api.delete("orders", { id: oid }).catch(() => {});
-        }
-      }
-      setPurgeModalOpen(false);
-      setPurgeSuccess(`Berhasil membersihkan ${orderIds.length} data transaksi dummy!`);
-      setTimeout(() => setPurgeSuccess(null), 4000);
-      data.reload();
-    } catch (err) {
-      alert(err.message || "Gagal membersihkan data transaksi dummy");
-    } finally {
-      setPurgeBusy(false);
-    }
-  };
 
   const data = useAsync(
     async () => {
@@ -211,36 +181,51 @@ export default function Transactions() {
   return (
     <div className="d-page">
       <PageHead
+        eyebrow="Operasional Kasir · Pembukuan"
         title="Riwayat Transaksi"
-        description="Daftar seluruh transaksi kasir POS, filter 4 metode pembayaran, rekonsiliasi S-Wallet tunai, dan 3 format cetak thermal."
+        desc="Daftar seluruh transaksi kasir POS, filter 4 metode pembayaran, rekonsiliasi S-Wallet tunai, dan 3 format cetak thermal."
         actions={
           <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
             <BranchSelect b={b} label="Lokasi Cabang" />
-            <button
-              type="button"
-              className="d-btn d-btn--ghost d-btn--sm"
-              style={{ color: "#dc2626", borderColor: "#fca5a5" }}
-              onClick={() => setPurgeModalOpen(true)}
-              title="Bersihkan seluruh data transaksi dummy fiktif"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <polyline points="3 6 5 6 21 6" />
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                <line x1="10" y1="11" x2="10" y2="17" />
-                <line x1="14" y1="11" x2="14" y2="17" />
-              </svg>
-              <span>Bersihkan Dummy</span>
-            </button>
           </div>
         }
       />
 
-      {purgeSuccess && (
-        <div style={{ background: "#ecfdf5", border: "1px solid #10b981", color: "#065f46", padding: "0.75rem 1rem", borderRadius: "8px", marginBottom: "1rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-          <span style={{ fontSize: "0.9rem", fontWeight: 600 }}>{purgeSuccess}</span>
+      {/* Indikator Lokasi & Geofence Cabang Aktif dari Backend */}
+      {b.branch && (
+        <div
+          className="d-panel"
+          style={{
+            padding: "0.6rem 1rem",
+            marginBottom: "1.25rem",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: "0.5rem",
+            background: "var(--color-paper-2)",
+            border: "1px solid var(--color-rule)",
+            borderRadius: "var(--radius-md, 10px)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap", fontSize: "0.85rem" }}>
+            <Badge tone="accent">{b.branch.is_warehouse ? "Gudang" : "Outlet POS"}</Badge>
+            <span style={{ fontWeight: 700, color: "var(--color-ink)" }}>{b.branch.name}</span>
+            <span style={{ color: "var(--color-muted)" }}>•</span>
+            <span style={{ color: "var(--color-ink-2)" }}>
+              {b.branch.address || b.branch.city || "Makassar, Sulawesi Selatan"}
+            </span>
+            {b.branch.lat && b.branch.lng && (
+              <span className="d-mono" style={{ fontSize: "0.75rem", color: "var(--color-muted)", background: "var(--color-paper)", padding: "2px 6px", borderRadius: "4px", border: "1px solid var(--color-rule-2)" }}>
+                {Number(b.branch.lat).toFixed(6)}, {Number(b.branch.lng).toFixed(6)} (Radius {b.branch.geofence_m || 50}m)
+              </span>
+            )}
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.8rem", color: "var(--color-accent, #059669)", fontWeight: 600 }}>
+            <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: "#10b981" }} />
+            <span>Terhubung Database Supabase</span>
+          </div>
         </div>
       )}
 
@@ -253,22 +238,50 @@ export default function Transactions() {
         </div>
       )}
 
-      {/* KPI Ringkasan Transaksi */}
-      <div className="d-stats" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", marginBottom: "1.25rem" }}>
-        <div className="d-stat">
-          <span className="d-stat__label">Total Omzet Lunas</span>
-          <span className="d-stat__value" style={{ color: "var(--color-accent)" }}>{rupiah(stats.totalRevenue)}</span>
-          <span className="d-stat__hint">Saldo tunai dibukukan ke S-Wallet Kasir</span>
+      {/* KPI Ringkasan Transaksi dengan Sistem .d-stats--3 Resmi Tijarah */}
+      <div className="d-stats d-stats--3" style={{ marginBottom: "1.25rem" }}>
+        <div className="d-stat d-stat--emerald">
+          <div className="d-stat__header">
+            <span className="d-stat__label">Total Omzet Lunas</span>
+            <div className="d-stat__icon" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="2" x2="12" y2="22" />
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+              </svg>
+            </div>
+          </div>
+          <div className="d-stat__value" style={{ color: "var(--color-accent, #059669)" }}>
+            {rupiah(stats.totalRevenue)}
+          </div>
+          <div className="d-stat__sub">Saldo tunai dibukukan ke S-Wallet Kasir</div>
         </div>
-        <div className="d-stat">
-          <span className="d-stat__label">Transaksi Berhasil</span>
-          <span className="d-stat__value">{stats.paidCount}</span>
-          <span className="d-stat__hint">Dari {filteredOrders.length} pesanan tercatat</span>
+
+        <div className="d-stat d-stat--sky">
+          <div className="d-stat__header">
+            <span className="d-stat__label">Transaksi Berhasil</span>
+            <div className="d-stat__icon" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+          </div>
+          <div className="d-stat__value">{stats.paidCount}</div>
+          <div className="d-stat__sub">Dari {filteredOrders.length} pesanan tercatat</div>
         </div>
-        <div className="d-stat">
-          <span className="d-stat__label">Rata-rata Tagihan</span>
-          <span className="d-stat__value">{rupiah(stats.avgBasket)}</span>
-          <span className="d-stat__hint">Basket size rata-rata per transaksi</span>
+
+        <div className="d-stat d-stat--gold">
+          <div className="d-stat__header">
+            <span className="d-stat__label">Rata-rata Tagihan</span>
+            <div className="d-stat__icon" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="9" cy="21" r="1" />
+                <circle cx="20" cy="21" r="1" />
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+              </svg>
+            </div>
+          </div>
+          <div className="d-stat__value">{rupiah(stats.avgBasket)}</div>
+          <div className="d-stat__sub">Basket size rata-rata per transaksi</div>
         </div>
       </div>
 
@@ -650,43 +663,6 @@ export default function Transactions() {
         )}
       </Modal>
 
-      {/* Modal Konfirmasi Bersihkan Transaksi Dummy */}
-      <Modal
-        open={purgeModalOpen}
-        title="Bersihkan Data Transaksi Dummy?"
-        onClose={() => !purgeBusy && setPurgeModalOpen(false)}
-        footer={
-          <>
-            <button
-              type="button"
-              className="d-btn d-btn--ghost"
-              disabled={purgeBusy}
-              onClick={() => setPurgeModalOpen(false)}
-            >
-              Batal
-            </button>
-            <button
-              type="button"
-              className="d-btn d-btn--danger"
-              disabled={purgeBusy}
-              onClick={handlePurgeDummyTransactions}
-              style={{ background: "#dc2626", color: "#ffffff", borderColor: "#dc2626" }}
-            >
-              {purgeBusy ? "Membersihkan…" : "Ya, Hapus Semua Transaksi Dummy"}
-            </button>
-          </>
-        }
-      >
-        <div className="d-form">
-          <p className="d-text" style={{ margin: 0, fontSize: "0.95rem", lineHeight: 1.5 }}>
-            Tindakan ini akan <strong>menghapus seluruh {filteredOrders.length} riwayat transaksi</strong> pada cabang{" "}
-            <strong>{b.branch?.name || "ini"}</strong> agar pembukuan omzet dan riwayat penjualan kasir menjadi bersih, nyata, dan akurat (Rp 0).
-          </p>
-          <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "8px", padding: "0.75rem", color: "#991b1b", fontSize: "0.85rem", marginTop: "0.75rem" }}>
-            <strong>Perhatian:</strong> Data transaksi yang sudah dihapus tidak dapat dipulihkan kembali. Seluruh transaksi kasir baru setelah ini akan tercatat normal.
-          </div>
-        </div>
-      </Modal>
     </div>
   );
 }

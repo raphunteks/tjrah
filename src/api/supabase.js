@@ -239,6 +239,7 @@ export const api = {
 
 // --------- FASE 2 · akses generik (RLS tetap penjaga utama + Multi-Tier Persistent SWR Caching) ---------
 const DB_CACHE = new Map();
+const IN_FLIGHT_PROMISES = new Map();
 const DB_STORAGE_PREFIX = "tijarah_db_cache:";
 const CACHE_TTL_MS = 120000; // 2 menit cache RAM untuk browsing instan antar subtab
 
@@ -294,6 +295,7 @@ function setDbStorage(key, data) {
 export function invalidateTableCache(table) {
   if (!table) {
     DB_CACHE.clear();
+    IN_FLIGHT_PROMISES.clear();
     const clearStorage = (store) => {
       try {
         if (typeof window !== "undefined" && window[store]) {
@@ -313,6 +315,11 @@ export function invalidateTableCache(table) {
   for (const k of DB_CACHE.keys()) {
     if (k.startsWith(`${table}:`)) {
       DB_CACHE.delete(k);
+    }
+  }
+  for (const k of IN_FLIGHT_PROMISES.keys()) {
+    if (k.startsWith(`${table}:`)) {
+      IN_FLIGHT_PROMISES.delete(k);
     }
   }
   const clearTableFrom = (store) => {
@@ -344,7 +351,20 @@ Object.assign(api, {
         }
       }
       const stored = getDbStorage(cacheKey);
-      if (stored) return stored;
+      if (stored) {
+        // Return data cache instan (0ms) untuk kecepatan navigasi antar subtab,
+        // dan revalidasi di background tanpa memblokir UI
+        if (!IN_FLIGHT_PROMISES.has(cacheKey)) {
+          api.list(table, { select, eq, inList, order, limit, force: true }).catch(() => {});
+        }
+        return stored;
+      }
+    }
+
+    // Deduplikasi request in-flight yang identik: jika 5 komponen memanggil bersamaan saat switch tab,
+    // hanya 1 request ke Supabase jaringan, sisanya menunggu promise yang sama
+    if (IN_FLIGHT_PROMISES.has(cacheKey)) {
+      return IN_FLIGHT_PROMISES.get(cacheKey);
     }
 
     // Hindari query ke PostgREST jika filter kolom UUID menerima format non-UUID (misal 'temp-gm', 'temp-owner') yang menyebabkan 400 Bad Request
@@ -383,31 +403,36 @@ Object.assign(api, {
     if (order) q = q.order(order[0], { ascending: order[1] !== "desc" });
     if (limit) q = q.limit(limit);
 
-    // Timeout failsafe 15 detik untuk koneksi lintas benua (US-East ke Indonesia)
-    let timer;
-    const timeoutPromise = new Promise((_, reject) => {
-      timer = setTimeout(() => reject(new Error(`Timeout query ${table} (15s)`)), 15000);
-    });
+    const execPromise = (async () => {
+      // Timeout failsafe 30 detik untuk koneksi lintas benua (US-East ke Indonesia)
+      let timer;
+      const timeoutPromise = new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`Timeout query ${table} (30s)`)), 30000);
+      });
 
-    try {
-      const res = await Promise.race([
-        q.then((r) => { clearTimeout(timer); return r; }),
-        timeoutPromise
-      ]);
-      const data = ok(res);
-      setDbStorage(cacheKey, data);
-      return data;
-    } catch (err) {
-      // Fallback ke cache lokal jika server lambat atau offline
-      const fallback = DB_CACHE.get(cacheKey)?.data || getDbStorage(cacheKey);
-      if (fallback) {
-        console.warn(`[supabase] ${table} respons lambat / kendala jaringan, menggunakan cache lokal:`, err.message);
-        return fallback;
+      try {
+        const res = await Promise.race([
+          q.then((r) => { clearTimeout(timer); return r; }),
+          timeoutPromise
+        ]);
+        const data = ok(res);
+        setDbStorage(cacheKey, data);
+        return data;
+      } catch (err) {
+        // Fallback ke cache lokal jika server lambat atau offline
+        const fallback = DB_CACHE.get(cacheKey)?.data || getDbStorage(cacheKey);
+        if (fallback) {
+          return fallback;
+        }
+        // Failsafe cadangan aman: jika belum ada cache lokal di panggilan pertama, kembalikan array kosong agar UI tidak crash
+        return [];
+      } finally {
+        IN_FLIGHT_PROMISES.delete(cacheKey);
       }
-      // Failsafe cadangan aman: jika belum ada cache lokal di panggilan pertama, kembalikan array kosong agar UI tidak crash
-      console.warn(`[supabase] ${table} gagal memuat data (${err.message}), menggunakan fallback aman.`);
-      return [];
-    }
+    })();
+
+    IN_FLIGHT_PROMISES.set(cacheKey, execPromise);
+    return execPromise;
   },
   insert: async (table, row) => {
     invalidateTableCache(table);

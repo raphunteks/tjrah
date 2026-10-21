@@ -545,7 +545,24 @@ export default function Pos() {
 
   return (
     <div ref={root}>
-      <PageHead eyebrow="Fitur 5 · Register Transaksi POS Visual" title="Kasir POS" actions={<BranchSelect b={b} />} />
+      <PageHead
+        eyebrow="Fitur 5 · Register Transaksi POS Visual"
+        title="Kasir POS"
+        actions={
+          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
+            <BranchSelect b={b} />
+            {b.branch?.address && (
+              <span
+                className="d-role-chip d-role-chip--plain d-hide-mobile"
+                title={`${b.branch.address}${b.branch.lat && b.branch.lng ? ` (${Number(b.branch.lat).toFixed(6)}, ${Number(b.branch.lng).toFixed(6)})` : ""}`}
+                style={{ maxWidth: "280px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "0.8rem" }}
+              >
+                📍 {b.branch.address}
+              </span>
+            )}
+          </div>
+        }
+      />
 
       {!canSell && <p className="d-note">Peran Anda hanya dapat melihat (R) register transaksi.</p>}
       {canSell && d && !d?.myShift && (
