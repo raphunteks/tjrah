@@ -62,6 +62,7 @@ export default function Pos() {
 
   // Tender / Kalkulator Kembalian Kasir Tunai state
   const [tenderAmount, setTenderAmount] = useState("");
+  const [showNumpad, setShowNumpad] = useState(false);
 
   const [showTableModal, setShowTableModal] = useState(false);
   const kdsEnabled = Boolean(tenant?.kds_enabled);
@@ -893,68 +894,83 @@ export default function Pos() {
                 </div>
               </dl>
 
-              {/* MODUL KALKULATOR KEMBALIAN KASIR TUNAI & PECAHAN CEPAT */}
-              {currentTotal > 0 && (
-                <div style={{ marginTop: "1rem", padding: "12px", background: "var(--color-paper-2)", borderRadius: "8px", border: "1px solid var(--color-rule-2)" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
-                    <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--color-ink)" }}>
-                      Kalkulator Kembalian Tunai:
-                    </span>
-                    <span style={{ fontSize: "0.75rem", fontFamily: "var(--font-mono)", color: "var(--color-muted)" }}>
-                      Tagihan: {rupiah(currentTotal)}
-                    </span>
-                  </div>
+              {/* MODUL KALKULATOR KEMBALIAN KASIR TUNAI & PECAHAN CEPAT (SELALU AKTIF) */}
+              <div style={{ marginTop: "1rem", padding: "12px", background: "var(--color-paper-2)", borderRadius: "8px", border: "1px solid var(--color-rule-2)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                  <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--color-ink)" }}>
+                    Kalkulator Kembalian Tunai:
+                  </span>
+                  <span style={{ fontSize: "0.75rem", fontFamily: "var(--font-mono)", color: "var(--color-muted)" }}>
+                    Tagihan: {rupiah(currentTotal)}
+                  </span>
+                </div>
 
-                  <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-                    <span style={{ fontSize: "0.82rem", color: "var(--color-muted)", fontWeight: 600 }}>Uang Diterima:</span>
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      placeholder="Rp 0"
-                      value={tenderAmount}
-                      onChange={(e) => setTenderAmount(e.target.value)}
-                      style={{
-                        flex: 1,
-                        padding: "6px 10px",
-                        fontSize: "0.95rem",
-                        fontWeight: 700,
-                        textAlign: "right",
-                        borderRadius: "6px",
-                        border: "1px solid var(--color-rule-2)",
-                        fontFamily: "var(--font-mono)",
-                        background: "var(--color-paper)",
-                      }}
-                    />
-                  </div>
-
-                  {/* 6 Tombol Pecahan Uang Cepat */}
-                  <div className="pos-tender-grid" style={{ marginTop: "8px" }}>
+                <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                  <span style={{ fontSize: "0.82rem", color: "var(--color-muted)", fontWeight: 600 }}>Uang Diterima:</span>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    placeholder="Rp 0"
+                    value={tenderAmount}
+                    onChange={(e) => setTenderAmount(e.target.value)}
+                    style={{
+                      flex: 1,
+                      padding: "6px 10px",
+                      fontSize: "0.95rem",
+                      fontWeight: 700,
+                      textAlign: "right",
+                      borderRadius: "6px",
+                      border: "1px solid var(--color-rule-2)",
+                      fontFamily: "var(--font-mono)",
+                      background: "var(--color-paper)",
+                    }}
+                  />
+                  {tenderAmount && (
                     <button
                       type="button"
-                      className="pos-tender-btn"
-                      onClick={() => setTenderAmount(String(currentTotal))}
+                      className="d-icon-btn"
+                      title="Reset uang diterima"
+                      onClick={() => setTenderAmount("")}
+                      style={{ padding: "4px" }}
                     >
-                      Uang Pas
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
                     </button>
-                    <button type="button" className="pos-tender-btn" onClick={() => setTenderAmount("10000")}>
-                      Rp 10.000
-                    </button>
-                    <button type="button" className="pos-tender-btn" onClick={() => setTenderAmount("20000")}>
-                      Rp 20.000
-                    </button>
-                    <button type="button" className="pos-tender-btn" onClick={() => setTenderAmount("40000")}>
-                      Rp 40.000
-                    </button>
-                    <button type="button" className="pos-tender-btn" onClick={() => setTenderAmount("50000")}>
-                      Rp 50.000
-                    </button>
-                    <button type="button" className="pos-tender-btn" onClick={() => setTenderAmount("100000")}>
-                      Rp 100.000
-                    </button>
-                  </div>
+                  )}
+                </div>
 
-                  {/* Banner Kembalian Dinamis */}
-                  {tenderNum > 0 && (
+                {/* 6 Tombol Pecahan Uang Cepat */}
+                <div className="pos-tender-grid" style={{ marginTop: "8px" }}>
+                  <button
+                    type="button"
+                    className="pos-tender-btn"
+                    disabled={currentTotal <= 0}
+                    onClick={() => setTenderAmount(String(currentTotal))}
+                  >
+                    Uang Pas
+                  </button>
+                  <button type="button" className="pos-tender-btn" onClick={() => setTenderAmount("10000")}>
+                    Rp 10.000
+                  </button>
+                  <button type="button" className="pos-tender-btn" onClick={() => setTenderAmount("20000")}>
+                    Rp 20.000
+                  </button>
+                  <button type="button" className="pos-tender-btn" onClick={() => setTenderAmount("50000")}>
+                    Rp 50.000
+                  </button>
+                  <button type="button" className="pos-tender-btn" onClick={() => setTenderAmount("100000")}>
+                    Rp 100.000
+                  </button>
+                  <button type="button" className="pos-tender-btn" onClick={() => setTenderAmount("200000")}>
+                    Rp 200.000
+                  </button>
+                </div>
+
+                {/* Banner Kembalian Dinamis */}
+                {currentTotal > 0 ? (
+                  tenderNum > 0 ? (
                     <div className={`pos-change-banner ${isShortTender ? "pos-change-banner--short" : ""}`} style={{ marginTop: "6px", padding: "8px 12px", fontSize: "1rem" }}>
                       {isShortTender ? (
                         <span>Kurang: −{rupiah(shortDue)}</span>
@@ -962,9 +978,65 @@ export default function Pos() {
                         <span>Uang Kembalian: {rupiah(changeDue)}</span>
                       )}
                     </div>
-                  )}
+                  ) : (
+                    <div style={{ marginTop: "6px", fontSize: "0.75rem", color: "var(--color-muted)", textAlign: "center" }}>
+                      Pilih pecahan cepat atau ketik uang diterima untuk menghitung kembalian.
+                    </div>
+                  )
+                ) : (
+                  <div style={{ marginTop: "6px", fontSize: "0.75rem", color: "var(--color-muted)", textAlign: "center" }}>
+                    {tenderNum > 0
+                      ? `Uang diterima: ${rupiah(tenderNum)} (Pilih menu untuk melihat kembalian)`
+                      : "Kalkulator siap · Masukkan uang diterima atau klik tombol pecahan cepat"}
+                  </div>
+                )}
+
+                {/* Toggle Keypad Sentuh / Numpad Touchscreen */}
+                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "4px" }}>
+                  <button
+                    type="button"
+                    className="pos-keypad-toggle"
+                    onClick={() => setShowNumpad(!showNumpad)}
+                    style={{ fontSize: "0.75rem", padding: "2px 0" }}
+                  >
+                    {showNumpad ? "Sembunyikan Keypad Sentuh" : "Tampilkan Keypad Sentuh (Numpad)"}
+                  </button>
                 </div>
-              )}
+
+                {showNumpad && (
+                  <div className="pos-numpad" role="group" aria-label="Keypad sentuh kasir" style={{ marginTop: "6px" }}>
+                    {["1", "2", "3", "4", "5", "6", "7", "8", "9", "000", "0"].map((num) => (
+                      <button
+                        key={num}
+                        type="button"
+                        className="pos-numpad__btn"
+                        onClick={() => {
+                          const cur = String(tenderAmount || "");
+                          setTenderAmount(cur === "0" ? num : cur + num);
+                        }}
+                      >
+                        {num}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      className="pos-numpad__btn pos-numpad__btn--action pos-numpad__btn--clear"
+                      title="Hapus digit terakhir"
+                      aria-label="Hapus digit terakhir"
+                      onClick={() => {
+                        const cur = String(tenderAmount || "");
+                        setTenderAmount(cur.slice(0, -1) || "");
+                      }}
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z" />
+                        <line x1="18" y1="9" x2="12" y2="15" />
+                        <line x1="12" y1="9" x2="18" y2="15" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+              </div>
 
               <div className="pos-actions" style={{ marginTop: "1rem" }}>
                 {kdsEnabled && (
