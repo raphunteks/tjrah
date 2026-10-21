@@ -25,9 +25,21 @@ test("CSP Header: vercel.json memuat Content-Security-Policy yang lengkap & aman
   assert.match(cspValue, /https:\/\/www\.gstatic\.com/, "CSP wajib mengizinkan gstatic resources");
   assert.match(cspValue, /frame-src[^;]*https:\/\/www\.google\.com\/recaptcha\//, "CSP wajib mengizinkan iframe reCAPTCHA");
 
+  assert.match(cspValue, /https:\/\/translate-pa\.googleapis\.com/, "CSP wajib mengizinkan Google Translate Personal Assistant API");
+  assert.match(cspValue, /https:\/\/translate\.google\.com/, "CSP wajib mengizinkan Google Translate");
+  assert.match(cspValue, /frame-src[^;]*https:\/\/translate\.google\.com/, "CSP wajib mengizinkan frame Google Translate");
+
   const hstsHeader = globalHeaders.headers.find((h) => h.key === "Strict-Transport-Security");
   assert.ok(hstsHeader, "Header Strict-Transport-Security wajib terpasang");
   assert.match(hstsHeader.value, /max-age=63072000/, "HSTS wajib memiliki max-age 2 tahun");
+});
+
+test("index.html: Memiliki konfigurasi Google Translate & deklarasi bahasa internasional yang kompatibel", () => {
+  const indexHtml = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+  assert.match(indexHtml, /<html\s+lang="en">/, "HTML root wajib lang='en' agar memicu fitur Omnibox Google Translate");
+  assert.match(indexHtml, /<meta name="google" content="translate"/, "Meta google translate harus terpasang");
+  assert.ok(!indexHtml.includes('http-equiv="Content-Language"'), "Content-Language tidak boleh membatasi bahasa halaman");
+  assert.ok(!indexHtml.includes("translate_a/element.js"), "Script deprecated Google Translate widget tidak boleh ada");
 });
 
 test("reCAPTCHA Serverless: Handler menolak method selain POST", async () => {
