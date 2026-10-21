@@ -113,6 +113,12 @@ export default function Wallet() {
   const [withdrawPin, setWithdrawPin] = useState("");
   const [withdrawProcessing, setWithdrawProcessing] = useState(false);
   const [withdrawNotice, setWithdrawNotice] = useState(null);
+  const [showPinRequiredModal, setShowPinRequiredModal] = useState(false);
+
+  const hasUserPin = Boolean(
+    user?.transaction_pin ||
+    getStoredUserPin(user?.id, user?.email, user?.role, user)
+  );
 
   const [posToken, setPosToken] = useState(null);
   const [posTokenCountdown, setPosTokenCountdown] = useState(60);
@@ -524,6 +530,10 @@ export default function Wallet() {
             type="button"
             className="swallet-action-btn"
             onClick={() => {
+              if (!hasUserPin) {
+                setShowPinRequiredModal(true);
+                return;
+              }
               setTransferNotice(null);
               setShowTransferModal(true);
             }}
@@ -536,6 +546,10 @@ export default function Wallet() {
             type="button"
             className="swallet-action-btn"
             onClick={() => {
+              if (!hasUserPin) {
+                setShowPinRequiredModal(true);
+                return;
+              }
               setWithdrawNotice(null);
               setShowWithdrawModal(true);
             }}
@@ -1318,7 +1332,55 @@ export default function Wallet() {
       {/* ──────── 9. PUSAT NAVIGASI AKUN & TATA KELOLA SISTEM (DOCK BAWAH) ──────── */}
       <AccountTabs />
 
-      {/* ──────── 10. MODAL RESET PIN TRANSAKSI VIA OTP ──────── */}
+      {/* ──────── 10. MODAL PERINGATAN PIN BELUM DIATUR ──────── */}
+      <Modal
+        open={showPinRequiredModal}
+        title="PIN Transaksi Belum Dikonfigurasi"
+        onClose={() => setShowPinRequiredModal(false)}
+        footer={
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem" }}>
+            <button type="button" className="d-btn d-btn--ghost" onClick={() => setShowPinRequiredModal(false)}>
+              Nanti Saja
+            </button>
+            <button
+              type="button"
+              className="d-btn d-btn--primary"
+              onClick={() => {
+                setShowPinRequiredModal(false);
+                navigate("/app/akun/keamanan");
+              }}
+            >
+              <i className="fa-solid fa-lock" aria-hidden="true" style={{ marginRight: "0.4rem" }} />
+              Atur PIN Transaksi Sekarang
+            </button>
+          </div>
+        }
+      >
+        <div style={{ textAlign: "center", padding: "1rem 0" }}>
+          <div style={{
+            width: "56px",
+            height: "56px",
+            borderRadius: "50%",
+            background: "rgba(245, 158, 11, 0.12)",
+            color: "#d97706",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: "1.75rem",
+            marginBottom: "1rem"
+          }}>
+            <i className="fa-solid fa-shield-halved" aria-hidden="true" />
+          </div>
+          <h4 style={{ margin: "0 0 0.5rem", fontSize: "1.05rem", fontWeight: 700, color: "var(--color-ink)" }}>
+            Otorisasi PIN Diperlukan
+          </h4>
+          <p style={{ margin: 0, fontSize: "0.88rem", color: "var(--color-muted)", lineHeight: 1.55, maxWidth: "420px", marginLeft: "auto", marginRight: "auto" }}>
+            Untuk melindungi keamanan saldo S-Wallet Anda dari penyalahgunaan dan otorisasi tidak sah, Anda wajib membuat <strong>PIN Transaksi 6-Digit</strong> terlebih dahulu pada subtab <strong>Keamanan & Kredensial</strong>.
+          </p>
+        </div>
+      </Modal>
+
+      {/* ──────── 11. MODAL RESET PIN TRANSAKSI VIA OTP ──────── */}
       <ResetPinModal
         open={showResetPinModal}
         onClose={() => setShowResetPinModal(false)}

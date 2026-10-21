@@ -20,8 +20,7 @@ export default function ResetPinModal({ open, onClose, user, api, onSuccess }) {
   const [notice, setNotice] = useState(null);
   const [error, setError] = useState("");
 
-  const [rawOtp, setRawOtp] = useState("");
-  const [inputOtp, setInputOtp] = useState("");
+  const [otpInput, setOtpInput] = useState("");
   const [newPin, setNewPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -47,23 +46,18 @@ export default function ResetPinModal({ open, onClose, user, api, onSuccess }) {
       setStep(1);
       setNotice(null);
       setError("");
-      setRawOtp("");
-      setInputOtp("");
+      setOtpInput("");
       setNewPin("");
       setConfirmPin("");
       setIsSubmitting(false);
     }
   }, [open]);
 
-  // Handler input OTP ketat (hanya 6 karakter alfanumerik kapital, otomatis strip prefix SW-)
+  // Handler input OTP fleksibel (menerima SW-XXXXXX atau XXXXXX)
   const handleOtpChange = (e) => {
-    let val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
-    if (val.startsWith("SW")) {
-      val = val.slice(2);
-    }
-    val = val.slice(0, 6);
-    setRawOtp(val);
-    setInputOtp(val ? `SW-${val}` : "");
+    let val = e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, "");
+    if (val.length > 9) val = val.slice(0, 9);
+    setOtpInput(val);
   };
 
   // Eksekusi pengiriman OTP
@@ -108,8 +102,14 @@ export default function ResetPinModal({ open, onClose, user, api, onSuccess }) {
     setError("");
 
     // 1. Validasi Kode OTP
-    const cleanInputOtp = inputOtp.trim().toUpperCase();
-    if (!cleanInputOtp) {
+    let cleanInputOtp = otpInput.trim().toUpperCase().replace(/\s+/g, "");
+    if (!cleanInputOtp.startsWith("SW-") && !cleanInputOtp.startsWith("SW")) {
+      cleanInputOtp = `SW-${cleanInputOtp}`;
+    } else if (cleanInputOtp.startsWith("SW") && !cleanInputOtp.startsWith("SW-")) {
+      cleanInputOtp = `SW-${cleanInputOtp.slice(2)}`;
+    }
+
+    if (!cleanInputOtp || cleanInputOtp === "SW-") {
       setError("Kode verifikasi OTP wajib diisi.");
       return;
     }
@@ -161,6 +161,9 @@ export default function ResetPinModal({ open, onClose, user, api, onSuccess }) {
     }
   };
 
+  const isPinMatching = newPin.length === 6 && confirmPin.length === 6 && newPin === confirmPin;
+  const isOtpValidLength = otpInput.trim().length >= 6;
+
   return (
     <Modal
       open={open}
@@ -191,7 +194,8 @@ export default function ResetPinModal({ open, onClose, user, api, onSuccess }) {
                 type="submit"
                 form="swallet-reset-pin-form"
                 className="tjr-pay-btn-primary"
-                disabled={isSubmitting || rawOtp.length !== 6 || newPin.length !== 6 || confirmPin.length !== 6}
+                disabled={isSubmitting || !isOtpValidLength || !isPinMatching}
+                title={!isPinMatching ? "PIN Baru dan Konfirmasi PIN wajib sama persis (6 digit)" : "Simpan PIN Baru"}
               >
                 <i className="fa-solid fa-lock" aria-hidden="true" style={{ marginRight: "0.4rem" }} />
                 {isSubmitting ? "Menyimpan PIN..." : "Simpan PIN Baru"}
@@ -290,48 +294,31 @@ export default function ResetPinModal({ open, onClose, user, api, onSuccess }) {
               <label htmlFor="otp-input" className="d-label" style={{ display: "block", marginBottom: "0.35rem", fontWeight: 500 }}>
                 Kode OTP Verifikasi
               </label>
-              <div style={{ display: "flex", alignItems: "center" }}>
-                <span style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  padding: "0 0.85rem",
-                  height: "40px",
-                  background: "var(--color-bg-subtle, #f8fafc)",
-                  border: "1px solid var(--color-border, #cbd5e1)",
-                  borderRight: "none",
-                  borderRadius: "6px 0 0 6px",
+              <input
+                id="otp-input"
+                type="text"
+                className="d-input"
+                style={{
+                  width: "100%",
                   fontFamily: "var(--font-mono)",
+                  fontSize: "1.05rem",
                   fontWeight: 700,
-                  fontSize: "0.95rem",
-                  color: "var(--brand-emerald, #065f46)",
-                  userSelect: "none"
-                }}>
-                  SW-
-                </span>
-                <input
-                  id="otp-input"
-                  type="text"
-                  className="d-input"
-                  style={{
-                    borderRadius: "0 6px 6px 0",
-                    fontFamily: "var(--font-mono)",
-                    fontSize: "1.05rem",
-                    fontWeight: 700,
-                    letterSpacing: "2.5px",
-                    textTransform: "uppercase"
-                  }}
-                  placeholder="••••••"
-                  maxLength={6}
-                  value={rawOtp}
-                  onChange={handleOtpChange}
-                  autoFocus
-                  required
-                />
-              </div>
+                  letterSpacing: "2.5px",
+                  textTransform: "uppercase"
+                }}
+                placeholder="SW-XXXXXX"
+                maxLength={9}
+                value={otpInput}
+                onChange={handleOtpChange}
+                autoFocus
+                required
+              />
+              <span style={{ display: "block", marginTop: "0.35rem", fontSize: "0.78rem", color: "var(--color-muted)" }}>
+                Contoh format: <strong>SW-12AS44</strong> (Dapat disalin langsung dari pesan masuk email/WhatsApp).
+              </span>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "0.75rem" }}>
               <div>
                 <label htmlFor="new-pin-input" className="d-label" style={{ display: "block", marginBottom: "0.35rem", fontWeight: 500 }}>
                   PIN 6-Digit Baru
