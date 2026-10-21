@@ -594,14 +594,7 @@ export default function Pos() {
                 </div>
               </div>
 
-              <div
-                className="pos-menu"
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))",
-                  gap: "10px",
-                }}
-              >
+              <div className="pos-menu">
                 {shown.map((p) => (
                   <button
                     key={p.id}
