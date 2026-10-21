@@ -31,3 +31,9 @@ export function readableFeatures(role) {
     label: PERMS[role][r[0]].label,
   }));
 }
+
+/** Helper pemeriksa peran eksekutif (Owner, General Manager, Superadmin). */
+export function isOwnerOrGm(role) {
+  return role === "owner" || role === "gm" || role === "superadmin";
+}
+

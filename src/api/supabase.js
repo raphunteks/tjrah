@@ -132,13 +132,13 @@ export const api = {
   async getProfile(uid) {
     let res = await supabase
       .from("profiles")
-      .select("id, tenant_id, branch_id, role, full_name, email, phone, two_factor_enabled, two_factor_secret, two_factor_backup_codes, transaction_pin, tenant:tenants(id, name, slug, pillar)")
+      .select("id, tenant_id, branch_id, role, full_name, email, phone, two_factor_enabled, two_factor_secret, two_factor_backup_codes, transaction_pin, tenant:tenants(id, name, slug, pillar, tax_rate, tax_label, kds_enabled)")
       .eq("id", uid)
       .single();
     if (res.error && /transaction_pin|does not exist/i.test(res.error.message || "")) {
       res = await supabase
         .from("profiles")
-        .select("id, tenant_id, branch_id, role, full_name, email, phone, two_factor_enabled, two_factor_secret, two_factor_backup_codes, tenant:tenants(id, name, slug, pillar)")
+        .select("id, tenant_id, branch_id, role, full_name, email, phone, two_factor_enabled, two_factor_secret, two_factor_backup_codes, tenant:tenants(id, name, slug, pillar, tax_rate, tax_label, kds_enabled)")
         .eq("id", uid)
         .single();
     }

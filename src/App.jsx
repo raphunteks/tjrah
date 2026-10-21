@@ -10,6 +10,7 @@ const ResetPassword = lazy(() => import("./auth/ResetPassword.jsx"));
 const AppShell = lazy(() => import("./app/AppShell.jsx"));
 const MemberShell = lazy(() => import("./member/MemberShell.jsx"));
 const MemberAuth = lazy(() => import("./member/MemberAuth.jsx"));
+const CustomerDisplay = lazy(() => import("./app/pages/public/CustomerDisplay.jsx"));
 
 // Bagian dalam /m yang bukan slug Tenant (Member sudah masuk).
 const MEMBER_SECTIONS = new Set(["kartu", "riwayat", "profil", "privasi", "pesan", "reservasi"]);
@@ -98,6 +99,9 @@ export default function App() {
     const seg = cleanPath.split("/")[2] ?? "";
     if (!seg || MEMBER_SECTIONS.has(seg)) return <main className="setup"><h1>Buka tautan Member dari tempat usaha Anda</h1><p>Tautan Member berbentuk <code>/m/nama-usaha</code>. Karyawan masuk lewat <a href="/masuk">halaman masuk</a>.</p></main>;
     return <Suspense fallback={<TopProgress />}><MemberAuth slug={seg} /></Suspense>;
+  }
+  if (cleanPath === "/display/customer" || cleanPath.startsWith("/display/customer")) {
+    return <Suspense fallback={<TopProgress />}><CustomerDisplay /></Suspense>;
   }
   if (cleanPath === "/" || (!inApp && !isAuthPage)) {
     return <Suspense fallback={<TopProgress />}><Landing /></Suspense>;

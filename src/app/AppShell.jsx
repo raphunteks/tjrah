@@ -420,7 +420,7 @@ function SidebarUserFooter({ profile, role, roleLabel, collapsed, lang, setLang,
 }
 
 export default function AppShell() {
-  const { profile, role, tenantId, signOut, api, pillar } = useAuth();
+  const { profile, role, tenantId, signOut, api, pillar, tenant } = useAuth();
   const { path, navigate } = useRouter();
   const { lang, setLang } = useAccountLang();
   const [navOpen, setNavOpen] = useState(false);
@@ -452,7 +452,13 @@ export default function AppShell() {
   };
 
   const main = useRef(null);
-  const pages = pagesFor(role, pillar);
+  const pages = pagesFor(role, pillar).filter((p) => {
+    // Sembunyikan Layar Dapur (KDS) dari sidebar jika tenant menonaktifkan KDS
+    if (p.path === "/app/dapur" && tenant && tenant.kds_enabled === false) {
+      return false;
+    }
+    return true;
+  });
   const page = findPage(path);
   const allowed = page && page.gate(role) && pillarOk(page, pillar);
 

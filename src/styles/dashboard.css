@@ -1290,7 +1290,7 @@
 
 /* ───────── POS ───────── */
 .pos-tabs { display: none; }
-.pos { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.3fr) minmax(0, 1fr); gap: var(--space-md); align-items: start; }
+.pos { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(360px, 1fr); gap: var(--space-md); align-items: start; }
 .pos-col { display: grid; gap: var(--space-sm); align-content: start; padding: var(--space-sm); border: var(--rule-hair) solid var(--color-rule-2); border-radius: var(--radius-lg); background: var(--color-paper); min-width: 0; }
 .pos-col--ticket { position: sticky; top: 4.5rem; }
 .pos-floor { display: grid; grid-template-columns: repeat(auto-fill, minmax(4.75rem, 1fr)); gap: var(--space-2xs); }
@@ -1325,6 +1325,82 @@
 .pos-prod__name { font-weight: 600; color: var(--color-ink); line-height: 1.25; }
 .pos-prod__price { font: 500 var(--text-sm)/1 var(--font-mono); color: var(--color-accent); }
 .pos-prod__st { font-size: 0.625rem; color: var(--color-muted); text-transform: uppercase; }
+
+/* ───────── POS Visual Card Grid (Fase 2) ───────── */
+.pos-prod--visual {
+  width: 100%; display: flex; flex-direction: column; text-align: left; padding: var(--space-2xs);
+  border: var(--rule-hair) solid var(--color-rule-2); border-radius: var(--radius-md); background: var(--color-paper); cursor: pointer;
+  transition: all var(--dur-micro) var(--ease-out); position: relative; overflow: hidden;
+}
+.pos-prod--visual:hover:not(:disabled) {
+  border-color: var(--color-accent); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+.pos-prod--visual:active:not(:disabled) { transform: translateY(0); }
+.pos-prod--visual:disabled { opacity: 0.55; cursor: not-allowed; }
+.pos-prod__img-box {
+  width: 100%; aspect-ratio: 1 / 1; border-radius: var(--radius-sm); overflow: hidden; background: var(--color-paper-2);
+  position: relative; display: flex; align-items: center; justify-content: center; margin-bottom: var(--space-2xs);
+}
+.pos-prod__img { width: 100%; height: 100%; object-fit: cover; transition: transform var(--dur-micro) var(--ease-out); }
+.pos-prod--visual:hover:not(:disabled) .pos-prod__img { transform: scale(1.04); }
+.pos-prod__badge-pos { position: absolute; top: 6px; right: 6px; z-index: 2; }
+.pos-prod__body { display: flex; flex-direction: column; gap: 2px; padding: 2px 4px; }
+.pos-prod__category { font-size: 0.65rem; color: var(--color-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* ───────── 3 Mode Layanan Segmented Switch ───────── */
+.pos-service-mode {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px;
+  background: var(--color-paper-2); border-radius: var(--radius-md); border: var(--rule-hair) solid var(--color-rule);
+  margin-bottom: var(--space-xs);
+}
+.pos-service-btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 4px;
+  font-size: var(--text-xs); font-weight: 600; border: 0; background: transparent; border-radius: var(--radius-sm);
+  cursor: pointer; color: var(--color-muted); transition: all var(--dur-micro) var(--ease-out);
+}
+.pos-service-btn.is-active {
+  background: var(--color-paper); color: var(--color-accent); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+.pos-service-btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+/* ───────── CRM Pelanggan Kasir Bar ───────── */
+.pos-crm-bar {
+  display: flex; align-items: center; gap: 6px; padding: 6px 8px; background: var(--color-paper-2);
+  border: var(--rule-hair) solid var(--color-rule); border-radius: var(--radius-md); margin-bottom: var(--space-xs);
+  position: relative;
+}
+.pos-crm-dropdown {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0; max-height: 220px; overflow-y: auto;
+  background: var(--color-paper); border: var(--rule-hair) solid var(--color-rule-2); border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12); z-index: 50; padding: 4px;
+}
+.pos-crm-item {
+  width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 8px 10px;
+  border: 0; background: transparent; border-radius: var(--radius-sm); cursor: pointer; text-align: left;
+}
+.pos-crm-item:hover { background: var(--color-paper-2); }
+
+/* ───────── Quick Discount Widget ───────── */
+.pos-quick-disc {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-xs);
+  padding: 8px 10px; background: var(--color-paper-2); border-radius: var(--radius-md);
+  border: var(--rule-hair) solid var(--color-rule); margin: var(--space-xs) 0;
+}
+
+/* ───────── Tender Cash Calculator & VA ───────── */
+.pos-tender-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 8px 0; }
+.pos-tender-btn {
+  padding: 8px 4px; font-size: 0.8rem; font-weight: 600; font-family: var(--font-mono);
+  border: var(--rule-hair) solid var(--color-rule-2); background: var(--color-paper); border-radius: var(--radius-sm);
+  cursor: pointer; transition: all var(--dur-micro) var(--ease-out);
+}
+.pos-tender-btn:hover { border-color: var(--color-accent); color: var(--color-accent); background: var(--color-paper-2); }
+.pos-change-banner {
+  padding: 10px 14px; border-radius: var(--radius-md); background: #ecfdf5; border: 1px solid #10b981;
+  color: #065f46; font-weight: 700; font-size: 1.15rem; text-align: center; margin-top: 8px;
+}
+.pos-change-banner--short { background: #fef2f2; border-color: #ef4444; color: #991b1b; }
+
 .pos-ticket-head h2 { font-size: var(--text-lg); font-weight: 600; }
 .pos-lines { display: grid; gap: 0; }
 .pos-lines li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: var(--space-xs); padding: var(--space-2xs) 0; border-bottom: var(--rule-hair) solid var(--color-rule); font-size: var(--text-sm); }
@@ -5212,4 +5288,54 @@
     border-bottom: none;
   }
 }
+
+/* ───────── Responsivitas Mobile-Friendly Riwayat Transaksi & POS ───────── */
+@media (max-width: 768px) {
+  .d-hide-mobile {
+    display: none !important;
+  }
+  .d-show-mobile {
+    display: flex !important;
+  }
+  .d-stats {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) !important;
+    gap: var(--space-xs) !important;
+  }
+  .d-stat {
+    padding: var(--space-sm) !important;
+  }
+  .d-stat__value {
+    font-size: 1.25rem !important;
+  }
+  .d-chips {
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 6px !important;
+    max-width: 100% !important;
+  }
+  .d-chips::-webkit-scrollbar {
+    height: 3px;
+  }
+  .d-chips::-webkit-scrollbar-thumb {
+    background: var(--color-rule-2);
+    border-radius: 4px;
+  }
+  .d-chip {
+    flex-shrink: 0 !important;
+    font-size: 0.8rem !important;
+    padding: 6px 12px !important;
+    white-space: nowrap !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .d-hide-mobile {
+    display: block !important;
+  }
+  .d-show-mobile {
+    display: none !important;
+  }
+}
+
 

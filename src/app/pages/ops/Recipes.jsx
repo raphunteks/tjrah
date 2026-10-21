@@ -310,6 +310,7 @@ export default function Recipes() {
         eyebrow={`Fitur 4 · ${permOf(role, 4)?.label}`}
         title="Resep & BOM"
         desc="Setiap porsi terjual memotong bahan baku sesuai takaran. Sistem secara cerdas mengonversi satuan resep (mg, g, ml) ke satuan stok gudang dan menghitung biaya HPP secara otomatis."
+        actions={<BranchSelect b={b} label="Lokasi Cabang" />}
       />
       {r.loading && !r.data ? (
         <RecipeSkeleton />

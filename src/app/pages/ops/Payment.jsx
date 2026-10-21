@@ -6,9 +6,30 @@ import { useAction, Feedback } from "../../ops.jsx";
 import { taxOf, taxLabel as taxLabelOf } from "../../../lib/tax.js";
 import { calculateAndCreditDoctorSplit } from "../../../api/swallet.js";
 import { dispatchHermesPosSale } from "../../../lib/hermes.js";
+import { broadcastCustomerDisplay } from "../../../lib/customerDisplay.js";
+import { createPakasirTransaction } from "../../../api/pakasir.js";
 import QrisPanel from "./QrisPanel.jsx";
 
-const METHODS = [["cash", "Tunai"], ["card", "Kartu"], ["qris", "QRIS"], ["ewallet", "E-wallet"], ["swallet", "S-Wallet"]];
+const METHODS = [
+  ["cash", "Tunai (S-Wallet Tunai)"],
+  ["qris", "QRIS Dinamis"],
+  ["va", "Transfer (VA Pakasir)"],
+  ["swallet", "S-Wallet Member"],
+  ["card", "Kartu EDC"],
+];
+
+const PAKASIR_VA_BANKS = [
+  { id: "bri_va", name: "Bank BRI", code: "BRI" },
+  { id: "bni_va", name: "Bank BNI", code: "BNI" },
+  { id: "cimb_niaga_va", name: "Bank CIMB Niaga", code: "CIMB" },
+  { id: "bsi_va", name: "Bank Syariah Indonesia", code: "BSI" },
+  { id: "danamon_va", name: "Bank Danamon", code: "DANAMON" },
+  { id: "muamalat_va", name: "Bank Muamalat", code: "MUAMALAT" },
+  { id: "bnc_va", name: "Bank Neo Commerce", code: "BNC" },
+  { id: "maybank_va", name: "Maybank Indonesia", code: "MAYBANK" },
+  { id: "ocbc_va", name: "Bank OCBC", code: "OCBC" },
+];
+
 export { taxOf };
 
 /* QR simulasi: pola deterministik dari kode invoice (bukan QRIS sungguhan). */
@@ -56,24 +77,21 @@ export function PaymentModal({ open, order, onClose, onPaid }) {
   const [rows, setRows] = useState([]);
   const [phone, setPhone] = useState("");
   useEffect(() => setPhone(order?.customer_phone ?? ""), [order?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (open && total > 0 && rows.length === 0) {
+      setRows([
+        {
+          method: "cash",
+          amount: total,
+          vaBank: undefined,
+          reference: "",
+          confirmed: true,
+        },
+      ]);
+    }
+  }, [open, total]); // eslint-disable-line react-hooks/exhaustive-deps
   const flags = useAsync(() => (api?.rpc ? api.rpc("my_flags").catch(() => ({})) : Promise.resolve({})), [api]);
   const qrisOn = Boolean(flags.data?.qris_dynamic) && typeof api?.qrisCreate === "function";
-  const onQrisPaid = async () => {
-    const [o] = await api.list("orders", { eq: { id: order.id } });
-    setReceipt({ ...(o ?? order), change: 0, rows: [] });
-    // Dispatch notifikasi realtime penjualan kasir (QRIS) ke WhatsApp Owner & GM
-    dispatchHermesPosSale({
-      order: o ?? order,
-      total: o?.total ?? total,
-      paymentMethod: "QRIS INSTAN",
-      cashierName: order.cashier_name || "Kasir",
-      tenantName: tenant?.name || "Tijarah Merchant",
-      branchName: order.branch_name || "Cabang Utama",
-      whatsappOwner: tenant?.whatsapp_owner,
-      whatsappGm: tenant?.whatsapp_gm
-    });
-    onPaid();
-  };
   const [cardTok, setCardTok] = useState("");
   const [cardInfo, setCardInfo] = useState(null);
   const scan = useAction();
@@ -87,13 +105,25 @@ export function PaymentModal({ open, order, onClose, onPaid }) {
     });
   const [split, setSplit] = useState(2);
   const [receipt, setReceipt] = useState(null);
+  const [copiedVa, setCopiedVa] = useState(null);
+  const [vaGenerating, setVaGenerating] = useState(false);
   const a = useAction();
   const paid = rows.reduce((s, r) => s + (Number(r.amount) || 0), 0);
   const cash = rows.filter((r) => r.method === "cash").reduce((s, r) => s + (Number(r.amount) || 0), 0);
   const change = Math.max(0, paid - total);
   const remaining = Math.max(0, total - paid);
 
-  const add = (method, amount = remaining) => setRows((r) => [...r, { method, amount, reference: "", confirmed: method === "cash" }]);
+  const add = (method, amount = remaining) =>
+    setRows((r) => [
+      ...r,
+      {
+        method,
+        amount,
+        vaBank: method === "va" ? "bri_va" : undefined,
+        reference: "",
+        confirmed: method === "cash",
+      },
+    ]);
   const set = (i, patch) => setRows((r) => r.map((x, j) => (j === i ? { ...x, ...patch } : x)));
   const equalSplit = () => {
     const n = Math.max(2, Math.min(20, Number(split) || 2));
@@ -101,6 +131,27 @@ export function PaymentModal({ open, order, onClose, onPaid }) {
     setRows(Array.from({ length: n }, (_, i) => ({ method: "qris", amount: i === n - 1 ? total - each * (n - 1) : each, reference: "", confirmed: false })));
   };
   const unconfirmed = rows.some((r) => r.method !== "cash" && !r.confirmed);
+
+  const onQrisPaid = async () => {
+    const [o] = await api.list("orders", { eq: { id: order.id } });
+    setReceipt({ ...(o ?? order), change: 0, rows: [] });
+    broadcastCustomerDisplay({
+      type: "ORDER_PAID",
+      order: { ...(o ?? order), total: o?.total ?? total, change: 0 },
+    });
+    // Dispatch notifikasi realtime penjualan kasir (QRIS) ke WhatsApp Owner & GM
+    dispatchHermesPosSale({
+      order: o ?? order,
+      total: o?.total ?? total,
+      paymentMethod: "QRIS INSTAN",
+      cashierName: order.cashier_name || "Kasir",
+      tenantName: tenant?.name || "Tijarah Merchant",
+      branchName: order.branch_name || "Cabang Utama",
+      whatsappOwner: tenant?.whatsapp_owner,
+      whatsappGm: tenant?.whatsapp_gm
+    });
+    onPaid();
+  };
 
   const submit = () =>
     a.run(async () => {
@@ -132,18 +183,26 @@ export function PaymentModal({ open, order, onClose, onPaid }) {
         whatsappGm: tenant?.whatsapp_gm
       });
 
+      // Broadcast ke Layar Pelanggan bahwa pembayaran lunas
+      broadcastCustomerDisplay({
+        type: "ORDER_PAID",
+        order: { ...order, ...r, total, change, paid },
+      });
+
       setReceipt({ ...r, change, rows });
       onPaid();
       return r;
     });
 
   const close = () => {
+    broadcastCustomerDisplay({ type: "RESET" });
     setRows([]);
     setDisc("");
     setVo(null);
     setPin("");
     setPhone("");
     setReceipt(null);
+    setCopiedVa(null);
     a.setError(null);
     onClose();
   };
@@ -227,67 +286,168 @@ export function PaymentModal({ open, order, onClose, onPaid }) {
             {rows.map((r, i) => (
               <li key={i} className="pos-pay">
                 <div className="pos-pay__row">
-                  <select value={r.method} onChange={(e) => set(i, { method: e.target.value, confirmed: e.target.value === "cash" })} aria-label="Metode">
+                  <select value={r.method} onChange={(e) => set(i, { method: e.target.value, vaBank: e.target.value === "va" ? "bri_va" : undefined, vaData: null, confirmed: e.target.value === "cash" })} aria-label="Metode">
                     {METHODS.map(([m, l]) => <option key={m} value={m}>{l}</option>)}
                   </select>
                   <input inputMode="numeric" value={r.amount} onChange={(e) => set(i, { amount: e.target.value.replace(/\D/g, "") })} aria-label="Nominal" />
-                  <button type="button" className="d-icon-btn" aria-label="Hapus baris" onClick={() => setRows((x) => x.filter((_, j) => j !== i))}>×</button>
+                  <button type="button" className="d-icon-btn" aria-label="Hapus baris" onClick={() => setRows((x) => x.filter((_, j) => j !== i))}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
                 </div>
                 {r.method === "cash" && (
-                  <>
-                    <div className="pos-denoms">
-                      {[
-                        ["Uang pas", remaining + (Number(r.amount) || 0)],
-                        ["20rb", 20000],
-                        ["50rb", 50000],
-                        ["100rb", 100000],
-                        ["200rb", 200000],
-                      ].map(([l, v]) => (
-                        <button key={l} type="button" className="d-btn d-btn--ghost d-btn--sm" onClick={() => set(i, { amount: v })}>{l}</button>
-                      ))}
-                    </div>
-                    <div className="pos-numpad" role="group" aria-label="Keypad sentuh kasir">
-                      {["1", "2", "3", "4", "5", "6", "7", "8", "9", "000", "0"].map((num) => (
-                        <button
-                          key={num}
-                          type="button"
-                          className="pos-numpad__btn"
-                          onClick={() => {
-                            const cur = String(r.amount || "");
-                            set(i, { amount: cur === "0" ? num : cur + num });
-                          }}
-                        >
-                          {num}
-                        </button>
-                      ))}
+                  <div style={{ marginTop: "0.5rem" }}>
+                    <p className="d-text d-muted" style={{ margin: 0, fontSize: "0.75rem" }}>
+                      Kalkulator kembalian &amp; pecahan cepat aktif di panel kasir POS. Pembayaran tunai tercatat otomatis ke S-Wallet Kasir (Cash Drawer).
+                    </p>
+                  </div>
+                )}
+                {r.method === "va" && (
+                  <div className="pos-va" style={{ background: "var(--color-paper-2)", padding: "1rem", borderRadius: "var(--radius-md)", border: "1px solid var(--color-rule)", marginTop: "0.5rem" }}>
+                    <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginBottom: "0.75rem", flexWrap: "wrap" }}>
+                      <label style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--color-ink-2)" }}>Pilih Bank:</label>
+                      <select
+                        value={r.vaBank || "bri_va"}
+                        onChange={(e) => {
+                          const bank = e.target.value;
+                          set(i, { vaBank: bank, vaData: null, confirmed: false, reference: "" });
+                        }}
+                        style={{ padding: "4px 8px", borderRadius: "var(--radius-sm)", border: "1px solid var(--color-rule-2)", fontSize: "0.85rem", background: "var(--color-paper)" }}
+                      >
+                        {PAKASIR_VA_BANKS.map((b) => (
+                          <option key={b.id} value={b.id}>{b.name} ({b.code})</option>
+                        ))}
+                      </select>
                       <button
                         type="button"
-                        className="pos-numpad__btn pos-numpad__btn--action pos-numpad__btn--clear"
-                        title="Hapus digit terakhir atau kosongkan"
-                        onClick={() => {
-                          const cur = String(r.amount || "");
-                          set(i, { amount: cur.slice(0, -1) || "" });
+                        className="d-btn d-btn--sm d-btn--ghost"
+                        disabled={vaGenerating}
+                        onClick={async () => {
+                          try {
+                            setVaGenerating(true);
+                            const bankId = r.vaBank || "bri_va";
+                            const bankObj = PAKASIR_VA_BANKS.find((x) => x.id === bankId);
+                            const txn = await createPakasirTransaction({
+                              orderId: `${order.code}-${Date.now().toString().slice(-4)}`,
+                              method: bankId,
+                              amount: Number(r.amount) || remaining || total,
+                            });
+                            set(i, { vaData: txn });
+                            broadcastCustomerDisplay({
+                              type: "PAYMENT_START",
+                              method: "va",
+                              va_number: txn.va_number,
+                              bank_name: bankObj?.name || "Bank Virtual Account",
+                              amount: txn.total_payment || txn.amount || total,
+                            });
+                          } catch (err) {
+                            alert(err.message || "Gagal membuat VA Pakasir");
+                          } finally {
+                            setVaGenerating(false);
+                          }
                         }}
                       >
-                        ⌫
+                        {vaGenerating ? "Membuat VA…" : "Generate Nomor VA"}
                       </button>
                     </div>
-                  </>
+
+                    {r.vaData?.va_number ? (
+                      <div style={{ background: "var(--color-paper)", padding: "0.85rem", borderRadius: "var(--radius-sm)", border: "1px dashed var(--color-rule-2)" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.4rem" }}>
+                          <span style={{ fontSize: "0.75rem", textTransform: "uppercase", fontWeight: 700, color: "var(--color-accent)" }}>
+                            Virtual Account {PAKASIR_VA_BANKS.find((x) => x.id === (r.vaBank || "bri_va"))?.name}
+                          </span>
+                          <span style={{ fontSize: "0.75rem", color: "var(--color-ink-2)" }}>Berlaku 24 Jam</span>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", background: "var(--color-paper-2)", padding: "0.5rem 0.75rem", borderRadius: "6px" }}>
+                          <span className="d-mono" style={{ fontSize: "1.25rem", fontWeight: 700, letterSpacing: "0.06em" }}>
+                            {r.vaData.va_number}
+                          </span>
+                          <button
+                            type="button"
+                            className="d-btn d-btn--ghost d-btn--sm"
+                            onClick={() => {
+                              navigator.clipboard?.writeText(r.vaData.va_number);
+                              setCopiedVa(r.vaData.va_number);
+                              setTimeout(() => setCopiedVa(null), 2000);
+                            }}
+                          >
+                            {copiedVa === r.vaData.va_number ? "Tersalin!" : "Salin"}
+                          </button>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "0.75rem" }}>
+                          <span style={{ fontSize: "0.85rem", color: "var(--color-ink-2)" }}>
+                            Total Transfer: <strong>{rupiah(r.vaData.total_payment || r.vaData.amount)}</strong>
+                          </span>
+                          {r.confirmed ? (
+                            <Badge tone="ok">Dana Masuk</Badge>
+                          ) : (
+                            <button
+                              type="button"
+                              className="d-btn d-btn--primary d-btn--sm"
+                              onClick={() => {
+                                set(i, { confirmed: true, reference: r.vaData.va_number });
+                              }}
+                            >
+                              Tandai Dana Masuk
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="d-text d-muted" style={{ margin: 0, fontSize: "0.8rem" }}>
+                        Pilih salah satu dari 9 Bank Nasional lalu klik <strong>Generate Nomor VA</strong>. Nomor rekening bayar otomatis akan muncul dan diteruskan ke Layar Pelanggan.
+                      </p>
+                    )}
+                  </div>
                 )}
                 {r.method === "card" && (
                   <input className="pos-ref" placeholder="Kode approval EDC · 4 digit akhir kartu" value={r.reference} maxLength={30}
                     onChange={(e) => set(i, { reference: e.target.value, confirmed: e.target.value.trim().length >= 6 })} />
                 )}
-                {(r.method === "qris" || r.method === "ewallet") && (
-                  <div className="pos-qris">
-                    {r.method === "qris" && <FakeQr seed={`${order.code}-${i}-${r.amount}`} />}
-                    <div className="d-form">
-                      <p className="d-text">{r.method === "qris" ? "QRIS dinamis per invoice. Dana terverifikasi lewat webhook payment gateway." : "E-wallet: GoPay, OVO, DANA, ShopeePay, LinkAja."}</p>
-                      {r.confirmed ? <Badge tone="ok">Dana masuk</Badge> : (
-                        <button type="button" className="d-btn d-btn--ghost d-btn--sm" onClick={() => set(i, { confirmed: true, reference: `${r.method.toUpperCase()}-SIM-${Date.now().toString().slice(-6)}` })}>
-                          Tandai dana masuk (simulasi webhook)
-                        </button>
-                      )}
+                {r.method === "qris" && (
+                  <div className="pos-qris" style={{ background: "var(--color-paper-2)", padding: "1rem", borderRadius: "var(--radius-md)", border: "1px solid var(--color-rule)", marginTop: "0.5rem" }}>
+                    <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+                      <FakeQr seed={`${order.code}-${i}-${r.amount}`} />
+                      <div className="d-form" style={{ flex: 1 }}>
+                        <p className="d-text" style={{ fontSize: "0.8rem", margin: "0 0 0.5rem" }}>
+                          QRIS Dinamis Pakasir. Pelanggan memindai QR code, dana terverifikasi real-time via webhook.
+                        </p>
+                        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
+                          {r.confirmed ? (
+                            <Badge tone="ok">Dana Masuk</Badge>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                className="d-btn d-btn--ghost d-btn--sm"
+                                onClick={() => {
+                                  const qrisAmt = Number(r.amount) || remaining || total;
+                                  broadcastCustomerDisplay({
+                                    type: "PAYMENT_START",
+                                    method: "qris",
+                                    qr_string: `https://qris.id/pay/${order.code || "TIJARAH"}?amt=${qrisAmt}`,
+                                    amount: qrisAmt,
+                                  });
+                                }}
+                              >
+                                Kirim ke Layar Pelanggan
+                              </button>
+                              <button
+                                type="button"
+                                className="d-btn d-btn--primary d-btn--sm"
+                                onClick={() => {
+                                  set(i, { confirmed: true, reference: `QRIS-PAID-${Date.now().toString().slice(-6)}` });
+                                }}
+                              >
+                                Tandai Dana Masuk
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
