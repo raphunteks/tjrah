@@ -63,34 +63,53 @@ export function clearStepUpSession() {
 }
 
 /**
+ * Ambil Kunci Rahasia Base32 2FA (TOTP) pengguna yang konsisten
+ * @param {Object} user
+ * @returns {string}
+ */
+export function getUserTwoFactorSecret(user) {
+  if (!user) return "";
+  if (user?.two_factor_secret) return String(user.two_factor_secret).trim();
+  if (user?.totp_secret) return String(user.totp_secret).trim();
+  try {
+    const byId = user?.id ? localStorage.getItem(`tijarah:2fa_secret:${user.id}`) : "";
+    if (byId) return byId.trim();
+    const byEmail = user?.email ? localStorage.getItem(`tijarah:2fa_secret:${user.email}`) : "";
+    if (byEmail) return byEmail.trim();
+  } catch {}
+  return "";
+}
+
+/**
  * Verifikasi tantangan 6-Digit TOTP Authenticator untuk membuka brankas
  * @param {string} token - 6 digit kode dari Google/Microsoft Authenticator
  * @param {string} secretKey - Kunci rahasia 2FA pengguna
- * @param {string} [backupPin] - PIN finansial pengguna sebagai cadangan
  * @returns {Promise<{ ok: boolean, error?: string }>}
  */
-export async function verifyTotpChallenge(token, secretKey = "", backupPin = "") {
+export async function verifyTotpChallenge(token, secretKey = "") {
   const cleanToken = String(token || "").trim().replace(/\D/g, "");
   if (cleanToken.length !== 6) {
     return { ok: false, error: "Kode verifikasi wajib terdiri dari 6 angka." };
   }
 
-  // 1. Coba verifikasi dengan RFC 6238 TOTP engine jika secretKey tersedia
-  if (secretKey) {
-    const isTotpValid = await verifyTOTP(cleanToken, secretKey);
-    if (isTotpValid) {
-      setStepUpSession();
-      return { ok: true };
-    }
+  if (!secretKey || secretKey.trim().length === 0) {
+    return {
+      ok: false,
+      error: "Kunci otorisasi 2FA belum terpasang. Silakan aktifkan 2FA terlebih dahulu di tab Keamanan & Kredensial."
+    };
   }
 
-  // 2. Coba verifikasi dengan PIN cadangan (jika PIN 6-digit sesuai)
-  if (backupPin && cleanToken === String(backupPin).trim()) {
+  // Verifikasi matematis RFC 6238 TOTP engine (Google Authenticator)
+  const isTotpValid = await verifyTOTP(cleanToken, secretKey);
+  if (isTotpValid) {
     setStepUpSession();
     return { ok: true };
   }
 
-  return { ok: false, error: "Kode verifikasi 2FA atau PIN salah. Pastikan waktu jam perangkat Anda akurat." };
+  return {
+    ok: false,
+    error: "Kode verifikasi tidak cocok dengan Google Authenticator. Pastikan jam di ponsel Anda akurat dan sinkron."
+  };
 }
 
 /**
@@ -102,14 +121,6 @@ export function isUserTwoFactorActive(user) {
   if (!user || (!user.id && !user.email)) return false;
   if (user?.two_factor_enabled === true) return true;
   if (user?.two_factor_enabled === false) return false;
-  // Akun utama Axa Xyz / ksanihtest@gmail.com selalu terproteksi 2FA
-  if (
-    user?.email === "ksanihtest@gmail.com" ||
-    user?.full_name?.toLowerCase()?.includes("axa") ||
-    user?.tenant?.name?.toLowerCase()?.includes("axa")
-  ) {
-    return true;
-  }
   try {
     // Bersihkan sisa legacy dummy flag jika ada di browser
     if (localStorage.getItem("tijarah:2fa:owner")) {
@@ -118,7 +129,9 @@ export function isUserTwoFactorActive(user) {
     // Hanya aktif jika user secara eksplisit telah memverifikasi QR code di Google Authenticator
     const verifiedById = user?.id ? localStorage.getItem(`tijarah:2fa_verified:${user.id}`) : null;
     const verifiedByEmail = user?.email ? localStorage.getItem(`tijarah:2fa_verified:${user.email}`) : null;
-    return verifiedById === "true" || verifiedByEmail === "true";
+    const isVerified = verifiedById === "true" || verifiedByEmail === "true";
+    const hasSecret = Boolean(getUserTwoFactorSecret(user));
+    return isVerified && hasSecret;
   } catch {
     return false;
   }

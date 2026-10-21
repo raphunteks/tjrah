@@ -454,7 +454,7 @@ if (body.targets && Array.isArray(body.targets) && body.targets.length > 0) {
   // Notifikasi operasional penting otomatis diteruskan ke nomor Owner dan nomor GM
   targets = [body.whatsapp_owner, body.whatsapp_gm];
 } else {
-  const single = body.target || body.target_phone || body.phone || body.whatsapp || body.whatsapp_owner || body.whatsapp_gm || defaultTarget;
+  const single = body.target || body.target_phone || body.phone || body.whatsapp || body.whatsapp_owner || body.whatsapp_gm || d.phone || d.target || d.target_phone || d.whatsapp || defaultTarget;
   targets = [single];
 }
 

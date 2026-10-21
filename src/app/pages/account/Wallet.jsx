@@ -24,6 +24,7 @@ import {
   getPayoutPricingConfig,
   purgeAllDummyWalletData,
   isUserTwoFactorActive,
+  getUserTwoFactorSecret,
   getStoredUserPin
 } from "../../../api/swallet.js";
 
@@ -198,25 +199,21 @@ export default function Wallet() {
     setGateError(null);
     setVerifyingGate(true);
 
-    const secret = user?.two_factor_secret ||
-      user?.totp_secret ||
-      (user?.id && localStorage.getItem(`tijarah:2fa_secret:${user.id}`)) ||
-      (user?.email && localStorage.getItem(`tijarah:2fa_secret:${user.email}`)) ||
-      "";
-    const backupPin = user?.transaction_pin ||
-      user?.pin ||
-      (user?.id && localStorage.getItem(`tijarah:pin:${user.id}`)) ||
-      (user?.email && localStorage.getItem(`tijarah:pin:${user.email}`)) ||
-      "";
+    const secret = getUserTwoFactorSecret(user);
+    if (!secret) {
+      setVerifyingGate(false);
+      setGateError("Kunci otorisasi 2FA belum terpasang pada akun Anda. Silakan buka subtab Keamanan & Kredensial untuk memindai kode QR Google Authenticator.");
+      return;
+    }
 
-    const res = await verifyTotpChallenge(totpInput, secret, backupPin);
+    const res = await verifyTotpChallenge(totpInput, secret);
     setVerifyingGate(false);
 
     if (res.ok) {
       setIsUnlocked(true);
       setTotpInput("");
     } else {
-      setGateError(res.error || "Kode verifikasi tidak sesuai.");
+      setGateError(res.error || "Kode verifikasi tidak sesuai dengan Google Authenticator.");
     }
   };
 

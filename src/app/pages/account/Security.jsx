@@ -435,7 +435,7 @@ export default function Security() {
                 </span>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginTop: "0.25rem" }}>
                   <Badge tone={targetOwner.two_factor_enabled ? "ok" : "warn"}>
-                    {targetOwner.two_factor_enabled ? "2FA Aktif (RFC 6238 TOTP)" : "Belum Mengaktifkan 2FA"}
+                    {targetOwner.two_factor_enabled ? "2FA Aktif Terlindungi" : "Belum Mengaktifkan 2FA"}
                   </Badge>
                 </div>
                 <span style={{ fontSize: "0.75rem", color: "var(--color-muted)", display: "block", marginTop: "0.35rem" }}>
@@ -453,7 +453,7 @@ export default function Security() {
                   {targetOwner.two_factor_secret ? "Kunci Kriptografis Tersimpan" : "Belum Dibuat"}
                 </strong>
                 <span style={{ fontSize: "0.75rem", color: "var(--color-muted)", display: "block", marginTop: "0.35rem" }}>
-                  Otorisasi token berbasis HMAC-SHA1 sesuai standar RFC 6238 TOTP.
+                  Otorisasi token berbasis HMAC-SHA1 Google Authenticator.
                 </span>
               </div>
             </div>
