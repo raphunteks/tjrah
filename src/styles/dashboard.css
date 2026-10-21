@@ -1290,7 +1290,7 @@
 
 /* ───────── POS ───────── */
 .pos-tabs { display: none; }
-.pos { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(360px, 1fr); gap: var(--space-md); align-items: start; }
+.pos { display: grid; grid-template-columns: minmax(0, 1fr) 325px; gap: var(--space-md); align-items: start; }
 .pos-col { display: grid; gap: var(--space-sm); align-content: start; padding: var(--space-sm); border: var(--rule-hair) solid var(--color-rule-2); border-radius: var(--radius-lg); background: var(--color-paper); min-width: 0; }
 .pos-col--ticket { position: sticky; top: 4.5rem; }
 .pos-floor { display: grid; grid-template-columns: repeat(auto-fill, minmax(4.75rem, 1fr)); gap: var(--space-2xs); }
@@ -1401,6 +1401,42 @@
 }
 .pos-change-banner--short { background: #fef2f2; border-color: #ef4444; color: #991b1b; }
 
+/* ───────── POS UI Component & Layout Classes ───────── */
+.pos-draft-bar { display: flex; gap: 6px; align-items: center; margin-bottom: var(--space-xs); }
+.pos-draft-select { font-size: 0.8rem; flex: 1; font-family: var(--font-mono); padding: 5px 8px; border-radius: var(--radius-sm); border: var(--rule-hair) solid var(--color-rule-2); background: var(--color-paper); }
+.pos-table-indicator { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-xs); padding: 6px 10px; background: var(--color-paper-2); border-radius: var(--radius-sm); font-size: 0.82rem; border: var(--rule-hair) solid var(--color-rule-2); }
+.pos-table-btn { font-size: 0.75rem; padding: 2px 8px; }
+.pos-drive-thru-box { margin-bottom: var(--space-xs); }
+.pos-drive-thru-input { width: 100%; padding: 6px 10px; font-size: 0.85rem; border-radius: var(--radius-sm); border: var(--rule-hair) solid var(--color-rule-2); text-transform: uppercase; font-family: var(--font-mono); }
+.pos-crm-selected { display: flex; justify-content: space-between; align-items: center; width: 100%; font-size: 0.85rem; }
+.pos-crm-selected-meta { color: var(--color-muted); margin-left: 0.4rem; font-size: 0.78rem; }
+.pos-crm-search-box { position: relative; width: 100%; display: flex; gap: 4px; }
+.pos-crm-search-input { flex: 1; padding: 5px 8px; font-size: 0.82rem; border-radius: var(--radius-sm); border: var(--rule-hair) solid var(--color-rule-2); }
+.pos-crm-btn-add { font-size: 0.75rem; white-space: nowrap; }
+.pos-quick-disc-row { display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem; }
+.pos-quick-disc-label { font-size: 0.82rem; font-weight: 600; color: var(--color-ink-2); }
+.pos-quick-disc-ctrls { display: flex; gap: 4px; align-items: center; }
+.pos-quick-disc-seg { padding: 2px; }
+.pos-quick-disc-seg-btn { padding: 3px 8px; font-size: 0.75rem; font-weight: 700; }
+.pos-quick-disc-input { width: 75px; padding: 4px 8px; font-size: 0.85rem; text-align: right; border-radius: var(--radius-sm); border: var(--rule-hair) solid var(--color-rule-2); font-family: var(--font-mono); }
+.pos-calc-card { margin-top: var(--space-sm); padding: 12px; background: var(--color-paper-2); border-radius: var(--radius-md); border: var(--rule-hair) solid var(--color-rule-2); }
+.pos-calc-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.pos-calc-title { font-size: 0.82rem; font-weight: 700; color: var(--color-ink); }
+.pos-calc-tagihan { font-size: 0.75rem; font-family: var(--font-mono); color: var(--color-muted); }
+.pos-calc-input-row { display: flex; gap: 6px; align-items: center; }
+.pos-calc-label { font-size: 0.82rem; color: var(--color-muted); font-weight: 600; white-space: nowrap; }
+.pos-calc-input { flex: 1; font-family: var(--font-mono); font-size: 1.15rem; font-weight: 700; text-align: right; padding: 6px 10px; border-radius: var(--radius-sm); border: var(--rule-hair) solid var(--color-rule-2); background: var(--color-paper); }
+.pos-calc-note { margin-top: 6px; font-size: 0.75rem; color: var(--color-muted); text-align: center; }
+.pos-calc-quick-actions { display: flex; justify-content: flex-end; margin-top: 4px; }
+.pos-calc-toggle-btn { font-size: 0.75rem; padding: 2px 0; }
+.pos-actions-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 8px; }
+.pos-actions-grid--single { grid-template-columns: minmax(0, 1fr); }
+.pos-btn-icon { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.pos-modal-floor-area { display: grid; gap: 1rem; }
+.pos-modal-floor-grid { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(85px, 1fr)); gap: 8px; }
+.pos-modal-table-btn { width: 100%; padding: 8px; text-align: center; border-radius: 6px; border: var(--rule-hair) solid var(--color-rule-2); }
+.pos-modal-empty { font-style: italic; color: var(--color-muted); padding: 1rem; text-align: center; }
+
 .pos-ticket-head h2 { font-size: var(--text-lg); font-weight: 600; }
 .pos-lines { display: grid; gap: 0; }
 .pos-lines li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: var(--space-xs); padding: var(--space-2xs) 0; border-bottom: var(--rule-hair) solid var(--color-rule); font-size: var(--text-sm); }
@@ -1477,15 +1513,16 @@
 .sto-flow li.is-done { background: var(--color-accent-soft); color: var(--color-accent); }
 
 @media (max-width: 1180px) {
-  .pos { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .pos { grid-template-columns: minmax(0, 1fr) 305px; gap: var(--space-sm); }
   .pos-col--floor { grid-column: 1 / -1; }
 }
 @media (max-width: 960px) {
-  .pos-tabs { display: inline-flex; margin-bottom: var(--space-sm); }
+  .pos-tabs { display: inline-flex; margin-bottom: var(--space-sm); width: 100%; }
   .pos { grid-template-columns: minmax(0, 1fr); }
-  .pos-col { display: none; }
+  .pos-col { display: none; width: 100%; }
   .pos--meja .pos-col--floor, .pos--menu .pos-col--menu, .pos--tiket .pos-col--ticket { display: grid; }
-  .pos-col--ticket { position: static; }
+  .pos-col--ticket { position: static; width: 100%; }
+  .pos-actions-grid { grid-template-columns: minmax(0, 1fr); }
   .kds { grid-template-columns: minmax(0, 1fr); }
   .bom { grid-template-columns: minmax(0, 1fr); }
   .bom-list { position: static; }

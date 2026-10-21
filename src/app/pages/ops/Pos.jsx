@@ -647,10 +647,9 @@ export default function Pos() {
             <section className="pos-col pos-col--ticket" aria-label="Tiket pesanan">
               {/* DROPDOWN PESANAN TERBUKA / HOLD DENGAN KONTROL PENGHAPUSAN/CLEAR DRAFT */}
               {ordersList.length > 0 && (
-                <div style={{ marginBottom: "0.5rem", display: "flex", gap: "6px", alignItems: "center" }}>
+                <div className="pos-draft-bar">
                   <select
-                    className="d-input d-input--sm"
-                    style={{ fontSize: "0.8rem", flex: 1, fontFamily: "var(--font-mono)", padding: "4px 8px" }}
+                    className="pos-draft-select"
                     value={order?.id || ""}
                     onChange={(e) => {
                       if (!e.target.value) {
@@ -676,7 +675,6 @@ export default function Pos() {
                       className="d-btn d-btn--danger-ghost d-btn--sm"
                       onClick={cancelCurrentDraft}
                       title={`Batalkan & hapus draft ${order.code}`}
-                      style={{ padding: "4px 8px", fontSize: "0.78rem", whiteSpace: "nowrap" }}
                     >
                       Batal Draft
                     </button>
@@ -687,7 +685,6 @@ export default function Pos() {
                     className="d-btn d-btn--ghost d-btn--sm"
                     onClick={clearAllOpenDrafts}
                     title="Bersihkan semua pesanan draft terbuka di cabang ini"
-                    style={{ padding: "4px 8px", fontSize: "0.78rem", color: "var(--color-muted)", whiteSpace: "nowrap" }}
                   >
                     Clear All
                   </button>
@@ -737,15 +734,14 @@ export default function Pos() {
 
               {/* INDIKATOR MEJA DINE IN */}
               {serviceMode === "dine_in" && (
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem", padding: "6px 10px", background: "var(--color-paper-2)", borderRadius: "6px", fontSize: "0.82rem", border: "1px solid var(--color-rule-2)" }}>
+                <div className="pos-table-indicator">
                   <span>
                     Meja: <strong>{tablesList.find((t) => t.id === (order?.table_id || sel?.tableId))?.label ? `Meja ${tablesList.find((t) => t.id === (order?.table_id || sel?.tableId))?.label}` : "Belum pilih meja"}</strong>
                   </span>
                   <button
                     type="button"
-                    className="d-btn d-btn--ghost d-btn--sm"
+                    className="d-btn d-btn--ghost d-btn--sm pos-table-btn"
                     onClick={() => setShowTableModal(true)}
-                    style={{ fontSize: "0.75rem", padding: "2px 8px" }}
                   >
                     {sel?.tableId || order?.table_id ? "Ganti Meja" : "Pilih Meja"}
                   </button>
@@ -754,13 +750,13 @@ export default function Pos() {
 
               {/* Form Input Tambahan Mode Drive Thru */}
               {serviceMode === "drive_thru" && (
-                <div style={{ marginBottom: "0.75rem" }}>
+                <div className="pos-drive-thru-box">
                   <input
                     type="text"
                     placeholder="Nomor Polisi Mobil (misal: DD 1234 XY)"
                     value={licensePlate}
                     onChange={(e) => setLicensePlate(e.target.value.toUpperCase())}
-                    style={{ width: "100%", padding: "6px 10px", fontSize: "0.85rem", borderRadius: "6px", border: "1px solid var(--color-rule-2)", textTransform: "uppercase", fontFamily: "var(--font-mono)" }}
+                    className="pos-drive-thru-input"
                   />
                 </div>
               )}
@@ -768,14 +764,14 @@ export default function Pos() {
               {/* MODUL CRM PELANGGAN L5 */}
               <div className="pos-crm-bar">
                 {selectedCustomer ? (
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", fontSize: "0.85rem" }}>
+                  <div className="pos-crm-selected">
                     <div>
                       <strong>{selectedCustomer.name || "Pelanggan"}</strong>
-                      <span style={{ color: "var(--color-muted)", marginLeft: "0.4rem", fontSize: "0.78rem" }}>
+                      <span className="pos-crm-selected-meta">
                         ({selectedCustomer.phone})
                       </span>
                       {selectedCustomer.points != null && (
-                        <Badge tone="ok" style={{ marginLeft: "0.4rem" }}>
+                        <Badge tone="ok">
                           {selectedCustomer.points} Poin L5
                         </Badge>
                       )}
@@ -790,7 +786,7 @@ export default function Pos() {
                     </button>
                   </div>
                 ) : (
-                  <div style={{ position: "relative", width: "100%", display: "flex", gap: "4px" }}>
+                  <div className="pos-crm-search-box">
                     <input
                       type="text"
                       placeholder="Cari pelanggan (nama/WA)…"
@@ -800,14 +796,13 @@ export default function Pos() {
                         setCustomerSearch(e.target.value);
                         setShowCustomerDropdown(true);
                       }}
-                      style={{ flex: 1, padding: "5px 8px", fontSize: "0.82rem", borderRadius: "4px", border: "1px solid var(--color-rule-2)" }}
+                      className="pos-crm-search-input"
                     />
                     <button
                       type="button"
-                      className="d-btn d-btn--ghost d-btn--sm"
+                      className="d-btn d-btn--ghost d-btn--sm pos-crm-btn-add"
                       onClick={() => setNewCustomerModal(true)}
                       title="Daftarkan pelanggan baru ke Member L5"
-                      style={{ fontSize: "0.75rem", whiteSpace: "nowrap" }}
                     >
                       + Member
                     </button>
@@ -905,23 +900,21 @@ export default function Pos() {
               {!order && cart.length === 0 && <Empty title="Tiket kosong">Pilih menu untuk mulai menjual.</Empty>}
 
               {/* WIDGET DISKON CEPAT DI ATAS SUBTOTAL */}
-              <div className="pos-quick-disc">
-                <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--color-ink-2)" }}>Diskon Cepat:</span>
-                <div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
-                  <div className="d-seg" style={{ padding: "2px" }}>
+              <div className="pos-quick-disc pos-quick-disc-row">
+                <span className="pos-quick-disc-label">Diskon Cepat:</span>
+                <div className="pos-quick-disc-ctrls">
+                  <div className="d-seg pos-quick-disc-seg">
                     <button
                       type="button"
-                      className={discUnit === "rp" ? "is-active" : ""}
+                      className={`pos-quick-disc-seg-btn ${discUnit === "rp" ? "is-active" : ""}`}
                       onClick={() => setDiscUnit("rp")}
-                      style={{ padding: "3px 8px", fontSize: "0.75rem", fontWeight: 700 }}
                     >
                       Rp
                     </button>
                     <button
                       type="button"
-                      className={discUnit === "pct" ? "is-active" : ""}
+                      className={`pos-quick-disc-seg-btn ${discUnit === "pct" ? "is-active" : ""}`}
                       onClick={() => setDiscUnit("pct")}
-                      style={{ padding: "3px 8px", fontSize: "0.75rem", fontWeight: 700 }}
                     >
                       %
                     </button>
@@ -932,7 +925,7 @@ export default function Pos() {
                     placeholder={discUnit === "rp" ? "0" : "0%"}
                     value={discVal}
                     onChange={(e) => setDiscVal(e.target.value)}
-                    style={{ width: "80px", padding: "4px 8px", fontSize: "0.85rem", textAlign: "right", borderRadius: "4px", border: "1px solid var(--color-rule-2)", fontFamily: "var(--font-mono)" }}
+                    className="pos-quick-disc-input"
                   />
                 </div>
               </div>
@@ -969,35 +962,25 @@ export default function Pos() {
               </dl>
 
               {/* MODUL KALKULATOR KEMBALIAN KASIR TUNAI & PECAHAN CEPAT (SELALU AKTIF) */}
-              <div style={{ marginTop: "1rem", padding: "12px", background: "var(--color-paper-2)", borderRadius: "8px", border: "1px solid var(--color-rule-2)" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
-                  <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--color-ink)" }}>
+              <div className="pos-calc-card">
+                <div className="pos-calc-head">
+                  <span className="pos-calc-title">
                     Kalkulator Kembalian Tunai:
                   </span>
-                  <span style={{ fontSize: "0.75rem", fontFamily: "var(--font-mono)", color: "var(--color-muted)" }}>
+                  <span className="pos-calc-tagihan">
                     Tagihan: {rupiah(currentTotal)}
                   </span>
                 </div>
 
-                <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-                  <span style={{ fontSize: "0.82rem", color: "var(--color-muted)", fontWeight: 600 }}>Uang Diterima:</span>
+                <div className="pos-calc-input-row">
+                  <span className="pos-calc-label">Uang Diterima:</span>
                   <input
                     type="number"
                     inputMode="numeric"
                     placeholder="Rp 0"
                     value={tenderAmount}
                     onChange={(e) => setTenderAmount(e.target.value)}
-                    style={{
-                      flex: 1,
-                      padding: "6px 10px",
-                      fontSize: "0.95rem",
-                      fontWeight: 700,
-                      textAlign: "right",
-                      borderRadius: "6px",
-                      border: "1px solid var(--color-rule-2)",
-                      fontFamily: "var(--font-mono)",
-                      background: "var(--color-paper)",
-                    }}
+                    className="pos-calc-input"
                   />
                   {tenderAmount && (
                     <button
@@ -1005,7 +988,6 @@ export default function Pos() {
                       className="d-icon-btn"
                       title="Reset uang diterima"
                       onClick={() => setTenderAmount("")}
-                      style={{ padding: "4px" }}
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                         <line x1="18" y1="6" x2="6" y2="18" />
@@ -1016,7 +998,7 @@ export default function Pos() {
                 </div>
 
                 {/* 6 Tombol Pecahan Uang Cepat */}
-                <div className="pos-tender-grid" style={{ marginTop: "8px" }}>
+                <div className="pos-tender-grid">
                   <button
                     type="button"
                     className="pos-tender-btn"
@@ -1045,7 +1027,7 @@ export default function Pos() {
                 {/* Banner Kembalian Dinamis */}
                 {currentTotal > 0 ? (
                   tenderNum > 0 ? (
-                    <div className={`pos-change-banner ${isShortTender ? "pos-change-banner--short" : ""}`} style={{ marginTop: "6px", padding: "8px 12px", fontSize: "1rem" }}>
+                    <div className={`pos-change-banner ${isShortTender ? "pos-change-banner--short" : ""}`}>
                       {isShortTender ? (
                         <span>Kurang: −{rupiah(shortDue)}</span>
                       ) : (
@@ -1053,12 +1035,12 @@ export default function Pos() {
                       )}
                     </div>
                   ) : (
-                    <div style={{ marginTop: "6px", fontSize: "0.75rem", color: "var(--color-muted)", textAlign: "center" }}>
+                    <div className="pos-calc-note">
                       Pilih pecahan cepat atau ketik uang diterima untuk menghitung kembalian.
                     </div>
                   )
                 ) : (
-                  <div style={{ marginTop: "6px", fontSize: "0.75rem", color: "var(--color-muted)", textAlign: "center" }}>
+                  <div className="pos-calc-note">
                     {tenderNum > 0
                       ? `Uang diterima: ${rupiah(tenderNum)} (Pilih menu untuk melihat kembalian)`
                       : "Kalkulator siap · Masukkan uang diterima atau klik tombol pecahan cepat"}
@@ -1066,19 +1048,18 @@ export default function Pos() {
                 )}
 
                 {/* Toggle Keypad Sentuh / Numpad Touchscreen */}
-                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "4px" }}>
+                <div className="pos-calc-quick-actions">
                   <button
                     type="button"
-                    className="pos-keypad-toggle"
+                    className="pos-keypad-toggle pos-calc-toggle-btn"
                     onClick={() => setShowNumpad(!showNumpad)}
-                    style={{ fontSize: "0.75rem", padding: "2px 0" }}
                   >
                     {showNumpad ? "Sembunyikan Keypad Sentuh" : "Tampilkan Keypad Sentuh (Numpad)"}
                   </button>
                 </div>
 
                 {showNumpad && (
-                  <div className="pos-numpad" role="group" aria-label="Keypad sentuh kasir" style={{ marginTop: "6px" }}>
+                  <div className="pos-numpad" role="group" aria-label="Keypad sentuh kasir">
                     {["1", "2", "3", "4", "5", "6", "7", "8", "9", "000", "0"].map((num) => (
                       <button
                         key={num}
@@ -1112,7 +1093,7 @@ export default function Pos() {
                 )}
               </div>
 
-              <div className="pos-actions" style={{ marginTop: "1rem" }}>
+              <div className="pos-actions">
                 {kdsEnabled && (
                   <button
                     type="button"
@@ -1123,14 +1104,13 @@ export default function Pos() {
                     {order ? "Tambah ke pesanan" : "Kirim ke dapur"}
                   </button>
                 )}
-                <div style={{ display: "grid", gridTemplateColumns: currentTotal > 0 ? "1.2fr 1fr" : "1fr", gap: "8px" }}>
+                <div className={`pos-actions-grid ${currentTotal <= 0 ? "pos-actions-grid--single" : ""}`}>
                   <button
                     type="button"
-                    className="d-btn d-btn--primary d-btn--block"
+                    className="d-btn d-btn--primary d-btn--block pos-btn-icon"
                     disabled={(!order && !cart.length) || a.busy || !d?.myShift || isShortTender}
                     onClick={payCashDirectly}
                     title="Bayar Tunai & Catat ke Cash Drawer S-Wallet"
-                    style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
                   >
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <rect width="20" height="12" x="2" y="6" rx="2" />
@@ -1142,11 +1122,10 @@ export default function Pos() {
                   {currentTotal > 0 && (
                     <button
                       type="button"
-                      className="d-btn d-btn--ghost d-btn--block"
+                      className="d-btn d-btn--ghost d-btn--block pos-btn-icon"
                       disabled={(!order && !cart.length) || a.busy || !d?.myShift}
                       onClick={payDirectly}
                       title="Buka QRIS Dinamis Pakasir atau Virtual Account 9 Bank"
-                      style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
                     >
                       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                         <rect width="20" height="14" x="2" y="5" rx="2" />
@@ -1202,29 +1181,28 @@ export default function Pos() {
 
       {/* MODAL PILIH MEJA DINE IN */}
       <Modal open={showTableModal} title="Pilih Meja Pelanggan" onClose={() => setShowTableModal(false)}>
-        <p className="d-text" style={{ marginBottom: "0.75rem", fontSize: "0.85rem", color: "var(--color-muted)" }}>
+        <p className="d-text pos-calc-note" style={{ textAlign: "left", marginBottom: "0.75rem" }}>
           Klik salah satu meja untuk menetapkan pesanan Dine In ini:
         </p>
         {showTableModal && (
-          <div style={{ display: "grid", gap: "1rem" }}>
+          <div className="pos-modal-floor-area">
             {tablesList.length === 0 ? (
-              <p className="d-text" style={{ fontStyle: "italic", color: "var(--color-muted)", padding: "1rem", textAlign: "center" }}>
+              <p className="d-text pos-modal-empty">
                 Belum ada denah meja yang terdaftar untuk cabang ini.
               </p>
             ) : (
               [...new Set(tablesList.map((t) => t.area))].map((area) => (
                 <div key={area}>
                   <p className="d-nav__label" style={{ fontWeight: 600, marginBottom: "0.5rem" }}>{area}</p>
-                  <ul className="pos-floor pos-floor--wide" style={{ listStyle: "none", padding: 0, display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(85px, 1fr))", gap: "8px" }}>
+                  <ul className="pos-floor pos-floor--wide pos-modal-floor-grid">
                     {tablesList
                       .filter((t) => t.area === area)
                       .map((t) => (
                         <li key={t.id}>
                           <button
                             type="button"
-                            className={`pos-table st--${t.status}${sel?.tableId === t.id || order?.table_id === t.id ? " is-sel" : ""}`}
+                            className={`pos-table st--${t.status}${sel?.tableId === t.id || order?.table_id === t.id ? " is-sel" : ""} pos-modal-table-btn`}
                             onClick={() => pickTable(t)}
-                            style={{ width: "100%", padding: "8px", textAlign: "center", borderRadius: "6px", border: "1px solid var(--color-rule-2)" }}
                             aria-label={`Meja ${t.label}, ${TABLE_STATUS[t.status]}`}
                           >
                             <span className="pos-table__no">{t.label}</span>
