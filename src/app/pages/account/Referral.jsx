@@ -3,6 +3,7 @@ import { useAuth } from "../../../auth/AuthProvider.jsx";
 import { rupiah, date } from "../../../lib/format.js";
 import { PageHead, Panel, Badge } from "../../ui/index.jsx";
 import AccountTabs from "./AccountTabs.jsx";
+import AdminTenantBar from "./AdminTenantBar.jsx";
 import { AccountKpiGrid, AccountKpiCard } from "./AccountKpiGrid.jsx";
 import { useAccountLang } from "./i18n.js";
 
@@ -90,6 +91,9 @@ export default function Referral() {
         title={t.referralTitle}
         desc={t.referralDesc}
       />
+
+      {/* ──────── BILAH PENGAWAS MULTI-TENANT SUPERADMIN ──────── */}
+      <AdminTenantBar />
 
       {/* ──────── BENTO KPI SUMMARY KODE REFERRAL ──────── */}
       <AccountKpiGrid>

@@ -2,6 +2,7 @@ import { useState, useEffect, useId } from "react";
 import { useAuth } from "../../../auth/AuthProvider.jsx";
 import { PageHead, Panel, Badge } from "../../ui/index.jsx";
 import AccountTabs from "./AccountTabs.jsx";
+import AdminTenantBar from "./AdminTenantBar.jsx";
 import { AccountKpiGrid, AccountKpiCard } from "./AccountKpiGrid.jsx";
 import { useAccountLang } from "./i18n.js";
 import { getTimezoneAbbr } from "../../../lib/format.js";
@@ -335,6 +336,9 @@ export default function Notifications() {
         title={t.notifTitle}
         desc={t.notifDesc}
       />
+
+      {/* ──────── BILAH PENGAWAS MULTI-TENANT SUPERADMIN ──────── */}
+      <AdminTenantBar />
 
       {/* ──────── BENTO KPI SUMMARY NOTIFIKASI ──────── */}
       <AccountKpiGrid>

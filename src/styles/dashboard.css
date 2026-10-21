@@ -865,8 +865,37 @@
 .d-table tbody tr:hover { background: var(--color-paper-2); }
 .d-table tbody tr:last-child td { border-bottom: 0; }
 .d-table .d-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.d-table tr.is-off td { color: var(--color-muted); }
 .d-table--fin tr.is-total td { font-weight: 600; color: var(--color-ink); background: var(--color-paper-2); }
+
+/* ───────── Billing Subscription Table (Proportional & Anti-Squish) ───────── */
+.d-table--billing {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+}
+.d-table--billing thead th {
+  padding: 0.85rem 1.25rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+  background: var(--color-paper-2);
+  border-bottom: 1px solid var(--color-rule);
+  white-space: nowrap;
+}
+.d-table--billing td {
+  padding: 1.1rem 1.25rem;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--color-rule);
+  white-space: nowrap;
+}
+.d-table--billing tbody tr:hover {
+  background: var(--color-paper-2);
+}
+.d-table--billing tbody tr:last-child td {
+  border-bottom: none;
+}
 
 /* ───────── States ───────── */
 .d-loading { display: grid; gap: var(--space-2xs); font-size: var(--text-sm); color: var(--color-muted); padding: var(--space-md) 0; }

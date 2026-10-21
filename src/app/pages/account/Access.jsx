@@ -3,6 +3,7 @@ import { MATRIX, ROLE_LABEL, ROLE_LEVEL } from "../../../lib/rbac-matrix.js";
 import { permOf } from "../../../lib/rbac.js";
 import { PageHead, Panel, Badge } from "../../ui/index.jsx";
 import AccountTabs from "./AccountTabs.jsx";
+import AdminTenantBar from "./AdminTenantBar.jsx";
 import { AccountKpiGrid, AccountKpiCard } from "./AccountKpiGrid.jsx";
 import { useAccountLang } from "./i18n.js";
 
@@ -31,6 +32,9 @@ export default function Access() {
         title={t.accessTitle}
         desc={`${t.accessDesc} (Peran: ${ROLE_LABEL[role]} - ${ROLE_LEVEL[role]})`}
       />
+
+      {/* ──────── BILAH PENGAWAS MULTI-TENANT SUPERADMIN ──────── */}
+      <AdminTenantBar />
 
       {/* ──────── BENTO KPI SUMMARY HAK AKSES ──────── */}
       <AccountKpiGrid>

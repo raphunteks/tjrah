@@ -4,6 +4,7 @@ import { rupiah, date } from "../../../lib/format.js";
 import { PageHead, Panel, Stat, Loading, ErrorNote, Empty, Badge, useAsync } from "../../ui/index.jsx";
 import { useAction, Feedback, useLive } from "../../ops.jsx";
 import AccountTabs from "../account/AccountTabs.jsx";
+import AdminTenantBar from "../account/AdminTenantBar.jsx";
 import { AccountKpiGrid, AccountKpiCard } from "../account/AccountKpiGrid.jsx";
 import { useAccountLang } from "../account/i18n.js";
 import PaymentModal from "./PaymentModal.jsx";
@@ -217,64 +218,71 @@ function Billing() {
               Tagihan {String(i.period).slice(0, 7)} · {rupiah(i.amount)} · jatuh tempo {date(i.due)}{i.days_overdue > 0 ? ` (terlambat ${i.days_overdue} hari; penangguhan ${date(i.suspend_on)})` : ""}. Pembayaran dikonfirmasi tim Tijarah setelah transfer diterima.
             </p>
           ))}
-          <div className="d-panel" style={{ padding: "0", overflow: "hidden" }}>
-            <div className="d-table-wrap">
-              <table className="d-table d-table--billing">
-                <thead>
-                  <tr>
-                    <th scope="col">TANGGAL</th>
-                    <th scope="col">PAKET</th>
-                    <th scope="col">JUMLAH</th>
-                    <th scope="col">PERIODE</th>
-                    <th scope="col" style={{ textAlign: "center" }}>STATUS</th>
-                    <th scope="col" style={{ textAlign: "right" }}>AKSI</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {displayInvoices.map((inv) => (
-                    <tr key={inv.id}>
-                      <td className="d-mono">{inv.date}</td>
-                      <td>
-                        <strong style={{ font: "700 0.92rem var(--font-brand)", color: "var(--color-ink)" }}>
-                          {inv.plan}
-                        </strong>
-                      </td>
-                      <td>
-                        <strong style={{ font: "700 0.95rem var(--font-mono)", color: "var(--color-ink)", display: "block" }}>
-                          {rupiah(inv.amount)}
-                        </strong>
-                        {inv.hasReferral && inv.discount > 0 && (
-                          <span style={{ color: "#059669", fontSize: "0.75rem", fontWeight: 500, display: "block", marginTop: "2px" }}>
-                            Diskon referral -{rupiah(inv.discount)}
-                          </span>
-                        )}
-                      </td>
-                      <td className="d-mono" style={{ fontSize: "0.85rem" }}>
-                        {inv.period}
-                      </td>
-                      <td style={{ textAlign: "center" }}>
-                        <span className={`d-status-badge d-status-badge--${inv.status === "ACTIVE" || inv.status === "paid" ? "active" : inv.status === "UNPAID" ? "warn" : "neutral"}`}>
-                          <span className="d-status-dot" aria-hidden="true" />
-                          {inv.status}
+          <div
+            className="d-table-wrap d-table-wrap--contained"
+            style={{
+              overflowX: "auto",
+              border: "1px solid var(--color-rule)",
+              borderRadius: "var(--radius-md)",
+              background: "var(--color-paper-1)",
+              boxShadow: "0 1px 3px rgba(0, 0, 0, 0.03)"
+            }}
+          >
+            <table className="d-table d-table--billing">
+              <thead>
+                <tr>
+                  <th scope="col" style={{ width: "15%" }}>TANGGAL</th>
+                  <th scope="col" style={{ width: "22%" }}>PAKET</th>
+                  <th scope="col" style={{ width: "18%" }}>JUMLAH</th>
+                  <th scope="col" style={{ width: "25%" }}>PERIODE</th>
+                  <th scope="col" style={{ width: "10%", textAlign: "center" }}>STATUS</th>
+                  <th scope="col" style={{ width: "10%", textAlign: "right" }}>AKSI</th>
+                </tr>
+              </thead>
+              <tbody>
+                {displayInvoices.map((inv) => (
+                  <tr key={inv.id}>
+                    <td className="d-mono">{inv.date}</td>
+                    <td>
+                      <strong style={{ font: "700 0.92rem var(--font-brand)", color: "var(--color-ink)" }}>
+                        {inv.plan}
+                      </strong>
+                    </td>
+                    <td>
+                      <strong style={{ font: "700 0.95rem var(--font-mono)", color: "var(--color-ink)", display: "block" }}>
+                        {rupiah(inv.amount)}
+                      </strong>
+                      {inv.hasReferral && inv.discount > 0 && (
+                        <span style={{ color: "#059669", fontSize: "0.75rem", fontWeight: 500, display: "block", marginTop: "2px" }}>
+                          Diskon referral -{rupiah(inv.discount)}
                         </span>
-                      </td>
-                      <td style={{ textAlign: "right" }}>
-                        <button
-                          type="button"
-                          className="d-btn d-btn--ghost d-btn--sm"
-                          disabled={downloadingId === inv.id}
-                          onClick={() => handleDownloadInvoice(inv)}
-                          title="Unduh Bukti Pembayaran / Kuitansi PDF Resmi"
-                        >
-                          <i className="fa-solid fa-file-pdf" aria-hidden="true" style={{ marginRight: "0.35rem", color: "var(--color-accent)" }} />
-                          {downloadingId === inv.id ? "Menyiapkan…" : "Unduh PDF"}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      )}
+                    </td>
+                    <td className="d-mono" style={{ fontSize: "0.85rem" }}>
+                      {inv.period}
+                    </td>
+                    <td style={{ textAlign: "center" }}>
+                      <span className={`d-status-badge d-status-badge--${inv.status === "ACTIVE" || inv.status === "paid" ? "active" : inv.status === "UNPAID" ? "warn" : "neutral"}`}>
+                        <span className="d-status-dot" aria-hidden="true" />
+                        {inv.status}
+                      </span>
+                    </td>
+                    <td style={{ textAlign: "right" }}>
+                      <button
+                        type="button"
+                        className="d-btn d-btn--ghost d-btn--sm"
+                        disabled={downloadingId === inv.id}
+                        onClick={() => handleDownloadInvoice(inv)}
+                        title="Unduh Bukti Pembayaran / Kuitansi PDF Resmi"
+                      >
+                        <i className="fa-solid fa-file-pdf" aria-hidden="true" style={{ marginRight: "0.35rem", color: "var(--color-accent)" }} />
+                        {downloadingId === inv.id ? "Menyiapkan…" : "Unduh PDF"}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </>
       )}
@@ -344,6 +352,9 @@ export default function Subscription() {
         title={t.subscriptionTitle}
         desc={t.subscriptionDesc}
       />
+
+      {/* ──────── BILAH PENGAWAS MULTI-TENANT SUPERADMIN ──────── */}
+      <AdminTenantBar />
 
       {/* ──────── BENTO KPI SUMMARY LANGGANAN & AI ──────── */}
       <AccountKpiGrid>

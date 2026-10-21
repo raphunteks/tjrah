@@ -1,12 +1,13 @@
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../../../auth/AuthProvider.jsx";
-import { PageHead, Panel, Badge, Modal } from "../../ui/index.jsx";
+import { PageHead, Panel, Badge, Modal, useAsync } from "../../ui/index.jsx";
 import AccountTabs from "./AccountTabs.jsx";
+import AdminTenantBar from "./AdminTenantBar.jsx";
 import { AccountKpiGrid, AccountKpiCard } from "./AccountKpiGrid.jsx";
 import { useAccountLang } from "./i18n.js";
 import { qrSvg } from "../../../lib/qr.js";
 import ResetPinModal from "./ResetPinModal.jsx";
-import { saveUserPin } from "../../../api/swallet.js";
+import { saveUserPin, getStoredUserPin } from "../../../api/swallet.js";
 import { dispatchHermesSecurityAlert } from "../../../lib/hermes.js";
 import {
   formatSecretKey,
@@ -24,10 +25,21 @@ const BACKUP_CODES = [
 ];
 
 export default function Security() {
-  const { profile, api, refreshProfile } = useAuth();
+  const { profile, role, api, refreshProfile, viewTenant, tenant } = useAuth();
   const { t } = useAccountLang();
 
-  const userEmail = profile?.email || "owner@demo.tijarah.id";
+  // Multi-Tenant Supervision Query for Superadmin
+  const tenantProfilesQuery = useAsync(async () => {
+    if (role !== "superadmin" || !viewTenant) return null;
+    const list = await api.list("profiles", { eq: { tenant_id: viewTenant } }).catch(() => []);
+    const owner = list.find((p) => p.role === "owner") || list[0] || null;
+    return { list, owner };
+  }, [api, role, viewTenant]);
+
+  const targetOwner = tenantProfilesQuery.data?.owner || null;
+  const isSuperadminInspecting = role === "superadmin" && Boolean(viewTenant) && Boolean(targetOwner);
+
+  const userEmail = isSuperadminInspecting ? (targetOwner?.email || "owner@demo.tijarah.id") : (profile?.email || "owner@demo.tijarah.id");
 
   // 1. STATE UBAH SANDI
   const [oldPassword, setOldPassword] = useState("");
@@ -93,6 +105,16 @@ export default function Security() {
   const [otpError, setOtpError] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
   const [recoveryModal, setRecoveryModal] = useState(false);
+  const [copiedBackupCodes, setCopiedBackupCodes] = useState(false);
+  const [backupCodesSaved, setBackupCodesSaved] = useState(() => {
+    try {
+      const byId = profile?.id && localStorage.getItem(`tijarah:2fa_backup_saved:${profile.id}`) === "true";
+      const byEmail = profile?.email && localStorage.getItem(`tijarah:2fa_backup_saved:${profile.email}`) === "true";
+      return Boolean(byId || byEmail);
+    } catch {
+      return false;
+    }
+  });
 
   // Sinkronisasi otomatis saat profil pengguna dari database termuat
   useEffect(() => {
@@ -230,6 +252,7 @@ export default function Security() {
       setTwoFactorModal(false);
       setVerifyOtp("");
       setOtpError("");
+      setCopiedBackupCodes(false);
       setRecoveryModal(true);
     } catch {
       setOtpError("Gagal memvalidasi token OTP. Silakan coba lagi.");
@@ -245,11 +268,15 @@ export default function Security() {
         if (profile?.id) {
           localStorage.removeItem(`tijarah:2fa_verified:${profile.id}`);
           localStorage.removeItem(`tijarah:2fa:${profile.id}`);
+          localStorage.removeItem(`tijarah:2fa_backup_saved:${profile.id}`);
         }
         if (profile?.email) {
           localStorage.removeItem(`tijarah:2fa_verified:${profile.email}`);
           localStorage.removeItem(`tijarah:2fa:${profile.email}`);
+          localStorage.removeItem(`tijarah:2fa_backup_saved:${profile.email}`);
         }
+        setBackupCodesSaved(false);
+        setCopiedBackupCodes(false);
         if (localStorage.getItem("tijarah:2fa:owner")) localStorage.removeItem("tijarah:2fa:owner");
         if (api?.update && profile?.id) {
           await api.update("profiles", profile.id, { two_factor_enabled: false }).catch(() => {});
@@ -314,6 +341,9 @@ export default function Security() {
     setTimeout(() => setPinNotice(null), 4000);
   };
 
+  const display2FaActive = isSuperadminInspecting ? Boolean(targetOwner?.two_factor_enabled) : twoFactorActive;
+  const targetStoredPin = isSuperadminInspecting ? (getStoredUserPin(targetOwner?.id, targetOwner?.email) || "") : pin;
+
   return (
     <>
       <PageHead
@@ -322,37 +352,92 @@ export default function Security() {
         desc={t.securityDesc}
       />
 
+      {/* ──────── BILAH PENGAWAS MULTI-TENANT SUPERADMIN ──────── */}
+      <AdminTenantBar />
+
       {/* ──────── BENTO KPI SUMMARY KEAMANAN & KREDENSIAL DI BAGIAN ATAS ──────── */}
       <AccountKpiGrid>
         <AccountKpiCard
           label="Kekuatan Sandi Akun"
-          value={hasMinLen && hasUpper ? "Sangat Kuat" : "Kriptografi Standar"}
+          value={isSuperadminInspecting ? "Kredensial Merchant" : (hasMinLen && hasUpper ? "Sangat Kuat" : "Kriptografi Standar")}
           sub="Algoritma Argon2id / bcrypt"
           tone="emerald"
           icon="fa-key"
         />
         <AccountKpiCard
           label="Autentikasi 2FA"
-          value={twoFactorActive ? "2FA Aktif Terlindungi" : "2FA Belum Aktif"}
-          sub={twoFactorActive ? "Google/Microsoft Authenticator" : "Pindai Barcode QR di Bawah"}
-          tone={twoFactorActive ? "emerald" : "rose"}
+          value={display2FaActive ? "2FA Aktif Terlindungi" : "2FA Belum Aktif"}
+          sub={isSuperadminInspecting ? (targetOwner?.email || "Owner Merchant") : (twoFactorActive ? "Google/Microsoft Authenticator" : "Pindai Barcode QR di Bawah")}
+          tone={display2FaActive ? "emerald" : "rose"}
           icon="fa-shield-halved"
         />
         <AccountKpiCard
           label="PIN Transaksi S-Wallet"
-          value={pin ? "6-Digit Terproteksi" : "PIN Belum Dibuat"}
+          value={targetStoredPin ? "6-Digit Terproteksi" : "PIN Belum Dibuat"}
           sub="Otorisasi Payout & Void Kasir"
-          tone={pin ? "sky" : "amber"}
+          tone={targetStoredPin ? "sky" : "amber"}
           icon="fa-lock"
         />
         <AccountKpiCard
           label="Status Kredensial Akun"
-          value={twoFactorActive && pin ? "Terproteksi Penuh" : "Perlu Lengkapi 2FA"}
-          sub="Enkripsi Kriptografis Aktif"
-          tone={twoFactorActive && pin ? "purple" : "amber"}
+          value={display2FaActive && targetStoredPin ? "Terproteksi Penuh" : "Perlu Lengkapi 2FA"}
+          sub={isSuperadminInspecting ? (tenant?.name || "Merchant Terpilih") : "Enkripsi Kriptografis Aktif"}
+          tone={display2FaActive && targetStoredPin ? "purple" : "amber"}
           icon="fa-fingerprint"
         />
       </AccountKpiGrid>
+
+      {/* ──────── AUDIT KREDENSIAL TENANT KHUSUS SUPERADMIN ──────── */}
+      {isSuperadminInspecting && (
+        <div style={{ marginBottom: "1.25rem" }}>
+          <Panel title={`Audit Kredensial Keamanan: ${tenant?.name || "Merchant"}`}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1rem", marginBottom: "1rem" }}>
+              <div style={{ padding: "1rem", borderRadius: "var(--radius-md)", border: "1px solid var(--color-rule)", background: "var(--color-paper-2)" }}>
+                <span className="d-label" style={{ display: "block", marginBottom: "0.25rem", color: "var(--color-muted)", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                  Pemilik Usaha (Owner)
+                </span>
+                <strong style={{ fontSize: "1.05rem", color: "var(--color-ink)", display: "block" }}>
+                  {targetOwner.full_name || "Owner Merchant"}
+                </strong>
+                <span style={{ fontSize: "0.85rem", color: "var(--color-muted)" }}>
+                  {targetOwner.email} {targetOwner.phone ? `· ${targetOwner.phone}` : ""}
+                </span>
+              </div>
+
+              <div style={{ padding: "1rem", borderRadius: "var(--radius-md)", border: "1px solid var(--color-rule)", background: "var(--color-paper-2)" }}>
+                <span className="d-label" style={{ display: "block", marginBottom: "0.25rem", color: "var(--color-muted)", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                  Status Autentikasi 2FA
+                </span>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginTop: "0.25rem" }}>
+                  <Badge tone={targetOwner.two_factor_enabled ? "ok" : "warn"}>
+                    {targetOwner.two_factor_enabled ? "2FA Aktif (RFC 6238 TOTP)" : "Belum Mengaktifkan 2FA"}
+                  </Badge>
+                </div>
+                <span style={{ fontSize: "0.75rem", color: "var(--color-muted)", display: "block", marginTop: "0.35rem" }}>
+                  {targetOwner.two_factor_enabled
+                    ? "Akun dilindungi kode otentikator real-time dan memenuhi syarat akses brankas moneter S-Wallet."
+                    : "Akun belum mengaktifkan 2FA di database; akses brankas moneter merchant dibatasi."}
+                </span>
+              </div>
+
+              <div style={{ padding: "1rem", borderRadius: "var(--radius-md)", border: "1px solid var(--color-rule)", background: "var(--color-paper-2)" }}>
+                <span className="d-label" style={{ display: "block", marginBottom: "0.25rem", color: "var(--color-muted)", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                  Kunci Rahasia &amp; Kredensial
+                </span>
+                <strong style={{ fontSize: "0.9rem", color: "var(--color-ink)", display: "block", marginTop: "0.2rem" }}>
+                  {targetOwner.two_factor_secret ? "Kunci Kriptografis Tersimpan" : "Belum Dibuat"}
+                </strong>
+                <span style={{ fontSize: "0.75rem", color: "var(--color-muted)", display: "block", marginTop: "0.35rem" }}>
+                  Otorisasi token berbasis HMAC-SHA1 sesuai standar RFC 6238 TOTP.
+                </span>
+              </div>
+            </div>
+            <p className="d-text d-muted" style={{ fontSize: "0.8rem", margin: 0, lineHeight: 1.5 }}>
+              Sebagai Superadmin, Anda sedang menginspeksi data kepatuhan keamanan merchant secara read-only. Untuk mengubah kredensial akun Superadmin pribadi Anda, pilih <em>-- Akun Pribadi Superadmin --</em> pada bilah pengawas di atas.
+            </p>
+          </Panel>
+        </div>
+      )}
 
       <div className="d-grid" style={{ gap: "1.25rem" }}>
         {/* SECTION 1: UBAH KATA SANDI */}
@@ -446,17 +531,22 @@ export default function Security() {
 
           {twoFactorActive ? (
             <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-              {/* Baris 1: Badge Status & Tombol Kode Cadangan (Responsif Mobile) */}
+              {/* Baris 1: Badge Status & Tombol Kode Cadangan (Responsif Mobile & Sembunyikan Demi Privasi Setelah Disimpan) */}
               <div className="sec-2fa-actions" style={{ justifyContent: "space-between" }}>
                 <Badge tone="ok">{t.twoFactorActiveBadge}</Badge>
-                <button
-                  type="button"
-                  className="d-btn d-btn--ghost d-btn--sm"
-                  onClick={() => setRecoveryModal(true)}
-                >
-                  <i className="fa-solid fa-file-shield" aria-hidden="true" style={{ marginRight: "0.4rem" }} />
-                  {t.backupCodesBtn}
-                </button>
+                {!backupCodesSaved && (
+                  <button
+                    type="button"
+                    className="d-btn d-btn--ghost d-btn--sm"
+                    onClick={() => {
+                      setCopiedBackupCodes(false);
+                      setRecoveryModal(true);
+                    }}
+                  >
+                    <i className="fa-solid fa-file-shield" aria-hidden="true" style={{ marginRight: "0.4rem" }} />
+                    {t.backupCodesBtn}
+                  </button>
+                )}
               </div>
 
               {/* Baris 2: Tombol Nonaktifkan 2FA Berbingkai Penuh dengan Teks Merah */}
@@ -715,7 +805,24 @@ export default function Security() {
         title="Kode Pemulihan Cadangan 2FA (Simpan di Tempat Aman)"
         onClose={() => setRecoveryModal(false)}
         footer={
-          <button type="button" className="d-btn d-btn--primary" onClick={() => setRecoveryModal(false)}>
+          <button
+            type="button"
+            className="d-btn d-btn--primary"
+            disabled={!copiedBackupCodes}
+            onClick={() => {
+              setRecoveryModal(false);
+              setBackupCodesSaved(true);
+              try {
+                if (profile?.id) localStorage.setItem(`tijarah:2fa_backup_saved:${profile.id}`, "true");
+                if (profile?.email) localStorage.setItem(`tijarah:2fa_backup_saved:${profile.email}`, "true");
+              } catch {}
+            }}
+            style={{
+              opacity: copiedBackupCodes ? 1 : 0.45,
+              cursor: copiedBackupCodes ? "pointer" : "not-allowed"
+            }}
+            title={!copiedBackupCodes ? "Salin semua kode cadangan terlebih dahulu untuk mengaktifkan tombol ini" : "Konfirmasi penyimpanan kode cadangan"}
+          >
             Saya Sudah Menyimpan Kode Ini
           </button>
         }
@@ -736,14 +843,15 @@ export default function Security() {
           <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem" }}>
             <button
               type="button"
-              className="d-btn d-btn--ghost d-btn--sm"
+              className={`d-btn ${copiedBackupCodes ? "d-btn--primary" : "d-btn--ghost"} d-btn--sm`}
               onClick={() => {
                 navigator.clipboard?.writeText(BACKUP_CODES.join("\n"));
-                alert("8 Kode pemulihan disalin ke clipboard!");
+                setCopiedBackupCodes(true);
+                alert("8 Kode pemulihan disalin ke clipboard! Tombol 'Saya Sudah Menyimpan Kode Ini' kini telah aktif.");
               }}
             >
-              <i className="fa-solid fa-copy" aria-hidden="true" style={{ marginRight: "0.4rem" }} />
-              Salin Semua Kode
+              <i className={`fa-solid ${copiedBackupCodes ? "fa-check" : "fa-copy"}`} aria-hidden="true" style={{ marginRight: "0.4rem" }} />
+              {copiedBackupCodes ? "Kode Berhasil Disalin" : "Salin Semua Kode"}
             </button>
           </div>
         </div>

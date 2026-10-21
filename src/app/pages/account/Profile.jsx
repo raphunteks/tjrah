@@ -3,6 +3,7 @@ import { useAuth } from "../../../auth/AuthProvider.jsx";
 import { ROLE_LABEL, ROLE_LEVEL } from "../../../lib/rbac-matrix.js";
 import { PageHead, Panel, Badge, useAsync } from "../../ui/index.jsx";
 import AccountTabs from "./AccountTabs.jsx";
+import AdminTenantBar from "./AdminTenantBar.jsx";
 import { AccountKpiGrid, AccountKpiCard } from "./AccountKpiGrid.jsx";
 import { useAccountLang } from "./i18n.js";
 
@@ -265,6 +266,9 @@ export default function Profile() {
         title={t.profileTitle}
         desc={t.profileDesc}
       />
+
+      {/* ──────── BILAH PENGAWAS MULTI-TENANT SUPERADMIN ──────── */}
+      <AdminTenantBar />
 
       {/* ──────── BENTO KPI SUMMARY PROFIL ──────── */}
       <AccountKpiGrid>

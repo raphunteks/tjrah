@@ -5,6 +5,7 @@ import { ROLE_LABEL, ROLE_LEVEL } from "../../../lib/rbac-matrix.js";
 import { rupiah, dateTime } from "../../../lib/format.js";
 import { PageHead, Panel, Badge, Modal, Empty, Loading, ErrorNote } from "../../ui/index.jsx";
 import AccountTabs from "./AccountTabs.jsx";
+import AdminTenantBar from "./AdminTenantBar.jsx";
 import { AccountKpiGrid, AccountKpiCard } from "./AccountKpiGrid.jsx";
 import { useAccountLang } from "./i18n.js";
 import ResetPinModal from "./ResetPinModal.jsx";
@@ -41,14 +42,40 @@ const BANK_OPTIONS = [
 
 export default function Wallet() {
   const { navigate } = useRouter();
-  const { role, profile, user: authUser, api } = useAuth();
-  const user = profile || authUser;
+  const { role, profile, user: authUser, api, viewTenant } = useAuth();
+  const [tenantOwner, setTenantOwner] = useState(null);
+
+  useEffect(() => {
+    if (role === "superadmin" && viewTenant) {
+      api.list("profiles", { eq: { tenant_id: viewTenant } })
+        .then((list) => {
+          const owner = (list || []).find((p) => p.role === "owner") || list?.[0] || null;
+          setTenantOwner(owner);
+        })
+        .catch(() => setTenantOwner(null));
+    } else {
+      setTenantOwner(null);
+    }
+  }, [api, role, viewTenant]);
+
+  const effectiveUser = (role === "superadmin" && viewTenant && tenantOwner) ? tenantOwner : (profile || authUser);
+  const user = effectiveUser;
   const { t } = useAccountLang();
   const [showResetPinModal, setShowResetPinModal] = useState(false);
   const storedUserPin = getStoredUserPin(user?.id, user?.email, role);
 
-  // 1. Status Gerbang 2FA Step-Up (15 Menit)
-  const [isUnlocked, setIsUnlocked] = useState(getStepUpSession);
+  // 1. Status Gerbang 2FA Step-Up (15 Menit) - Superadmin privileged auto-unlock
+  const [isUnlocked, setIsUnlocked] = useState(() => {
+    if (role === "superadmin") return true;
+    return getStepUpSession();
+  });
+
+  useEffect(() => {
+    if (role === "superadmin") {
+      setIsUnlocked(true);
+    }
+  }, [role, viewTenant]);
+
   const [totpInput, setTotpInput] = useState("");
   const [gateError, setGateError] = useState(null);
   const [verifyingGate, setVerifyingGate] = useState(false);
@@ -134,7 +161,7 @@ export default function Wallet() {
     if (isUnlocked) {
       loadWalletData();
     }
-  }, [isUnlocked]);
+  }, [isUnlocked, user?.id, viewTenant]);
 
   // Hitung mundur token POS 60 detik
   useEffect(() => {
@@ -303,7 +330,7 @@ export default function Wallet() {
   }, [transactions, txnFilter]);
 
   // ───────── TAMPILAN STATE 0: 2FA BELUM DIAKTIFKAN PADA AKUN ─────────
-  const is2FaActive = isUserTwoFactorActive(user);
+  const is2FaActive = role === "superadmin" ? true : isUserTwoFactorActive(user);
   if (!is2FaActive) {
     return (
       <>
@@ -312,6 +339,9 @@ export default function Wallet() {
           title={t.walletTitle}
           desc="Aktivasi Autentikasi Dua Faktor (2FA) Diperlukan"
         />
+
+        {/* ──────── BILAH PENGAWAS MULTI-TENANT SUPERADMIN ──────── */}
+        <AdminTenantBar />
 
         <div className="swallet-gate-wrapper">
           <div className="swallet-gate-card">
@@ -436,6 +466,9 @@ export default function Wallet() {
           </button>
         }
       />
+
+      {/* ──────── BILAH PENGAWAS MULTI-TENANT SUPERADMIN ──────── */}
+      <AdminTenantBar />
 
       {/* ──────── 1. KARTU BENTO UTAMA BRANKAS S-WALLET ──────── */}
       <section className="swallet-vault-card" aria-label="Brankas S-Wallet Digital">
