@@ -73,7 +73,7 @@ export const PAGES = [
     gate: (r) => can(r, 17, "r") && !permOf(r, 17)?.scope, Comp: lazy(() => import("./pages/clinic/Patients.jsx")) },
 
   // Operasional cabang — Staff & GM (FASE 2)
-  { path: "/app/antrean", label: "Reservasi & antrean", group: "Operasional", code: "F18", tenant: true,
+  { path: "/app/antrean", label: "Reservasi", group: "Operasional", code: "F18", tenant: true,
     gate: (r) => can(r, 18, "r"), Comp: lazy(() => import("./pages/clinic/Queue.jsx")) },
   { path: "/app/tagihan", label: "Tagihan & e-resep", group: "Operasional", code: "F5·17", tenant: true, pillars: ["health"],
     gate: (r) => can(r, 5, "r") && can(r, 17, "r"), Comp: lazy(() => import("./pages/clinic/Billing.jsx")) },

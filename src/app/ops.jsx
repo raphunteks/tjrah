@@ -102,20 +102,46 @@ export function useBranch({ warehouses = false } = {}) {
 
 export function BranchSelect({ b, label = "Cabang" }) {
   if (b.loading && !b.branchId) {
-    return <span className="d-role-chip d-role-chip--plain">Memuat lokasi...</span>;
+    return (
+      <div className="d-branch-badge d-branch-badge--loading">
+        <i className="fa-solid fa-store" aria-hidden="true" />
+        <span>Memuat lokasi…</span>
+      </div>
+    );
   }
-  if (b.locked) return <span className="d-role-chip d-role-chip--plain">{b.branch?.name ?? "…"}</span>;
+  if (b.locked) {
+    return (
+      <div className="d-branch-badge" title="Cabang aktif operasional">
+        <i className="fa-solid fa-store" aria-hidden="true" />
+        <span>{b.branch?.name ?? "…"}</span>
+      </div>
+    );
+  }
   if (!b.options || b.options.length === 0) {
-    return <span className="d-role-chip d-role-chip--plain">Belum ada cabang</span>;
+    return (
+      <div className="d-branch-badge">
+        <i className="fa-solid fa-store" aria-hidden="true" />
+        <span>Belum ada cabang</span>
+      </div>
+    );
   }
   return (
-    <label className="d-switch">
-      <span className="d-switch__label">{label}</span>
-      <select value={b.branchId ?? ""} onChange={(e) => b.setBranch(e.target.value)}>
+    <div className="d-branch-select-wrap">
+      <i className="fa-solid fa-store d-branch-select-icon" aria-hidden="true" />
+      <select
+        className="d-branch-select"
+        value={b.branchId ?? ""}
+        onChange={(e) => b.setBranch(e.target.value)}
+        aria-label={`Pilih ${label}`}
+      >
         {!b.branchId && <option value="">-- Pilih {label} --</option>}
-        {b.options.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+        {b.options.map((x) => (
+          <option key={x.id} value={x.id}>
+            {x.name}
+          </option>
+        ))}
       </select>
-    </label>
+    </div>
   );
 }
 

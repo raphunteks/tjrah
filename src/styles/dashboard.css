@@ -664,7 +664,15 @@
 }
 .d-btn:active:not(:disabled) { transform: translateY(1px); }
 .d-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.d-btn--sm { min-height: 2rem; padding: 0 var(--space-xs); font-size: var(--text-xs); }
+.d-btn--sm {
+  min-height: 2.25rem;
+  padding: 0.35rem 0.85rem;
+  font-size: var(--text-xs, 0.75rem);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+}
 .d-btn--block { width: 100%; }
 .d-btn--primary { background: var(--color-accent); color: var(--color-accent-ink); }
 .d-btn--primary:hover:not(:disabled) { background: var(--color-accent-hover); }
@@ -1280,6 +1288,45 @@
 .d-note--warn { background: var(--color-warn-soft); border-color: var(--color-warn-soft); color: var(--color-ink); }
 .d-note a { color: var(--color-accent); font-weight: 600; }
 .d-role-chip--plain { margin-left: 0; background: var(--color-paper-2); color: var(--color-ink); }
+
+/* Badge Cabang Toko Resmi GBR 2 */
+.d-branch-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-sm, 6px);
+  background: var(--color-paper-2, #f8fafc);
+  border: 1px solid var(--color-rule, #e2e8f0);
+  font-family: var(--font-body, inherit);
+  font-size: var(--text-sm, 0.875rem);
+  font-weight: 600;
+  color: var(--color-ink, #0f172a);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+.d-branch-badge i {
+  color: var(--brand-emerald, #0B5D4B);
+  font-size: 0.9rem;
+}
+.d-branch-badge--loading {
+  opacity: 0.75;
+}
+.d-branch-select-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.d-branch-select-icon {
+  position: absolute;
+  left: 0.75rem;
+  color: var(--brand-emerald, #0B5D4B);
+  font-size: 0.9rem;
+  pointer-events: none;
+}
+.d-branch-select {
+  padding-left: 2.25rem !important;
+  font-weight: 600;
+}
 .d-chip {
   min-height: 2rem; padding: 0 var(--space-xs); border-radius: var(--radius-md); border: var(--rule-hair) solid var(--color-rule-2);
   background: var(--color-paper); font-size: var(--text-sm); cursor: pointer; white-space: nowrap; color: var(--color-ink-2);
@@ -1298,6 +1345,7 @@
 .pos-tabs { display: none; }
 .pos { display: grid; grid-template-columns: minmax(0, 1fr) 350px; gap: var(--space-md); align-items: start; width: 100%; max-width: 100%; box-sizing: border-box; }
 .pos-col { display: grid; gap: var(--space-sm); align-content: start; padding: var(--space-sm); border: var(--rule-hair) solid var(--color-rule-2); border-radius: var(--radius-lg); background: var(--color-paper); min-width: 0; max-width: 100%; box-sizing: border-box; }
+.pos-col--menu { background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important; }
 .pos-col--ticket { position: sticky; top: 4.5rem; min-width: 0; max-width: 100%; box-sizing: border-box; }
 .pos-floor { display: grid; grid-template-columns: repeat(auto-fill, minmax(4.75rem, 1fr)); gap: var(--space-2xs); }
 .pos-floor--wide { grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr)); }
@@ -1445,7 +1493,7 @@
 .pos-calc-input-row { display: flex; gap: 6px; align-items: center; width: 100%; min-width: 0; box-sizing: border-box; }
 .pos-calc-label { font-size: 0.8rem; color: var(--color-muted); font-weight: 600; white-space: nowrap; flex-shrink: 0; }
 .pos-calc-input { flex: 1; min-width: 0; width: 100%; font-family: var(--font-mono); font-size: 1.05rem; font-weight: 700; text-align: right; padding: 5px 8px; border-radius: var(--radius-sm); border: var(--rule-hair) solid var(--color-rule-2); background: var(--color-paper); box-sizing: border-box; }
-.pos-calc-note { margin-top: 6px; font-size: 0.72rem; color: var(--color-muted); text-align: center; }
+.pos-calc-note { margin-top: 6px; font: 500 var(--text-xs, 0.75rem)/1.4 var(--font-body); color: var(--color-muted); text-align: center; }
 .pos-calc-quick-actions { display: flex; justify-content: flex-end; margin-top: 4px; }
 .pos-calc-toggle-btn { font-size: 0.75rem; padding: 2px 0; }
 .pos-actions-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 6px; width: 100%; min-width: 0; box-sizing: border-box; }
@@ -3019,6 +3067,36 @@
 }
 
 /* ───────── Fitur 13: Presensi, Kamera, Geofence & Riwayat Absensi (RBAC Owner, GM, Staf) ───────── */
+.att-workspace {
+  background: var(--color-paper, #ffffff);
+  border: var(--rule-hair, 1px) solid var(--color-rule-2, #e2e8f0);
+  border-radius: var(--radius-lg, 12px);
+  padding: var(--space-md, 1.25rem);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+.att-workspace__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--color-rule-2, #e2e8f0);
+}
+.att-workspace__title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-ink, #0f172a);
+  margin: 0;
+}
+.att-workspace__meta {
+  font-size: 0.85rem;
+  color: var(--color-muted, #64748b);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
 .att-layout {
   display: grid;
   grid-template-columns: minmax(320px, 440px) 1fr;

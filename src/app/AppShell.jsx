@@ -457,6 +457,15 @@ export default function AppShell() {
     if (p.path === "/app/dapur" && tenant && tenant.kds_enabled === false) {
       return false;
     }
+    // Sembunyikan Reservasi dari sidebar jika dinonaktifkan di Pengaturan Dapur & KDS (khusus non-klinik)
+    if (p.path === "/app/antrean" && pillar !== "health" && tenant) {
+      const isReservationDisabled =
+        tenant.reservation_enabled === false ||
+        (tenant.kds_enabled === false && tenant.reservation_enabled !== true);
+      if (isReservationDisabled) {
+        return false;
+      }
+    }
     return true;
   });
   const page = findPage(path);
@@ -609,6 +618,8 @@ export default function AppShell() {
                         } else if (p.path === "/app/antrean") {
                           pageLabel = lang === "en" ? "Clinic Queue" : "Antrean Pasien";
                         }
+                      } else if (p.path === "/app/antrean") {
+                        pageLabel = lang === "en" ? "Reservations" : "Reservasi";
                       }
                       return (
                         <li key={p.path}>

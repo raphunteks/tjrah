@@ -951,7 +951,7 @@ export const PAGE_TRANSLATIONS = {
   "/app/cabang": { id: "Cabang & outlet", en: "Branches & Outlets" },
   "/app/pemeriksaan": { id: "Rekam Medis (RME)", en: "Medical Records (EMR)" },
   "/app/pasien": { id: "Data Pasien", en: "Patient Records" },
-  "/app/antrean": { id: "Antrean Klinik", en: "Clinic Queue" },
+  "/app/antrean": { id: "Reservasi", en: "Reservations" },
   "/app/tagihan": { id: "Tagihan & Kasir", en: "Billing & POS" },
   "/app/kasir": { id: "Kasir POS", en: "POS Cashier" },
   "/app/dapur": { id: "Display Dapur (KDS)", en: "Kitchen Display (KDS)" },

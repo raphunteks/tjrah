@@ -164,18 +164,21 @@ export default function SdmReports() {
         desc="Pusat rekapitulasi 6 modul laporan resmi ketenagakerjaan, efisiensi labour cost, audit jam kerja lembur, dan kepatuhan staf."
         actions={
           <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
-            <select
-              value={branchFilter}
-              onChange={(e) => setBranchFilter(e.target.value)}
-              className="d-input"
-              aria-label="Filter Cabang"
-              style={{ minWidth: "150px", fontSize: "0.85rem", padding: "0.35rem 0.65rem" }}
-            >
-              <option value="">Seluruh Cabang</option>
-              {branches.map((b) => (
-                <option key={b.id} value={b.id}>{b.name}</option>
-              ))}
-            </select>
+            <div className="d-branch-select-wrap">
+              <i className="fa-solid fa-store d-branch-select-icon" aria-hidden="true" />
+              <select
+                value={branchFilter}
+                onChange={(e) => setBranchFilter(e.target.value)}
+                className="d-branch-select"
+                aria-label="Filter Cabang"
+                style={{ minWidth: "160px", fontSize: "0.85rem" }}
+              >
+                <option value="">Seluruh Cabang</option>
+                {branches.map((b) => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+            </div>
             <select
               value={periodFilter}
               onChange={(e) => setPeriodFilter(e.target.value)}

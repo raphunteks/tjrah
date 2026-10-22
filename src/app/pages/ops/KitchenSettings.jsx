@@ -18,6 +18,7 @@ export default function KitchenSettings() {
   }, [api, tenantId], { key: `tenant@${tenantId}` });
 
   const [kdsEnabled, setKdsEnabled] = useState(false);
+  const [reservationEnabled, setReservationEnabled] = useState(false);
   const [stationsEnabled, setStationsEnabled] = useState(false);
   const [slaMinutes, setSlaMinutes] = useState(15);
   const [stations, setStations] = useState(DEFAULT_STATIONS);
@@ -28,6 +29,7 @@ export default function KitchenSettings() {
     if (tQuery.data) {
       const t = tQuery.data;
       setKdsEnabled(Boolean(t.kds_enabled));
+      setReservationEnabled(Boolean(t.reservation_enabled));
       setStationsEnabled(Boolean(t.kitchen_stations_enabled));
       setSlaMinutes(Number(t.kds_sla_minutes) || 15);
       if (Array.isArray(t.kitchen_stations) && t.kitchen_stations.length > 0) {
@@ -63,6 +65,7 @@ export default function KitchenSettings() {
     if (!tenantId) throw new Error("ID Tenant tidak ditemukan.");
     const patch = {
       kds_enabled: kdsEnabled,
+      reservation_enabled: reservationEnabled,
       kitchen_stations_enabled: stationsEnabled,
       kds_sla_minutes: Math.max(1, Number(slaMinutes) || 15),
       kitchen_stations: stations.length > 0 ? stations : DEFAULT_STATIONS,
@@ -131,9 +134,41 @@ export default function KitchenSettings() {
             </div>
           </Panel>
 
-          {/* KARTU 2: Sakelar Multi-Stasiun Dapur */}
+          {/* KARTU 2: Sakelar Reservasi Meja & Antrean Tamu */}
           <Panel
-            title="2. Sakelar Multi-Stasiun Dapur"
+            title="2. Sakelar Reservasi Meja & Antrean Tamu"
+            meta={<Badge tone={reservationEnabled ? "ok" : "neutral"}>{reservationEnabled ? "Aktif" : "Nonaktif (Default)"}</Badge>}
+            desc="Mengatur ketersediaan subtab Reservasi (/app/antrean) pada bilah navigasi Staf Kasir (L3)."
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap", padding: "0.5rem 0" }}>
+              <div style={{ flex: "1 1 300px" }}>
+                <p style={{ margin: 0, fontWeight: 600, color: "var(--color-ink, #0f172a)" }}>
+                  Status Subtab Reservasi Kasir / Staf
+                </p>
+                <p style={{ margin: "0.25rem 0 0", fontSize: "0.85rem", color: "var(--color-muted, #64748b)" }}>
+                  Jika dinonaktifkan, subtab Reservasi disembunyikan sepenuhnya dari kasir. Data reservasi tetap tersimpan aman di server.
+                </p>
+              </div>
+              <div>
+                <label className="d-btn d-btn--ghost" style={{ cursor: canEdit ? "pointer" : "not-allowed", display: "inline-flex", alignItems: "center", gap: "0.5rem", userSelect: "none" }}>
+                  <input
+                    type="checkbox"
+                    checked={reservationEnabled}
+                    disabled={!canEdit}
+                    onChange={(e) => setReservationEnabled(e.target.checked)}
+                    style={{ width: "1.15rem", height: "1.15rem", cursor: "pointer" }}
+                  />
+                  <span style={{ fontWeight: 600 }}>
+                    {reservationEnabled ? "Reservasi Diaktifkan" : "Reservasi Dinonaktifkan"}
+                  </span>
+                </label>
+              </div>
+            </div>
+          </Panel>
+
+          {/* KARTU 3: Sakelar Multi-Stasiun Dapur */}
+          <Panel
+            title="3. Sakelar Multi-Stasiun Dapur"
             meta={<Badge tone={stationsEnabled ? "ok" : "neutral"}>{stationsEnabled ? "Multi-Stasiun Aktif" : "Satu Dapur Umum (Default)"}</Badge>}
             desc="Pemisahan pesanan makanan/minuman ke beberapa pos kerja (misal: Barista, Grill, Pastry)."
           >
@@ -163,9 +198,9 @@ export default function KitchenSettings() {
             </div>
           </Panel>
 
-          {/* KARTU 3: Target SLA Timer Masak */}
+          {/* KARTU 4: Target SLA Timer Masak */}
           <Panel
-            title="3. Target Waktu Masak & SLA Dapur"
+            title="4. Target Waktu Masak & SLA Dapur"
             meta={<Badge tone="neutral">{slaMinutes} Menit</Badge>}
             desc="Batas waktu standar penyelesaian pesanan sebelum tiket antrean dapur berganti warna peringatan."
           >
@@ -205,9 +240,9 @@ export default function KitchenSettings() {
             </div>
           </Panel>
 
-          {/* KARTU 4: Kelola Stasiun Kerja Dapur Aktif */}
+          {/* KARTU 5: Kelola Stasiun Kerja Dapur Aktif */}
           <Panel
-            title="4. Daftar Stasiun Kerja Dapur"
+            title="5. Daftar Stasiun Kerja Dapur"
             meta={<Badge tone="neutral">{stations.length} Stasiun Terdaftar</Badge>}
             desc="Kelola stasiun tujuan preparasi produk. Stasiun ini muncul pada pilihan menu saat Multi-Stasiun aktif."
           >

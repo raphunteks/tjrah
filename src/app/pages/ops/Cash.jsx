@@ -37,7 +37,7 @@ export default function Cash() {
   return (
     <>
       <PageHead eyebrow={`Fitur 12 · ${permOf(role, 12)?.label}`} title={scoped ? "Kas kecil" : "Kas & settlement"}
-        desc="Pengeluaran tak terduga outlet dengan foto nota, divalidasi GM lalu otomatis dijurnal." actions={b.locked ? <BranchSelect b={b} /> : <span className="d-role-chip d-role-chip--plain">Semua cabang</span>} />
+        desc="Pengeluaran tak terduga outlet dengan foto nota, divalidasi GM lalu otomatis dijurnal." actions={b.locked ? <BranchSelect b={b} /> : <div className="d-branch-badge"><i className="fa-solid fa-store" aria-hidden="true" /><span>Semua Cabang</span></div>} />
       {r.loading && !r.data ? <Loading /> : r.error ? <ErrorNote error={r.error} onRetry={r.reload} /> : !r.data ? <Loading /> : (
         <div className="d-grid d-grid--wide">
           <div className="d-grid">

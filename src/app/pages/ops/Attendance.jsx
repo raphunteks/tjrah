@@ -687,12 +687,18 @@ export default function Attendance() {
         <ErrorNote error={r.error} onRetry={r.reload} />
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem", width: "100%" }}>
-          {/* 1. PANEL PRESENSI LIVE CAMERA KASIR / STAF (DI ATAS - FULL WIDTH KE KANAN) */}
+          {/* 1. WORKSPACE PRESENSI LIVE CAMERA KASIR / STAF (DI ATAS - FULL WIDTH KE KANAN) */}
           {profile.branch_id && (
-            <Panel
-              title={alreadyCompletedToday ? "Presensi Shift Hari Ini Lengkap" : nextKind === "in" ? "Absen Masuk Kamera" : "Absen Pulang Kamera"}
-              meta={`Outlet: ${home?.name || "Cabang Anda"}`}
-            >
+            <div className="att-workspace">
+              <div className="att-workspace__head">
+                <h2 className="att-workspace__title">
+                  {alreadyCompletedToday ? "Presensi Shift Hari Ini Lengkap" : nextKind === "in" ? "Absen Masuk Kamera" : "Absen Pulang Kamera"}
+                </h2>
+                <span className="att-workspace__meta">
+                  <i className="fa-solid fa-location-dot" style={{ color: "var(--brand-emerald, #0B5D4B)" }} />
+                  Outlet: {home?.name || "Cabang Anda"}
+                </span>
+              </div>
               <div className="att-layout">
                 {/* Kolom Kiri: Viewfinder Live Webcam & Deteksi Alamat Satelit */}
                 <div className="att-viewfinder">
@@ -1005,7 +1011,7 @@ export default function Attendance() {
                   <Feedback a={a} />
                 </div>
               </div>
-            </Panel>
+            </div>
           )}
 
           {/* 2. PANEL RIWAYAT ABSENSI KASIR (DI BAWAH - FULL WIDTH 100% UNTUK OWNER, GM, DAN STAF) */}
@@ -1016,25 +1022,28 @@ export default function Attendance() {
                 {/* Indikator / Filter Cabang */}
                 {!isManager ? (
                   <div
-                    className="att-branch-chip"
+                    className="d-branch-badge"
                     title="Cabang penugasan resmi Anda (Role staf/kasir terkunci ke cabang penugasan)"
                   >
-                    <i className="fa-solid fa-store" style={{ color: "var(--color-primary, #0B5D4B)" }} />
+                    <i className="fa-solid fa-store" aria-hidden="true" />
                     <span>{home?.name || "Cabang Penugasan"}</span>
                   </div>
                 ) : (
-                  <select
-                    value={branchFilter}
-                    onChange={(e) => setBranchFilter(e.target.value)}
-                    className="d-input"
-                    style={{ fontSize: "0.8125rem", padding: "4px 8px", minWidth: "150px" }}
-                    aria-label="Filter Cabang"
-                  >
-                    <option value="">Seluruh Cabang</option>
-                    {(r.data?.branches ?? []).filter((b) => !b.is_warehouse).map((b) => (
-                      <option key={b.id} value={b.id}>{b.name}</option>
-                    ))}
-                  </select>
+                  <div className="d-branch-select-wrap">
+                    <i className="fa-solid fa-store d-branch-select-icon" aria-hidden="true" />
+                    <select
+                      value={branchFilter}
+                      onChange={(e) => setBranchFilter(e.target.value)}
+                      className="d-branch-select"
+                      style={{ fontSize: "0.8125rem", minWidth: "150px" }}
+                      aria-label="Filter Cabang"
+                    >
+                      <option value="">Seluruh Cabang</option>
+                      {(r.data?.branches ?? []).filter((b) => !b.is_warehouse).map((b) => (
+                        <option key={b.id} value={b.id}>{b.name}</option>
+                      ))}
+                    </select>
+                  </div>
                 )}
 
                 {/* Log Anomali & Kosongkan Riwayat (Hanya untuk Owner / GM) */}
