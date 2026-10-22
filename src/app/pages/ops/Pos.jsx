@@ -551,15 +551,6 @@ export default function Pos() {
         actions={
           <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
             <BranchSelect b={b} />
-            {b.branch?.address && (
-              <span
-                className="d-role-chip d-role-chip--plain d-hide-mobile"
-                title={`${b.branch.address}${b.branch.lat && b.branch.lng ? ` (${Number(b.branch.lat).toFixed(6)}, ${Number(b.branch.lng).toFixed(6)})` : ""}`}
-                style={{ maxWidth: "280px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "0.8rem" }}
-              >
-                📍 {b.branch.address}
-              </span>
-            )}
           </div>
         }
       />
@@ -641,12 +632,8 @@ export default function Pos() {
 
                     <div className="pos-prod__body">
                       <span className="pos-prod__category">{p.category}</span>
-                      <span className="pos-prod__name" style={{ fontSize: "0.85rem", height: "2.3rem", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
-                        {p.name}
-                      </span>
-                      <span className="pos-prod__price" style={{ marginTop: "4px" }}>
-                        {rupiah(p.price)}
-                      </span>
+                      <span className="pos-prod__name">{p.name}</span>
+                      <span className="pos-prod__price">{rupiah(p.price)}</span>
                     </div>
                   </button>
                 ))}

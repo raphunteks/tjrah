@@ -180,7 +180,7 @@ export default function Transactions() {
   };
 
   return (
-    <div className="d-page" style={{ width: "100%", maxWidth: "100%", minWidth: 0, boxSizing: border-box }}>
+    <div className="d-page">
       <PageHead
         eyebrow="Operasional Kasir · Pembukuan"
         title="Riwayat Transaksi"
