@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /app
 Disallow: /masuk
-Sitemap: https://harum.in/sitemap.xml
+Sitemap: https://harumin.my.id/sitemap.xml

@@ -39,7 +39,10 @@ export default function Referral() {
     return code;
   });
 
-  const referralLink = `https://tijarah.id/daftar?ref=${referralCode}`;
+  const baseUrl = typeof window !== "undefined" && window.location?.origin
+    ? window.location.origin
+    : "https://harumin.my.id";
+  const referralLink = `${baseUrl}/daftar?ref=${referralCode}`;
 
   // Data riwayat merchant referral (Real-Time dari Database/Sistem)
   const [referralUsers, setReferralUsers] = useState(() => {
