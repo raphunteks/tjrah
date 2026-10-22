@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useAuth } from "../../../auth/AuthProvider.jsx";
 import { rupiah, dateTime } from "../../../lib/format.js";
-import { PageHead, Loading, ErrorNote, Modal, Badge, Empty, useAsync, Stat } from "../../ui/index.jsx";
+import { PageHead, Loading, ErrorNote, Modal, Badge, Empty, useAsync, Stat, Panel } from "../../ui/index.jsx";
 import { useBranch, BranchSelect, useLive } from "../../ops.jsx";
 import {
   executePrint,
@@ -180,7 +180,7 @@ export default function Transactions() {
   };
 
   return (
-    <div className="d-page">
+    <div className="d-page" style={{ width: "100%", maxWidth: "100%", minWidth: 0, boxSizing: border-box }}>
       <PageHead
         eyebrow="Operasional Kasir · Pembukuan"
         title="Riwayat Transaksi"
@@ -288,9 +288,11 @@ export default function Transactions() {
         <Empty title="Tidak ada transaksi yang cocok" desc="Coba ubah filter metode bayar atau kata kunci pencarian Anda." />
       ) : (
         <>
-          {/* Tampilan Desktop: Tabel Lengkap 9 Kolom */}
-          <div className="d-hide-mobile d-table-wrapper" style={{ overflowX: "auto" }}>
-            <table className="d-table" style={{ width: "100%", minWidth: "960px" }}>
+          {/* Tampilan Desktop: Tabel Lengkap 9 Kolom Dalam Panel Terisolasi */}
+          <div className="d-hide-mobile" style={{ width: "100%", minWidth: 0, maxWidth: "100%" }}>
+            <Panel style={{ overflow: "hidden", padding: 0, minWidth: 0 }}>
+              <div className="d-table-wrap d-table-wrap--contained" style={{ overflowX: "auto", width: "100%", minWidth: 0 }}>
+                <table className="d-table" style={{ width: "100%", minWidth: "860px" }}>
               <thead>
                 <tr>
                   <th>ID Order &amp; Waktu</th>
@@ -420,6 +422,8 @@ export default function Transactions() {
                 })}
               </tbody>
             </table>
+              </div>
+            </Panel>
           </div>
 
           {/* Tampilan Mobile: Kartu Transaksi Touch-Friendly (<= 768px) */}

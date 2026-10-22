@@ -644,6 +644,7 @@
 .d-top__tenant { font-weight: 600; color: var(--color-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .d-role-chip { margin-left: auto; font: 500 var(--text-xs)/1 var(--font-mono); padding: 0.375rem 0.5rem; border-radius: var(--radius-sm); background: var(--color-accent-soft); color: var(--color-accent); white-space: nowrap; }
 .d-main { padding: var(--space-xl) var(--space-lg) var(--space-3xl); display: grid; gap: var(--space-lg); align-content: start; outline: none; max-width: 90rem; width: 100%; min-width: 0; overflow-x: hidden; box-sizing: border-box; }
+.d-page { display: flex; flex-direction: column; gap: var(--space-md); width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; }
 .d-bleed { margin: calc(var(--space-xl) * -1) calc(var(--space-lg) * -1) 0; }
 
 /* ───────── Page head ───────── */
@@ -722,6 +723,10 @@
 .d-stats {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   border: var(--rule-hair) solid var(--color-rule);
   border-radius: var(--radius-lg);
   background: var(--color-paper-2);
@@ -1028,8 +1033,9 @@
 
 /* ───────── Responsive ───────── */
 @media (max-width: 1180px) {
-  .d-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .d-stat:nth-child(3) { border-left: 0; }
+  .d-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; }
+  .d-stat:nth-child(odd) { border-left: 0; }
+  .d-stat:nth-child(even) { border-left: var(--rule-hair) solid var(--color-rule); }
   .d-stat:nth-child(n + 3) { border-top: var(--rule-hair) solid var(--color-rule); }
   .d-grid--wide { grid-template-columns: minmax(0, 1fr); }
 }
@@ -5340,14 +5346,29 @@
     display: flex !important;
   }
   .d-stats {
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) !important;
-    gap: var(--space-xs) !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    gap: 1px !important;
+    background: var(--color-rule) !important;
+    border-radius: var(--radius-md) !important;
   }
   .d-stat {
-    padding: var(--space-sm) !important;
+    padding: 0.65rem 0.5rem !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+    background: var(--color-paper-2) !important;
+  }
+  .d-stat + .d-stat {
+    border-left: 0 !important;
+    border-top: 0 !important;
   }
   .d-stat__value {
-    font-size: 1.25rem !important;
+    font-size: 1.15rem !important;
   }
   .d-chips {
     overflow-x: auto !important;
