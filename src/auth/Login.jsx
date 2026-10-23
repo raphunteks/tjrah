@@ -37,6 +37,38 @@ export default function Login() {
   const [recaptchaWidgetId, setRecaptchaWidgetId] = useState(null);
   const [recaptchaV2Token, setRecaptchaV2Token] = useState(null);
 
+  // Progressive lockout state (Anti-Brute Force)
+  const [lockoutSeconds, setLockoutSeconds] = useState(() => {
+    try {
+      const until = sessionStorage.getItem("tijarah:lockout_until");
+      if (until) {
+        const remaining = Math.ceil((parseInt(until, 10) - Date.now()) / 1000);
+        return remaining > 0 ? remaining : 0;
+      }
+    } catch {
+      // ignore
+    }
+    return 0;
+  });
+
+  useEffect(() => {
+    if (lockoutSeconds <= 0) return;
+    const timer = setInterval(() => {
+      setLockoutSeconds((prev) => {
+        if (prev <= 1) {
+          try {
+            sessionStorage.removeItem("tijarah:lockout_until");
+          } catch {
+            // ignore
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [lockoutSeconds]);
+
   // Inisialisasi Google reCAPTCHA: Tampilkan floating badge v3 di kanan bawah & render Checkbox v2
   useEffect(() => {
     let isMounted = true;
@@ -113,6 +145,7 @@ export default function Login() {
 
   const submit = async (e, creds) => {
     e?.preventDefault();
+    if (!creds && lockoutSeconds > 0) return;
     setBusy(true);
     setErr(null);
     try {
@@ -157,10 +190,32 @@ export default function Login() {
 
       await signIn(emailToUse, passToUse, creds ? { ...creds, email: emailToUse } : null);
 
+      // Jika login berhasil, reset counter kegagalan
+      try {
+        sessionStorage.removeItem("tijarah:login_attempts");
+        sessionStorage.removeItem("tijarah:lockout_until");
+      } catch {
+        // ignore
+      }
+
       if (!creds?.role) {
         navigate(targetRole === "member" ? "/m" : "/app", { replace: true });
       }
     } catch (e2) {
+      if (!creds) {
+        try {
+          const currentAttempts = (parseInt(sessionStorage.getItem("tijarah:login_attempts") || "0", 10)) + 1;
+          sessionStorage.setItem("tijarah:login_attempts", String(currentAttempts));
+          if (currentAttempts >= 5) {
+            const until = Date.now() + 30000;
+            sessionStorage.setItem("tijarah:lockout_until", String(until));
+            sessionStorage.setItem("tijarah:login_attempts", "0");
+            setLockoutSeconds(30);
+          }
+        } catch {
+          // ignore
+        }
+      }
       setErr(e2.message === "Invalid login credentials" ? "Email atau kata sandi salah." : e2.message);
     } finally {
       setBusy(false);
@@ -321,8 +376,32 @@ export default function Login() {
             </p>
           )}
 
-          <button type="submit" className="d-btn d-btn--primary d-btn--block" disabled={busy || !api}>
-            {busy ? "Memeriksa…" : "Masuk"}
+          {lockoutSeconds > 0 && (
+            <div
+              style={{
+                margin: "0.75rem 0",
+                padding: "0.75rem 1rem",
+                borderRadius: "var(--radius-md)",
+                background: "rgba(239, 68, 68, 0.12)",
+                border: "1px solid rgba(239, 68, 68, 0.35)",
+                color: "#EF4444",
+                fontSize: "0.82rem",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem"
+              }}
+              role="alert"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              <span>Terlalu banyak percobaan gagal. Tombol masuk dikunci selama <strong>{lockoutSeconds}d</strong> demi keamanan akun.</span>
+            </div>
+          )}
+
+          <button type="submit" className="d-btn d-btn--primary d-btn--block" disabled={busy || !api || lockoutSeconds > 0}>
+            {lockoutSeconds > 0 ? `Terkunci (${lockoutSeconds}s)` : busy ? "Memeriksa…" : "Masuk"}
           </button>
 
           {/* Widget Checkbox Resmi Google reCAPTCHA v2 (Di Bawah Tombol Masuk) */}

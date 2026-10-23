@@ -1,6 +1,6 @@
 // Tijarah OS · Progressive Web App (PWA) Service Worker
-// Versi: 1.0.0
-// Cakupan: App Shell, Static Cache, Push Notifications & Click Dispatcher
+// Versi: 1.1.0 (Runtime Cache & Offline Shell Hardening)
+// Cakupan: App Shell, Static Cache, Runtime Hashed Asset Cache, Push Notifications & Click Dispatcher
 
 const CACHE_NAME = "tijarah-pwa-v1";
 
@@ -97,7 +97,25 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // 2. Aset Statis Lokal (Ikon, Font, Gambar, CSS, JS) -> Stale-While-Revalidate
+  // 2. Aset Statis Ber-Hash (/assets/*) -> Cache First dengan Runtime Caching
+  // Karena chunk Vite di /assets/ sudah memiliki hash konten unik dan immutable di vercel.json
+  if (url.origin === self.location.origin && url.pathname.startsWith("/assets/")) {
+    event.respondWith(
+      caches.match(req).then((cachedResponse) => {
+        if (cachedResponse) return cachedResponse;
+        return fetch(req).then((networkResponse) => {
+          if (networkResponse && networkResponse.ok) {
+            const clone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(req, clone));
+          }
+          return networkResponse;
+        });
+      })
+    );
+    return;
+  }
+
+  // 3. Aset Statis Lokal Lainnya (Ikon, Font, Gambar, CSS, JS di luar /assets/) -> Stale-While-Revalidate
   if (
     url.origin === self.location.origin &&
     (url.pathname.startsWith("/icons/") ||
