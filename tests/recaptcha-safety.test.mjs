@@ -28,6 +28,8 @@ test("CSP Header: vercel.json memuat Content-Security-Policy yang lengkap & aman
   assert.match(cspValue, /https:\/\/translate-pa\.googleapis\.com/, "CSP wajib mengizinkan Google Translate Personal Assistant API");
   assert.match(cspValue, /https:\/\/translate\.google\.com/, "CSP wajib mengizinkan Google Translate");
   assert.match(cspValue, /frame-src[^;]*https:\/\/translate\.google\.com/, "CSP wajib mengizinkan frame Google Translate");
+  assert.match(cspValue, /frame-src[^;]*https:\/\/maps\.google\.com/, "CSP wajib mengizinkan frame Google Maps");
+  assert.match(cspValue, /frame-src[^;]*https:\/\/www\.google\.com/, "CSP wajib mengizinkan frame Google Maps www subdomain");
 
   const hstsHeader = globalHeaders.headers.find((h) => h.key === "Strict-Transport-Security");
   assert.ok(hstsHeader, "Header Strict-Transport-Security wajib terpasang");
